@@ -4,11 +4,11 @@ use crate::type_system::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum Declaration {
-    VariableDeclaration(VariableDeclaration),
-    FunctionDeclaration(FunctionDeclaration),
-    TraitDeclaration(TraitDeclaration),
-    StructDeclaration(StructDeclaration),
-    EnumDeclaration(EnumDeclaration),
+    Variable(VariableDeclaration),
+    Function(FunctionDeclaration),
+    Trait(TraitDeclaration),
+    Struct(StructDeclaration),
+    Enum(EnumDeclaration),
 }
 
 #[derive(Debug, Clone, PartialEq)]
