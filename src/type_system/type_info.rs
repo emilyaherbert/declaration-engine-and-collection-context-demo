@@ -22,3 +22,9 @@ pub(crate) enum TypeInfo {
     Ref(TypeId),
     ErrorRecovery,
 }
+
+impl Default for TypeInfo {
+    fn default() -> Self {
+        TypeInfo::Unknown
+    }
+}

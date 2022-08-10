@@ -1,15 +1,13 @@
-//use crate::type_system::*;
-
-// #[derive(Debug, Clone, PartialEq)]
-// pub(crate) struct TypedExpression {
-//     variant: TypedExpressionVariant,
-//     type_id: TypeId,
-// }
-
-use crate::language::Literal;
+use crate::{language::Literal, type_system::TypeId};
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum TypedExpression {
+pub(crate) struct TypedExpression {
+    variant: TypedExpressionVariant,
+    type_id: TypeId,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub(crate) enum TypedExpressionVariant {
     Literal {
         value: Literal,
     },

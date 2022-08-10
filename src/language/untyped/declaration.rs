@@ -1,3 +1,5 @@
+use crate::type_system::TypeInfo;
+
 use super::{expression::*, Node};
 
 //use crate::type_system::*;
@@ -15,6 +17,7 @@ pub(crate) enum Declaration {
 pub(crate) struct VariableDeclaration {
     pub(crate) name: String,
     pub(crate) body: Expression,
+    pub(crate) type_ascription: TypeInfo
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -23,13 +26,13 @@ pub(crate) struct FunctionDeclaration {
     //pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) parameters: Vec<FunctionParameter>,
     pub(crate) body: Vec<Node>,
-    //pub(crate) return_type: TypeInfo,
+    pub(crate) return_type: TypeInfo,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct FunctionParameter {
     pub(crate) name: String,
-    //pub(crate) type_id: TypeId,
+    pub(crate) type_info: TypeInfo,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -43,7 +46,7 @@ pub(crate) struct TraitDeclaration {
 pub(crate) struct TraitFn {
     pub(crate) name: String,
     pub(crate) parameters: Vec<FunctionParameter>,
-    //pub(crate) return_type: TypeInfo,
+    pub(crate) return_type: TypeInfo,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -56,7 +59,7 @@ pub(crate) struct StructDeclaration {
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct StructField {
     pub(crate) name: String,
-    //pub(crate) type_info: TypeInfo,
+    pub(crate) type_info: TypeInfo,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -69,6 +72,6 @@ pub(crate) struct EnumDeclaration {
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct EnumVariant {
     pub(crate) name: String,
-    //pub(crate) type_info: TypeInfo,
+    pub(crate) type_info: TypeInfo,
     pub(crate) tag: usize,
 }

@@ -1,21 +1,30 @@
 use crate::{
     declaration_engine::DeclarationEngine,
-    language::{Expression, StructExpressionField, TypedExpression, TypedStructExpressionField},
+    language::{Expression, StructExpressionField, TypedExpression, TypedStructExpressionField, TypedExpressionVariant},
+    type_system::TypeEngine,
 };
 
 pub(super) fn analyze_expression(
+    type_engine: &mut TypeEngine,
     declaration_engine: &mut DeclarationEngine,
     expression: Expression,
 ) -> TypedExpression {
     match expression {
-        Expression::Literal { value } => TypedExpression::Literal { value },
-        Expression::Variable { name } => TypedExpression::Variable { name },
+        Expression::Literal { value } => {
+            let type_id = todo!();
+            let variant = TypedExpressionVariant::Literal { value };
+            TypedExpression {
+                variant,
+                type_id
+            }
+        },
+        Expression::Variable { name } => TypedExpressionVariant::Variable { name },
         Expression::FunctionApplication { name, arguments } => {
             let new_arguments = arguments
                 .into_iter()
-                .map(|argument| analyze_expression(declaration_engine, argument))
+                .map(|argument| analyze_expression(type_engine, declaration_engine, argument))
                 .collect::<Vec<_>>();
-            TypedExpression::FunctionApplication {
+            TypedExpressionVariant::FunctionApplication {
                 name,
                 arguments: new_arguments,
             }
@@ -26,9 +35,11 @@ pub(super) fn analyze_expression(
         } => {
             let new_fields = fields
                 .into_iter()
-                .map(|field| analyze_struct_expression_field(declaration_engine, field))
+                .map(|field| {
+                    analyze_struct_expression_field(type_engine, declaration_engine, field)
+                })
                 .collect::<Vec<_>>();
-            TypedExpression::Struct {
+            TypedExpressionVariant::Struct {
                 struct_name,
                 fields: new_fields,
             }
@@ -38,8 +49,8 @@ pub(super) fn analyze_expression(
             variant_name,
             value,
         } => {
-            let new_value = analyze_expression(declaration_engine, *value);
-            TypedExpression::Enum {
+            let new_value = analyze_expression(type_engine, declaration_engine, *value);
+            TypedExpressionVariant::Enum {
                 enum_name,
                 variant_name,
                 value: Box::new(new_value),
@@ -49,10 +60,15 @@ pub(super) fn analyze_expression(
 }
 
 fn analyze_struct_expression_field(
+    type_engine: &mut TypeEngine,
     declaration_engine: &mut DeclarationEngine,
     struct_expression_field: StructExpressionField,
 ) -> TypedStructExpressionField {
-    let new_value = analyze_expression(declaration_engine, struct_expression_field.value);
+    let new_value = analyze_expression(
+        type_engine,
+        declaration_engine,
+        struct_expression_field.value,
+    );
     TypedStructExpressionField {
         name: struct_expression_field.name,
         value: new_value,

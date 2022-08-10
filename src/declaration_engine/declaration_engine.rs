@@ -5,6 +5,7 @@ use crate::language::{
     TypedVariableDeclaration,
 };
 
+// TODO: will need to use concurrent structure like https://github.com/xacrimon/dashmaps
 #[derive(Default)]
 pub(crate) struct DeclarationEngine {
     variables: HashMap<String, TypedVariableDeclaration>,
