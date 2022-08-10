@@ -1,15 +1,15 @@
 //use crate::type_system::*;
 
 // #[derive(Debug, Clone, PartialEq)]
-// pub(crate) struct TypedExpression {
-//     variant: TypedExpressionVariant,
+// pub(crate) struct ResolvedExpression {
+//     variant: ResolvedExpressionVariant,
 //     type_id: TypeId,
 // }
 
-use crate::language::Literal;
+use crate::language::{Literal, TypedFunctionDeclaration};
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum TypedExpression {
+pub(crate) enum ResolvedExpression {
     Literal {
         value: Literal,
     },
@@ -18,21 +18,22 @@ pub(crate) enum TypedExpression {
     },
     FunctionApplication {
         name: String,
-        arguments: Vec<TypedExpression>,
+        function_declaration: TypedFunctionDeclaration,
+        arguments: Vec<ResolvedExpression>,
     },
     Struct {
         struct_name: String,
-        fields: Vec<TypedStructExpressionField>,
+        fields: Vec<ResolvedStructExpressionField>,
     },
     Enum {
         enum_name: String,
         variant_name: String,
-        value: Box<TypedExpression>,
+        value: Box<ResolvedExpression>,
     },
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) struct TypedStructExpressionField {
+pub(crate) struct ResolvedStructExpressionField {
     pub(crate) name: String,
-    pub(crate) value: TypedExpression,
+    pub(crate) value: ResolvedExpression,
 }

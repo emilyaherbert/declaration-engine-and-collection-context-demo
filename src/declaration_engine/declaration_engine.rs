@@ -1,31 +1,57 @@
+use std::collections::HashMap;
+
 use crate::language::{
     TypedEnumDeclaration, TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration,
+    TypedVariableDeclaration,
 };
-
-use super::{ConcurrentSlab, DeclarationId};
 
 #[derive(Default)]
 pub(crate) struct DeclarationEngine {
-    functions: ConcurrentSlab<TypedFunctionDeclaration>,
-    structs: ConcurrentSlab<TypedStructDeclaration>,
-    enums: ConcurrentSlab<TypedEnumDeclaration>,
-    traits: ConcurrentSlab<TypedTraitDeclaration>,
+    variables: HashMap<String, TypedVariableDeclaration>,
+    functions: HashMap<String, TypedFunctionDeclaration>,
+    structs: HashMap<String, TypedStructDeclaration>,
+    enums: HashMap<String, TypedEnumDeclaration>,
+    traits: HashMap<String, TypedTraitDeclaration>,
 }
 
 impl DeclarationEngine {
-    pub(crate) fn insert_function(&mut self, function: TypedFunctionDeclaration) -> DeclarationId {
-        self.functions.insert(function)
+    pub(crate) fn insert_variable(&mut self, name: String, variable: TypedVariableDeclaration) {
+        self.variables.insert(name, variable);
     }
 
-    pub(crate) fn insert_struct(&mut self, r#struct: TypedStructDeclaration) -> DeclarationId {
-        self.structs.insert(r#struct)
+    pub(crate) fn insert_function(&mut self, name: String, function: TypedFunctionDeclaration) {
+        self.functions.insert(name, function);
     }
 
-    pub(crate) fn insert_enum(&mut self, r#enum: TypedEnumDeclaration) -> DeclarationId {
-        self.enums.insert(r#enum)
+    pub(crate) fn insert_struct(&mut self, name: String, r#struct: TypedStructDeclaration) {
+        self.structs.insert(name, r#struct);
     }
 
-    pub(crate) fn insert_trait(&mut self, r#trait: TypedTraitDeclaration) -> DeclarationId {
-        self.traits.insert(r#trait)
+    pub(crate) fn insert_enum(&mut self, name: String, r#enum: TypedEnumDeclaration) {
+        self.enums.insert(name, r#enum);
+    }
+
+    pub(crate) fn insert_trait(&mut self, name: String, r#trait: TypedTraitDeclaration) {
+        self.traits.insert(name, r#trait);
+    }
+
+    pub(crate) fn get_variable(&mut self, name: String) -> Option<&TypedVariableDeclaration> {
+        self.variables.get(&name)
+    }
+
+    pub(crate) fn get_function(&mut self, name: String) -> Option<&TypedFunctionDeclaration> {
+        self.functions.get(&name)
+    }
+
+    pub(crate) fn get_struct(&mut self, name: String) -> Option<&TypedStructDeclaration> {
+        self.structs.get(&name)
+    }
+
+    pub(crate) fn get_enum(&mut self, name: String) -> Option<&TypedEnumDeclaration> {
+        self.enums.get(&name)
+    }
+
+    pub(crate) fn get_trait(&mut self, name: String) -> Option<&TypedTraitDeclaration> {
+        self.traits.get(&name)
     }
 }

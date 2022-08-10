@@ -1,6 +1,6 @@
 use crate::language::{TypedEnumVariant, TypedStructField};
 
-use super::{type_argument::*, type_id::*, type_parameter::*, IntegerBits};
+use super::{type_id::*, type_parameter::*, IntegerBits};
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum TypeInfo {
@@ -20,11 +20,5 @@ pub(crate) enum TypeInfo {
         fields: Vec<TypedStructField>,
     },
     Ref(TypeId),
-    Custom {
-        name: String,
-        type_arguments: Option<Vec<TypeArgument>>,
-    },
-    SelfType,
-    Numeric,
     ErrorRecovery,
 }
