@@ -1,12 +1,12 @@
 use crate::{
-    declaration_engine::DeclarationRef,
-    language::{TypedEnumVariant, TypedStructField},
+    declaration_engine::declaration_ref::DeclarationRef,
+    language::typed::typed_declaration::{TypedEnumVariant, TypedStructField},
 };
 
 use super::{type_id::*, type_parameter::*, IntegerBits};
 
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum TypeInfo {
+pub enum TypeInfo {
     Unknown,
     UnknownGeneric {
         name: String,

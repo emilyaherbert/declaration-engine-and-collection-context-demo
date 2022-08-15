@@ -1,4 +1,4 @@
-use super::{concurrent_slab::ConcurrentSlab, TypeId, TypeInfo};
+use super::{concurrent_slab::ConcurrentSlab, type_id::TypeId, type_info::TypeInfo};
 
 #[derive(Debug, Default)]
 pub(crate) struct TypeEngine {

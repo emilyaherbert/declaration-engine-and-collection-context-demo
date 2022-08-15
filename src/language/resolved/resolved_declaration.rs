@@ -1,6 +1,6 @@
-use crate::language::{
+use crate::language::typed::typed_declaration::{
     TypedEnumDeclaration, TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration,
-    TypedVariableDeclaration,
+    TypedTraitImpl, TypedVariableDeclaration,
 };
 
 #[derive(Debug, Clone, PartialEq)]
@@ -10,4 +10,5 @@ pub(crate) enum ResolvedDeclaration {
     Trait(TypedTraitDeclaration),
     Struct(TypedStructDeclaration),
     Enum(TypedEnumDeclaration),
+    ImplTrait(TypedTraitImpl),
 }

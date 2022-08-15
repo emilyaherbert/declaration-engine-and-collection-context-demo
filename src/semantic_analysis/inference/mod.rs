@@ -5,15 +5,20 @@ use declaration::*;
 use expression::*;
 
 use crate::{
-    declaration_engine::DeclarationEngine,
-    language::{Node, Tree, TypedNode, TypedTree},
-    type_system::TypeEngine,
+    declaration_engine::declaration_engine::DeclarationEngine,
+    language::{
+        typed::{TypedNode, TypedTree},
+        untyped::{Node, Tree},
+    },
+    type_system::type_engine::TypeEngine,
 };
 
-pub(crate) fn analyze(tree: Tree) -> TypedTree {
-    let mut type_engine = TypeEngine::default();
-    let mut declaration_engine = DeclarationEngine::default();
-    let new_nodes = analyze_nodes(&mut type_engine, &mut declaration_engine, tree.nodes);
+pub(crate) fn analyze(
+    type_engine: &mut TypeEngine,
+    declaration_engine: &mut DeclarationEngine,
+    tree: Tree,
+) -> TypedTree {
+    let new_nodes = analyze_nodes(type_engine, declaration_engine, tree.nodes);
     TypedTree { nodes: new_nodes }
 }
 

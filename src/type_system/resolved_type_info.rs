@@ -1,4 +1,4 @@
-use crate::language::{TypedEnumVariant, TypedStructField};
+use crate::language::typed::typed_declaration::{TypedEnumVariant, TypedStructField};
 
 use super::{type_parameter::*, IntegerBits};
 

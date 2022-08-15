@@ -1,4 +1,4 @@
-use crate::{language::Literal, type_system::TypeId};
+use crate::{language::literal::Literal, type_system::type_id::TypeId};
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct TypedExpression {

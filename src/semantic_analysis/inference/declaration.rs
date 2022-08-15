@@ -1,13 +1,17 @@
 use crate::{
-    declaration_engine::DeclarationEngine,
+    declaration_engine::declaration_engine::DeclarationEngine,
     language::{
-        Declaration, EnumDeclaration, EnumVariant, FunctionDeclaration, FunctionParameter,
-        StructDeclaration, StructField, TraitDeclaration, TraitFn, TypedDeclaration,
-        TypedEnumDeclaration, TypedEnumVariant, TypedFunctionDeclaration, TypedFunctionParameter,
-        TypedStructDeclaration, TypedStructField, TypedTraitDeclaration, TypedTraitFn,
-        TypedVariableDeclaration, VariableDeclaration,
+        typed::typed_declaration::{
+            TypedDeclaration, TypedEnumDeclaration, TypedEnumVariant, TypedFunctionDeclaration,
+            TypedFunctionParameter, TypedStructDeclaration, TypedStructField,
+            TypedTraitDeclaration, TypedTraitFn, TypedVariableDeclaration,
+        },
+        untyped::declaration::{
+            Declaration, EnumDeclaration, EnumVariant, FunctionDeclaration, FunctionParameter,
+            StructDeclaration, StructField, TraitDeclaration, TraitFn, VariableDeclaration,
+        },
     },
-    type_system::TypeEngine,
+    type_system::type_engine::TypeEngine,
 };
 
 use super::{analyze_expression, analyze_nodes};
@@ -21,9 +25,7 @@ pub(super) fn analyze_declaration(
         Declaration::Variable(variable_declaration) => {
             let typed_variable_declaration =
                 analyze_variable(type_engine, declaration_engine, variable_declaration);
-            let name = typed_variable_declaration.name.clone();
-            declaration_engine.insert_variable(name.clone(), typed_variable_declaration);
-            TypedDeclaration::Variable(name)
+            TypedDeclaration::Variable(typed_variable_declaration)
         }
         Declaration::Function(function_declaration) => {
             let typed_function_declaration =
@@ -53,6 +55,8 @@ pub(super) fn analyze_declaration(
             declaration_engine.insert_enum(name.clone(), typed_enum_declaration);
             TypedDeclaration::Enum(name)
         }
+        Declaration::TraitImpl(_) => unimplemented!(),
+        Declaration::SelfImpl(_) => unimplemented!(),
     }
 }
 
@@ -84,6 +88,7 @@ fn analyze_function(
     let new_body = analyze_nodes(type_engine, declaration_engine, function_declaration.body);
     TypedFunctionDeclaration {
         name: function_declaration.name,
+        type_parameters: todo!(),
         parameters: new_parameters,
         body: new_body,
         return_type: type_engine.insert_type(function_declaration.return_type),
@@ -147,6 +152,7 @@ fn analyze_struct(
         .collect::<Vec<_>>();
     TypedStructDeclaration {
         name: struct_declaration.name,
+        type_parameters: todo!(),
         fields: new_fields,
     }
 }
@@ -174,6 +180,7 @@ fn analyze_enum(
         .collect::<Vec<_>>();
     TypedEnumDeclaration {
         name: enum_declaration.name,
+        type_parameters: todo!(),
         variants: new_variants,
     }
 }

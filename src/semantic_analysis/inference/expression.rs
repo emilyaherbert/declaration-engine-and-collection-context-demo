@@ -1,10 +1,12 @@
 use crate::{
-    declaration_engine::DeclarationEngine,
+    declaration_engine::declaration_engine::DeclarationEngine,
     language::{
-        Expression, StructExpressionField, TypedExpression, TypedExpressionVariant,
-        TypedStructExpressionField,
+        typed::typed_expression::{
+            TypedExpression, TypedExpressionVariant, TypedStructExpressionField,
+        },
+        untyped::expression::{Expression, StructExpressionField},
     },
-    type_system::TypeEngine,
+    type_system::type_engine::TypeEngine,
 };
 
 pub(super) fn analyze_expression(
@@ -23,7 +25,11 @@ pub(super) fn analyze_expression(
             let variant = TypedExpressionVariant::Variable { name };
             TypedExpression { variant, type_id }
         }
-        Expression::FunctionApplication { name, arguments } => {
+        Expression::FunctionApplication {
+            name,
+            arguments,
+            type_arguments,
+        } => {
             let new_arguments = arguments
                 .into_iter()
                 .map(|argument| analyze_expression(type_engine, declaration_engine, argument))
@@ -38,6 +44,7 @@ pub(super) fn analyze_expression(
         Expression::Struct {
             struct_name,
             fields,
+            type_arguments,
         } => {
             let new_fields = fields
                 .into_iter()
@@ -56,6 +63,7 @@ pub(super) fn analyze_expression(
             enum_name,
             variant_name,
             value,
+            type_arguments,
         } => {
             let new_value = analyze_expression(type_engine, declaration_engine, *value);
             let type_id = todo!();

@@ -5,8 +5,11 @@ use declaration::*;
 use expression::*;
 
 use crate::{
-    declaration_engine::DeclarationEngine,
-    language::{ResolvedNode, ResolvedTree, TypedNode, TypedTree},
+    declaration_engine::declaration_engine::DeclarationEngine,
+    language::{
+        resolved::{ResolvedNode, ResolvedTree},
+        typed::{TypedNode, TypedTree},
+    },
 };
 
 pub(crate) fn resolve(tree: TypedTree) -> ResolvedTree {

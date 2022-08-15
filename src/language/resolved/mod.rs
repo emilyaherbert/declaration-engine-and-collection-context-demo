@@ -1,11 +1,10 @@
-mod resolved_declaration;
-mod resolved_expression;
+use self::{resolved_declaration::ResolvedDeclaration, resolved_expression::ResolvedExpression};
 
-pub(crate) use resolved_declaration::*;
-pub(crate) use resolved_expression::*;
+pub(crate) mod resolved_declaration;
+pub(crate) mod resolved_expression;
 
 #[derive(Debug)]
-pub(crate) struct ResolvedTree {
+pub struct ResolvedTree {
     pub(crate) nodes: Vec<ResolvedNode>,
 }
 

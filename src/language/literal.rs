@@ -1,7 +1,7 @@
-use crate::type_system::{IntegerBits, TypeInfo};
+use crate::type_system::{type_info::TypeInfo, IntegerBits};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
-pub(crate) enum Literal {
+pub enum Literal {
     U8(u8),
     U16(u16),
     U32(u32),

@@ -6,7 +6,7 @@
 //     type_id: TypeId,
 // }
 
-use crate::language::{Literal, TypedFunctionDeclaration};
+use crate::language::{literal::Literal, typed::typed_declaration::TypedFunctionDeclaration};
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum ResolvedExpression {

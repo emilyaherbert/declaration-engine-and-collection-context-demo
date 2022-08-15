@@ -1,20 +1,13 @@
-mod concurrent_slab;
-mod resolved_type_info;
-mod type_argument;
-mod type_engine;
-mod type_id;
-mod type_info;
-mod type_parameter;
-
-pub(crate) use resolved_type_info::*;
-pub(crate) use type_argument::*;
-pub(crate) use type_engine::*;
-pub(crate) use type_id::*;
-pub(crate) use type_info::*;
-pub(crate) use type_parameter::*;
+pub(crate) mod concurrent_slab;
+pub(crate) mod resolved_type_info;
+pub(crate) mod type_argument;
+pub(crate) mod type_engine;
+pub(crate) mod type_id;
+pub(crate) mod type_info;
+pub(crate) mod type_parameter;
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]
-pub(crate) enum IntegerBits {
+pub enum IntegerBits {
     Eight,
     Sixteen,
     ThirtyTwo,

@@ -1,5 +1,6 @@
-use crate::type_system::TypeId;
 use std::sync::RwLock;
+
+use super::type_id::TypeId;
 
 #[derive(Debug, Default)]
 pub(super) struct ConcurrentSlab<T> {

@@ -1,4 +1,4 @@
 #[derive(Debug, Clone, PartialEq)]
-pub(crate) enum DeclarationRef {
+pub enum DeclarationRef {
     Variable(String),
 }

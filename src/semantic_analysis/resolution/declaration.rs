@@ -1,6 +1,9 @@
 use crate::{
-    declaration_engine::DeclarationEngine,
-    language::{ResolvedDeclaration, TypedDeclaration},
+    declaration_engine::declaration_engine::DeclarationEngine,
+    language::{
+        resolved::resolved_declaration::ResolvedDeclaration,
+        typed::typed_declaration::TypedDeclaration,
+    },
 };
 
 pub(super) fn resolve_declaration(
@@ -8,9 +11,8 @@ pub(super) fn resolve_declaration(
     declaration: TypedDeclaration,
 ) -> ResolvedDeclaration {
     match declaration {
-        TypedDeclaration::Variable(name) => {
-            let declaration = declaration_engine.get_variable(name).cloned().unwrap();
-            ResolvedDeclaration::Variable(declaration)
+        TypedDeclaration::Variable(variable_declaration) => {
+            ResolvedDeclaration::Variable(variable_declaration)
         }
         TypedDeclaration::Function(name) => {
             let declaration = declaration_engine.get_function(name).cloned().unwrap();
@@ -28,5 +30,6 @@ pub(super) fn resolve_declaration(
             let declaration = declaration_engine.get_enum(name).cloned().unwrap();
             ResolvedDeclaration::Enum(declaration)
         }
+        TypedDeclaration::TraitImpl(_) => todo!(),
     }
 }

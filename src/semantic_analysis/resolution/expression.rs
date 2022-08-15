@@ -1,8 +1,10 @@
 use crate::{
-    declaration_engine::DeclarationEngine,
+    declaration_engine::declaration_engine::DeclarationEngine,
     language::{
-        ResolvedExpression, ResolvedStructExpressionField, TypedExpression, TypedExpressionVariant,
-        TypedStructExpressionField,
+        resolved::resolved_expression::{ResolvedExpression, ResolvedStructExpressionField},
+        typed::typed_expression::{
+            TypedExpression, TypedExpressionVariant, TypedStructExpressionField,
+        },
     },
 };
 

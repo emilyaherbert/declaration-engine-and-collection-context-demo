@@ -1,25 +1,21 @@
 use std::collections::HashMap;
 
-use crate::language::{
+use crate::language::typed::typed_declaration::{
     TypedEnumDeclaration, TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration,
-    TypedVariableDeclaration,
+    TypedTraitImpl,
 };
 
 // TODO: will need to use concurrent structure like https://github.com/xacrimon/dashmaps
 #[derive(Default)]
 pub(crate) struct DeclarationEngine {
-    variables: HashMap<String, TypedVariableDeclaration>,
     functions: HashMap<String, TypedFunctionDeclaration>,
     structs: HashMap<String, TypedStructDeclaration>,
     enums: HashMap<String, TypedEnumDeclaration>,
     traits: HashMap<String, TypedTraitDeclaration>,
+    trait_impl: HashMap<(String, String), TypedTraitImpl>,
 }
 
 impl DeclarationEngine {
-    pub(crate) fn insert_variable(&mut self, name: String, variable: TypedVariableDeclaration) {
-        self.variables.insert(name, variable);
-    }
-
     pub(crate) fn insert_function(&mut self, name: String, function: TypedFunctionDeclaration) {
         self.functions.insert(name, function);
     }
@@ -34,10 +30,6 @@ impl DeclarationEngine {
 
     pub(crate) fn insert_trait(&mut self, name: String, r#trait: TypedTraitDeclaration) {
         self.traits.insert(name, r#trait);
-    }
-
-    pub(crate) fn get_variable(&mut self, name: String) -> Option<&TypedVariableDeclaration> {
-        self.variables.get(&name)
     }
 
     pub(crate) fn get_function(&mut self, name: String) -> Option<&TypedFunctionDeclaration> {

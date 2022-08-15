@@ -1,8 +1,7 @@
-mod typed_declaration;
-mod typed_expression;
+use self::{typed_declaration::TypedDeclaration, typed_expression::TypedExpression};
 
-pub(crate) use typed_declaration::*;
-pub(crate) use typed_expression::*;
+pub(crate) mod typed_declaration;
+pub(crate) mod typed_expression;
 
 #[derive(Debug)]
 pub(crate) struct TypedTree {
