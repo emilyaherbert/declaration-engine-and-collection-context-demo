@@ -67,7 +67,7 @@ fn analyze_variable(
     TypedVariableDeclaration {
         name: variable_declaration.name,
         body: new_body,
-        type_ascription: new_type_ascription
+        type_ascription: new_type_ascription,
     }
 }
 
@@ -86,7 +86,7 @@ fn analyze_function(
         name: function_declaration.name,
         parameters: new_parameters,
         body: new_body,
-        return_type: type_engine.insert_type(function_declaration.return_type)
+        return_type: type_engine.insert_type(function_declaration.return_type),
     }
 }
 
@@ -97,7 +97,7 @@ fn analyze_function_parameter(
 ) -> TypedFunctionParameter {
     TypedFunctionParameter {
         name: function_parameter.name,
-        type_id: type_engine.insert_type(function_parameter.type_info)
+        type_id: type_engine.insert_type(function_parameter.type_info),
     }
 }
 
@@ -131,7 +131,7 @@ fn analyze_trait_fn(
     TypedTraitFn {
         name: trait_fn.name,
         parameters: new_parameters,
-        return_type: type_engine.insert_type(trait_fn.return_type)
+        return_type: type_engine.insert_type(trait_fn.return_type),
     }
 }
 
@@ -158,7 +158,7 @@ fn analyze_struct_field(
 ) -> TypedStructField {
     TypedStructField {
         name: struct_field.name,
-        type_id: type_engine.insert_type(struct_field.type_info)
+        type_id: type_engine.insert_type(struct_field.type_info),
     }
 }
 
@@ -186,6 +186,6 @@ fn analyze_enum_variant(
     TypedEnumVariant {
         name: enum_variant.name,
         tag: enum_variant.tag,
-        type_id: type_engine.insert_type(enum_variant.type_info)
+        type_id: type_engine.insert_type(enum_variant.type_info),
     }
 }

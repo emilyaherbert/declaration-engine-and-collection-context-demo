@@ -1,4 +1,7 @@
-use crate::language::{TypedEnumVariant, TypedStructField};
+use crate::{
+    declaration_engine::DeclarationRef,
+    language::{TypedEnumVariant, TypedStructField},
+};
 
 use super::{type_id::*, type_parameter::*, IntegerBits};
 
@@ -20,7 +23,7 @@ pub(crate) enum TypeInfo {
         fields: Vec<TypedStructField>,
     },
     Ref(TypeId),
-    ErrorRecovery,
+    DeclarationRef(DeclarationRef),
 }
 
 impl Default for TypeInfo {

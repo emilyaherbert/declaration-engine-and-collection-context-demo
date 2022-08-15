@@ -17,7 +17,7 @@ pub(crate) enum Declaration {
 pub(crate) struct VariableDeclaration {
     pub(crate) name: String,
     pub(crate) body: Expression,
-    pub(crate) type_ascription: TypeInfo
+    pub(crate) type_ascription: TypeInfo,
 }
 
 #[derive(Debug, Clone, PartialEq)]

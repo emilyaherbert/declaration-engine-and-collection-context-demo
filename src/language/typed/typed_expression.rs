@@ -2,8 +2,8 @@ use crate::{language::Literal, type_system::TypeId};
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct TypedExpression {
-    variant: TypedExpressionVariant,
-    type_id: TypeId,
+    pub(crate) variant: TypedExpressionVariant,
+    pub(crate) type_id: TypeId,
 }
 
 #[derive(Debug, Clone, PartialEq)]

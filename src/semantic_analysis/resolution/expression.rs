@@ -1,7 +1,7 @@
 use crate::{
     declaration_engine::DeclarationEngine,
     language::{
-        ResolvedExpression, ResolvedStructExpressionField, TypedExpression,
+        ResolvedExpression, ResolvedStructExpressionField, TypedExpression, TypedExpressionVariant,
         TypedStructExpressionField,
     },
 };
@@ -10,10 +10,17 @@ pub(super) fn resolve_expression(
     declaration_engine: &mut DeclarationEngine,
     expression: TypedExpression,
 ) -> ResolvedExpression {
-    match expression {
-        TypedExpression::Literal { value } => ResolvedExpression::Literal { value },
-        TypedExpression::Variable { name } => ResolvedExpression::Variable { name },
-        TypedExpression::FunctionApplication { name, arguments } => {
+    resolve_expression_variant(declaration_engine, expression.variant)
+}
+
+fn resolve_expression_variant(
+    declaration_engine: &mut DeclarationEngine,
+    variant: TypedExpressionVariant,
+) -> ResolvedExpression {
+    match variant {
+        TypedExpressionVariant::Literal { value } => ResolvedExpression::Literal { value },
+        TypedExpressionVariant::Variable { name } => ResolvedExpression::Variable { name },
+        TypedExpressionVariant::FunctionApplication { name, arguments } => {
             // TODO: check to see that it exists
             // TODO: monomorphize it
             let function_declaration = declaration_engine
@@ -30,7 +37,7 @@ pub(super) fn resolve_expression(
                 arguments: new_arguments,
             }
         }
-        TypedExpression::Struct {
+        TypedExpressionVariant::Struct {
             struct_name,
             fields,
         } => {
@@ -43,7 +50,7 @@ pub(super) fn resolve_expression(
                 fields: new_fields,
             }
         }
-        TypedExpression::Enum {
+        TypedExpressionVariant::Enum {
             enum_name,
             variant_name,
             value,
