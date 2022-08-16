@@ -138,7 +138,7 @@ pub(crate) struct TypedStructDeclaration {
     pub(crate) fields: Vec<TypedStructField>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TypedStructField {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
@@ -151,7 +151,7 @@ pub(crate) struct TypedEnumDeclaration {
     pub(crate) variants: Vec<TypedEnumVariant>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct TypedEnumVariant {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,

@@ -94,7 +94,7 @@ impl fmt::Display for FunctionDeclaration {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FunctionParameter {
     pub(crate) name: String,
     pub(crate) type_info: TypeInfo,
@@ -127,7 +127,7 @@ pub struct StructDeclaration {
     pub(crate) fields: Vec<StructField>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct StructField {
     pub(crate) name: String,
     pub(crate) type_info: TypeInfo,
@@ -140,7 +140,7 @@ pub struct EnumDeclaration {
     pub(crate) variants: Vec<EnumVariant>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct EnumVariant {
     pub(crate) name: String,
     pub(crate) type_info: TypeInfo,

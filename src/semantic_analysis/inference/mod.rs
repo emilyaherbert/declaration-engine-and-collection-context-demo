@@ -11,7 +11,7 @@ use crate::{
         typed::{TypedApplication, TypedFile, TypedNode},
         untyped::{Application, File, Node},
     },
-    namespace::Namespace,
+    namespace::namespace::Namespace,
 };
 
 pub(crate) fn analyze(
@@ -21,16 +21,16 @@ pub(crate) fn analyze(
     application: Application,
 ) -> TypedApplication {
     let typed_programs = application
-        .programs
+        .files
         .into_iter()
-        .map(|program| analyze_program(namespace, collection_context, declaration_engine, program))
+        .map(|program| analyze_file(namespace, collection_context, declaration_engine, program))
         .collect();
     TypedApplication {
-        programs: typed_programs,
+        files: typed_programs,
     }
 }
 
-fn analyze_program(
+fn analyze_file(
     namespace: &mut Namespace,
     collection_context: &CollectionContext,
     declaration_engine: &mut DeclarationEngine,

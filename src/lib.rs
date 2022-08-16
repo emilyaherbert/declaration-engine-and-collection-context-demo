@@ -3,7 +3,7 @@
 use crate::declaration_engine::declaration_engine::DeclarationEngine;
 use collection_context::collection_context::CollectionContext;
 use language::{resolved::ResolvedApplication, untyped::Application};
-use namespace::Namespace;
+use namespace::namespace::Namespace;
 use semantic_analysis::{collection::collect, inference::analyze, resolution::resolve};
 
 mod collection_context;

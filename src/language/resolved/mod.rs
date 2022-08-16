@@ -7,7 +7,7 @@ pub(crate) mod resolved_declaration;
 pub(crate) mod resolved_expression;
 
 pub struct ResolvedApplication {
-    pub programs: Vec<ResolvedFile>,
+    pub files: Vec<ResolvedFile>,
 }
 
 impl fmt::Display for ResolvedApplication {
@@ -17,7 +17,7 @@ impl fmt::Display for ResolvedApplication {
             f,
             "{}{}\n{}",
             format!("\n++++++++ RESOLVED").red(),
-            self.programs
+            self.files
                 .iter()
                 .map(|program| program.to_string())
                 .collect::<Vec<_>>()

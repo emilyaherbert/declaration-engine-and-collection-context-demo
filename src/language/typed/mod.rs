@@ -6,7 +6,7 @@ pub(crate) mod typed_declaration;
 pub(crate) mod typed_expression;
 
 pub(crate) struct TypedApplication {
-    pub programs: Vec<TypedFile>,
+    pub files: Vec<TypedFile>,
 }
 
 pub(crate) struct TypedFile {

@@ -7,7 +7,7 @@ use crate::{
         },
         untyped::expression::{Expression, StructExpressionField},
     },
-    namespace::Namespace,
+    namespace::namespace::Namespace,
     type_system::type_engine::insert_type,
 };
 

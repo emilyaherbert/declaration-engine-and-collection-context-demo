@@ -4,13 +4,13 @@ use crate::{
 };
 
 pub(crate) fn collect(collection_context: &mut CollectionContext, application: &Application) {
-    for program in application.programs.iter() {
-        collect_program(collection_context, program);
+    for program in application.files.iter() {
+        collect_file(collection_context, program);
     }
 }
 
-fn collect_program(collection_context: &mut CollectionContext, program: &File) {
-    collect_nodes(collection_context, &program.nodes);
+fn collect_file(collection_context: &mut CollectionContext, file: &File) {
+    collect_nodes(collection_context, &file.nodes);
 }
 
 fn collect_nodes(collection_context: &mut CollectionContext, nodes: &[Node]) {
@@ -30,7 +30,7 @@ fn collect_declaration(collection_context: &mut CollectionContext, declaration: 
         Declaration::Variable(_) => {}
         Declaration::Function(function_declaration) => {
             let name = function_declaration.name.clone();
-            collection_context.insert_function(name, function_declaration);
+            collection_context.insert_function(todo!(), name, function_declaration);
         }
         Declaration::Trait(_) => {
             unimplemented!();

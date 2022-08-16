@@ -12,7 +12,7 @@ use crate::{
             StructDeclaration, StructField, TraitDeclaration, TraitFn, VariableDeclaration,
         },
     },
-    namespace::Namespace,
+    namespace::namespace::Namespace,
     type_system::type_engine::{insert_type, unify},
 };
 

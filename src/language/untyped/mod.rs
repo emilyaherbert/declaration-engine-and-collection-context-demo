@@ -7,7 +7,7 @@ pub mod declaration;
 pub mod expression;
 
 pub struct Application {
-    pub programs: Vec<File>,
+    pub files: Vec<File>,
 }
 
 impl fmt::Display for Application {
@@ -17,7 +17,7 @@ impl fmt::Display for Application {
             f,
             "{}{}\n{}",
             format!("\n++++++++ UNTYPED").red(),
-            self.programs
+            self.files
                 .iter()
                 .map(|program| program.to_string())
                 .collect::<Vec<_>>()

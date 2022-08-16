@@ -17,16 +17,16 @@ pub(crate) fn resolve(
     application: TypedApplication,
 ) -> ResolvedApplication {
     let resolved_programs = application
-        .programs
+        .files
         .into_iter()
-        .map(|program| resolve_program(declaration_engine, program))
+        .map(|program| resolve_file(declaration_engine, program))
         .collect();
     ResolvedApplication {
-        programs: resolved_programs,
+        files: resolved_programs,
     }
 }
 
-fn resolve_program(declaration_engine: &DeclarationEngine, file: TypedFile) -> ResolvedFile {
+fn resolve_file(declaration_engine: &DeclarationEngine, file: TypedFile) -> ResolvedFile {
     let new_nodes = resolve_nodes(declaration_engine, file.nodes);
     ResolvedFile {
         name: file.name,

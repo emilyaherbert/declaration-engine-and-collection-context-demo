@@ -21,7 +21,7 @@ fn var_decl_test() {
         nodes: vec![var_decl("x", None, u8(5u8)), exp(var("x"))],
     };
     let application = Application {
-        programs: vec![program_1, program_2],
+        files: vec![program_1, program_2],
     };
     println!("{}", application);
     let resolved_application = compile(application);
@@ -45,7 +45,7 @@ fn func_decl_test() {
         )],
     };
     let application = Application {
-        programs: vec![program_1],
+        files: vec![program_1],
     };
     println!("{}", application);
     let resolved_application = compile(application);
@@ -72,7 +72,7 @@ fn func_app_test() {
         ],
     };
     let application = Application {
-        programs: vec![program_1],
+        files: vec![program_1],
     };
     println!("{}", application);
     let resolved_application = compile(application);
