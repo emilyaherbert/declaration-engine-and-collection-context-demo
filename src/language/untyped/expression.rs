@@ -37,18 +37,32 @@ impl fmt::Display for Expression {
                 name,
                 type_arguments,
                 arguments,
-            } => todo!(),
-            Expression::Struct {
-                struct_name,
-                type_arguments,
-                fields,
-            } => todo!(),
-            Expression::Enum {
-                enum_name,
-                variant_name,
-                type_arguments,
-                value,
-            } => todo!(),
+            } => {
+                write!(
+                    f,
+                    "{}{}({})",
+                    name,
+                    if type_arguments.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "::<{}>",
+                            type_arguments
+                                .iter()
+                                .map(|type_argument| type_argument.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    },
+                    &arguments
+                        .iter()
+                        .map(|argument| argument.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            Expression::Struct { .. } => todo!(),
+            Expression::Enum { .. } => todo!(),
         }
     }
 }
@@ -62,7 +76,7 @@ pub struct StructExpressionField {
 pub mod constructors {
     use std::u8;
 
-    use crate::language::literal::Literal;
+    use crate::{language::literal::Literal, type_system::type_argument::TypeArgument};
 
     use super::Expression;
 
@@ -93,6 +107,18 @@ pub mod constructors {
     pub fn var(name: &str) -> Expression {
         Expression::Variable {
             name: name.to_string(),
+        }
+    }
+
+    pub fn func_app(
+        name: &str,
+        type_arguments: &[TypeArgument],
+        arguments: &[Expression],
+    ) -> Expression {
+        Expression::FunctionApplication {
+            name: name.to_string(),
+            type_arguments: type_arguments.to_vec(),
+            arguments: arguments.to_vec(),
         }
     }
 }

@@ -7,14 +7,31 @@ use expression::*;
 use crate::{
     declaration_engine::declaration_engine::DeclarationEngine,
     language::{
-        resolved::{ResolvedNode, ResolvedTree},
-        typed::{TypedNode, TypedTree},
+        resolved::{ResolvedApplication, ResolvedFile, ResolvedNode},
+        typed::{TypedApplication, TypedFile, TypedNode},
     },
 };
 
-pub(crate) fn resolve(declaration_engine: &DeclarationEngine, tree: TypedTree) -> ResolvedTree {
-    let new_nodes = resolve_nodes(declaration_engine, tree.nodes);
-    ResolvedTree { nodes: new_nodes }
+pub(crate) fn resolve(
+    declaration_engine: &DeclarationEngine,
+    application: TypedApplication,
+) -> ResolvedApplication {
+    let resolved_programs = application
+        .programs
+        .into_iter()
+        .map(|program| resolve_program(declaration_engine, program))
+        .collect();
+    ResolvedApplication {
+        programs: resolved_programs,
+    }
+}
+
+fn resolve_program(declaration_engine: &DeclarationEngine, file: TypedFile) -> ResolvedFile {
+    let new_nodes = resolve_nodes(declaration_engine, file.nodes);
+    ResolvedFile {
+        name: file.name,
+        nodes: new_nodes,
+    }
 }
 
 fn resolve_nodes(

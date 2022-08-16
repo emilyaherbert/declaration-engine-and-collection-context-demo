@@ -40,16 +40,8 @@ impl fmt::Display for TypeInfo {
             TypeInfo::Unknown => write!(f, "UNK"),
             TypeInfo::UnknownGeneric { name } => write!(f, "{}", name),
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
-            TypeInfo::Enum {
-                name,
-                type_parameters,
-                variant_types,
-            } => todo!(),
-            TypeInfo::Struct {
-                name,
-                type_parameters,
-                fields,
-            } => todo!(),
+            TypeInfo::Enum { .. } => todo!(),
+            TypeInfo::Struct { .. } => todo!(),
             TypeInfo::Ref(_) => todo!(),
             TypeInfo::DeclarationRef(_) => todo!(),
         }

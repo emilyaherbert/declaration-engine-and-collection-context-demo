@@ -15,7 +15,6 @@ pub(super) fn resolve_declaration(
             ResolvedDeclaration::Variable(variable_declaration)
         }
         TypedDeclaration::Function(name) => {
-            declaration_engine.debug_print();
             let declaration = declaration_engine.get_function(name).cloned().unwrap();
             ResolvedDeclaration::Function(declaration)
         }

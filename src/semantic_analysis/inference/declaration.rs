@@ -1,4 +1,5 @@
 use crate::{
+    collection_context::collection_context::CollectionContext,
     declaration_engine::declaration_engine::DeclarationEngine,
     language::{
         typed::typed_declaration::{
@@ -19,45 +20,69 @@ use super::{analyze_expression, analyze_nodes};
 
 pub(super) fn analyze_declaration(
     namespace: &mut Namespace,
+    collection_context: &CollectionContext,
     declaration_engine: &mut DeclarationEngine,
     declaration: Declaration,
 ) -> TypedDeclaration {
     match declaration {
         Declaration::Variable(variable_declaration) => {
-            let typed_variable_declaration =
-                analyze_variable(namespace, declaration_engine, variable_declaration);
+            let typed_variable_declaration = analyze_variable(
+                namespace,
+                collection_context,
+                declaration_engine,
+                variable_declaration,
+            );
             let name = typed_variable_declaration.name.clone();
             let decl = TypedDeclaration::Variable(typed_variable_declaration);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
         Declaration::Function(function_declaration) => {
-            let typed_function_declaration =
-                analyze_function(namespace, declaration_engine, function_declaration);
+            let typed_function_declaration = analyze_function(
+                namespace,
+                collection_context,
+                declaration_engine,
+                function_declaration,
+            );
             let name = typed_function_declaration.name.clone();
             declaration_engine.insert_function(name.clone(), typed_function_declaration);
             TypedDeclaration::Function(name)
         }
-        Declaration::Trait(trait_declaration) => {
-            let typed_trait_declaration =
-                analyze_trait(namespace, declaration_engine, trait_declaration);
-            let name = typed_trait_declaration.name.clone();
-            declaration_engine.insert_trait(name.clone(), typed_trait_declaration);
-            TypedDeclaration::Trait(name)
+        Declaration::Trait(_) => {
+            unimplemented!();
+            // let typed_trait_declaration = analyze_trait(
+            //     namespace,
+            //     collection_context,
+            //     declaration_engine,
+            //     trait_declaration,
+            // );
+            // let name = typed_trait_declaration.name.clone();
+            // declaration_engine.insert_trait(name.clone(), typed_trait_declaration);
+            // TypedDeclaration::Trait(name)
         }
-        Declaration::Struct(struct_declaration) => {
-            let typed_struct_declaration =
-                analyze_struct(namespace, declaration_engine, struct_declaration);
-            let name = typed_struct_declaration.name.clone();
-            declaration_engine.insert_struct(name.clone(), typed_struct_declaration);
-            TypedDeclaration::Struct(name)
+        Declaration::Struct(_) => {
+            unimplemented!();
+            // let typed_struct_declaration = analyze_struct(
+            //     namespace,
+            //     collection_context,
+            //     declaration_engine,
+            //     struct_declaration,
+            // );
+            // let name = typed_struct_declaration.name.clone();
+            // declaration_engine.insert_struct(name.clone(), typed_struct_declaration);
+            // TypedDeclaration::Struct(name)
         }
-        Declaration::Enum(enum_declaration) => {
-            let typed_enum_declaration =
-                analyze_enum(namespace, declaration_engine, enum_declaration);
-            let name = typed_enum_declaration.name.clone();
-            declaration_engine.insert_enum(name.clone(), typed_enum_declaration);
-            TypedDeclaration::Enum(name)
+        Declaration::Enum(_) => {
+            unimplemented!();
+            // let typed_enum_declaration = analyze_enum(
+            //     namespace,
+            //     collection_context,
+            //     declaration_engine,
+            //     enum_declaration,
+            // );
+            // let name = typed_enum_declaration.name.clone();
+            // declaration_engine.insert_enum(name.clone(), typed_enum_declaration);
+            // TypedDeclaration::Enum(name)
         }
         Declaration::TraitImpl(_) => unimplemented!(),
         Declaration::SelfImpl(_) => unimplemented!(),
@@ -66,10 +91,16 @@ pub(super) fn analyze_declaration(
 
 fn analyze_variable(
     namespace: &mut Namespace,
+    collection_context: &CollectionContext,
     declaration_engine: &mut DeclarationEngine,
     variable_declaration: VariableDeclaration,
 ) -> TypedVariableDeclaration {
-    let new_body = analyze_expression(namespace, declaration_engine, variable_declaration.body);
+    let new_body = analyze_expression(
+        namespace,
+        collection_context,
+        declaration_engine,
+        variable_declaration.body,
+    );
     let new_type_ascription = insert_type(variable_declaration.type_ascription);
     unify(new_body.type_id, new_type_ascription).unwrap();
     TypedVariableDeclaration {
@@ -81,6 +112,7 @@ fn analyze_variable(
 
 fn analyze_function(
     namespace: &mut Namespace,
+    collection_context: &CollectionContext,
     declaration_engine: &mut DeclarationEngine,
     function_declaration: FunctionDeclaration,
 ) -> TypedFunctionDeclaration {
@@ -90,9 +122,16 @@ fn analyze_function(
     let new_parameters = function_declaration
         .parameters
         .into_iter()
-        .map(|parameter| analyze_function_parameter(namespace, declaration_engine, parameter))
+        .map(|parameter| {
+            analyze_function_parameter(namespace, collection_context, declaration_engine, parameter)
+        })
         .collect::<Vec<_>>();
-    let new_body = analyze_nodes(namespace, declaration_engine, function_declaration.body);
+    let new_body = analyze_nodes(
+        &mut namespace.scoped(),
+        collection_context,
+        declaration_engine,
+        function_declaration.body,
+    );
     TypedFunctionDeclaration {
         name: function_declaration.name,
         type_parameters: vec![],
@@ -104,6 +143,7 @@ fn analyze_function(
 
 fn analyze_function_parameter(
     _namespace: &mut Namespace,
+    _collection_context: &CollectionContext,
     _declaration_engine: &mut DeclarationEngine,
     function_parameter: FunctionParameter,
 ) -> TypedFunctionParameter {
@@ -115,13 +155,16 @@ fn analyze_function_parameter(
 
 fn analyze_trait(
     namespace: &mut Namespace,
+    collection_context: &CollectionContext,
     declaration_engine: &mut DeclarationEngine,
     trait_declaration: TraitDeclaration,
 ) -> TypedTraitDeclaration {
     let new_interface_surface = trait_declaration
         .interface_surface
         .into_iter()
-        .map(|trait_fn| analyze_trait_fn(namespace, declaration_engine, trait_fn))
+        .map(|trait_fn| {
+            analyze_trait_fn(namespace, collection_context, declaration_engine, trait_fn)
+        })
         .collect::<Vec<_>>();
     TypedTraitDeclaration {
         name: trait_declaration.name,
@@ -132,13 +175,16 @@ fn analyze_trait(
 
 fn analyze_trait_fn(
     namespace: &mut Namespace,
+    collection_context: &CollectionContext,
     declaration_engine: &mut DeclarationEngine,
     trait_fn: TraitFn,
 ) -> TypedTraitFn {
     let new_parameters = trait_fn
         .parameters
         .into_iter()
-        .map(|parameter| analyze_function_parameter(namespace, declaration_engine, parameter))
+        .map(|parameter| {
+            analyze_function_parameter(namespace, collection_context, declaration_engine, parameter)
+        })
         .collect::<Vec<_>>();
     TypedTraitFn {
         name: trait_fn.name,
@@ -149,6 +195,7 @@ fn analyze_trait_fn(
 
 fn analyze_struct(
     namespace: &mut Namespace,
+    collection_context: &CollectionContext,
     declaration_engine: &mut DeclarationEngine,
     struct_declaration: StructDeclaration,
 ) -> TypedStructDeclaration {
@@ -158,7 +205,7 @@ fn analyze_struct(
     let new_fields = struct_declaration
         .fields
         .into_iter()
-        .map(|field| analyze_struct_field(namespace, declaration_engine, field))
+        .map(|field| analyze_struct_field(namespace, collection_context, declaration_engine, field))
         .collect::<Vec<_>>();
     TypedStructDeclaration {
         name: struct_declaration.name,
@@ -169,6 +216,7 @@ fn analyze_struct(
 
 fn analyze_struct_field(
     _namespace: &mut Namespace,
+    _collection_context: &CollectionContext,
     _declaration_engine: &mut DeclarationEngine,
     struct_field: StructField,
 ) -> TypedStructField {
@@ -180,6 +228,7 @@ fn analyze_struct_field(
 
 fn analyze_enum(
     namespace: &mut Namespace,
+    collection_context: &CollectionContext,
     declaration_engine: &mut DeclarationEngine,
     enum_declaration: EnumDeclaration,
 ) -> TypedEnumDeclaration {
@@ -189,7 +238,9 @@ fn analyze_enum(
     let new_variants = enum_declaration
         .variants
         .into_iter()
-        .map(|variant| analyze_enum_variant(namespace, declaration_engine, variant))
+        .map(|variant| {
+            analyze_enum_variant(namespace, collection_context, declaration_engine, variant)
+        })
         .collect::<Vec<_>>();
     TypedEnumDeclaration {
         name: enum_declaration.name,
@@ -200,6 +251,7 @@ fn analyze_enum(
 
 fn analyze_enum_variant(
     _namespace: &mut Namespace,
+    _collection_context: &CollectionContext,
     _declaration_engine: &mut DeclarationEngine,
     enum_variant: EnumVariant,
 ) -> TypedEnumVariant {

@@ -1,3 +1,4 @@
+use colored::Colorize;
 use std::fmt;
 
 use self::{declaration::Declaration, expression::Expression};
@@ -5,21 +6,50 @@ use self::{declaration::Declaration, expression::Expression};
 pub mod declaration;
 pub mod expression;
 
-#[derive(Debug)]
-pub struct Tree {
+pub struct Application {
+    pub programs: Vec<File>,
+}
+
+impl fmt::Display for Application {
+    #[allow(clippy::useless_format)]
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "{}{}\n{}",
+            format!("\n++++++++ UNTYPED").red(),
+            self.programs
+                .iter()
+                .map(|program| program.to_string())
+                .collect::<Vec<_>>()
+                .join("\n"),
+            format!("++++++++").red(),
+        )
+    }
+}
+
+pub struct File {
+    pub name: String,
     pub nodes: Vec<Node>,
 }
 
-impl fmt::Display for Tree {
+impl fmt::Display for File {
+    #[allow(clippy::useless_format)]
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut builder = String::new();
-        builder.push_str("\n\n>>>\n");
-        for node in self.nodes.iter() {
-            builder.push_str(&node.to_string());
-            builder.push_str(";\n");
-        }
-        builder.push_str("<<<\n");
-        write!(f, "{}", builder)
+        let mut nodes_str = self
+            .nodes
+            .iter()
+            .map(|node| node.to_string())
+            .collect::<Vec<_>>()
+            .join(";\n");
+        nodes_str.insert(0, '\n');
+        nodes_str.push(';');
+        write!(
+            f,
+            "{}{}{}",
+            format!("\n>>> {}", self.name).green(),
+            nodes_str,
+            format!("\n<<<").green(),
+        )
     }
 }
 

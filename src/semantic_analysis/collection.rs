@@ -1,10 +1,16 @@
 use crate::{
     collection_context::collection_context::CollectionContext,
-    language::untyped::{declaration::Declaration, Node, Tree},
+    language::untyped::{declaration::Declaration, Application, File, Node},
 };
 
-pub(crate) fn collect(collection_context: &mut CollectionContext, tree: &Tree) {
-    collect_nodes(collection_context, &tree.nodes);
+pub(crate) fn collect(collection_context: &mut CollectionContext, application: &Application) {
+    for program in application.programs.iter() {
+        collect_program(collection_context, program);
+    }
+}
+
+fn collect_program(collection_context: &mut CollectionContext, program: &File) {
+    collect_nodes(collection_context, &program.nodes);
 }
 
 fn collect_nodes(collection_context: &mut CollectionContext, nodes: &[Node]) {
@@ -26,17 +32,20 @@ fn collect_declaration(collection_context: &mut CollectionContext, declaration: 
             let name = function_declaration.name.clone();
             collection_context.insert_function(name, function_declaration);
         }
-        Declaration::Trait(trait_declaration) => {
-            let name = trait_declaration.name.clone();
-            collection_context.insert_trait(name, trait_declaration);
+        Declaration::Trait(_) => {
+            unimplemented!();
+            // let name = trait_declaration.name.clone();
+            // collection_context.insert_trait(name, trait_declaration);
         }
-        Declaration::Struct(struct_declaration) => {
-            let name = struct_declaration.name.clone();
-            collection_context.insert_struct(name, struct_declaration);
+        Declaration::Struct(_) => {
+            unimplemented!();
+            // let name = struct_declaration.name.clone();
+            // collection_context.insert_struct(name, struct_declaration);
         }
-        Declaration::Enum(enum_declaration) => {
-            let name = enum_declaration.name.clone();
-            collection_context.insert_enum(name, enum_declaration);
+        Declaration::Enum(_) => {
+            unimplemented!();
+            // let name = enum_declaration.name.clone();
+            // collection_context.insert_enum(name, enum_declaration);
         }
         Declaration::TraitImpl(_) => unimplemented!(),
         Declaration::SelfImpl(_) => unimplemented!(),

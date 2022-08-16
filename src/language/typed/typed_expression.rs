@@ -42,16 +42,9 @@ impl fmt::Display for TypedExpressionVariant {
         match self {
             TypedExpressionVariant::Literal { value } => write!(f, "{}", value),
             TypedExpressionVariant::Variable { name } => write!(f, "{}", name),
-            TypedExpressionVariant::FunctionApplication { name, arguments } => todo!(),
-            TypedExpressionVariant::Struct {
-                struct_name,
-                fields,
-            } => todo!(),
-            TypedExpressionVariant::Enum {
-                enum_name,
-                variant_name,
-                value,
-            } => todo!(),
+            TypedExpressionVariant::FunctionApplication { .. } => todo!(),
+            TypedExpressionVariant::Struct { .. } => todo!(),
+            TypedExpressionVariant::Enum { .. } => todo!(),
         }
     }
 }

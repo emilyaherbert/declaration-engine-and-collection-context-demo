@@ -5,8 +5,12 @@ use self::{typed_declaration::TypedDeclaration, typed_expression::TypedExpressio
 pub(crate) mod typed_declaration;
 pub(crate) mod typed_expression;
 
-#[derive(Debug)]
-pub(crate) struct TypedTree {
+pub(crate) struct TypedApplication {
+    pub programs: Vec<TypedFile>,
+}
+
+pub(crate) struct TypedFile {
+    pub(crate) name: String,
     pub(crate) nodes: Vec<TypedNode>,
 }
 

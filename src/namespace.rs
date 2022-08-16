@@ -1,17 +1,20 @@
-use std::{collections::HashMap, fmt};
+use std::fmt;
+
+use linked_hash_map::LinkedHashMap;
 
 use crate::language::typed::typed_declaration::TypedDeclaration;
 
 #[derive(Debug, Default)]
 pub(crate) struct Namespace {
-    symbols: HashMap<String, TypedDeclaration>,
+    symbols: LinkedHashMap<String, TypedDeclaration>,
 }
 
 impl fmt::Display for Namespace {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut builder = String::new();
         for symbol in self.symbols.keys() {
-            builder.push_str("\n  {symbol}");
+            builder.push_str("\n  ");
+            builder.push_str(symbol);
         }
         write!(f, "{}", builder)
     }
@@ -36,9 +39,6 @@ impl Namespace {
     }
 
     pub fn debug_print(&self) {
-        println!(
-            "\n\n~~~~~~~~~~\n\nDeclaration Engine:\n\n{}\n\n~~~~~~~~~~",
-            self
-        );
+        println!("\n\n~~~~~~~~~~\n\nNamespace:\n{}\n\n~~~~~~~~~~", self);
     }
 }

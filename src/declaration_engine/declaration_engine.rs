@@ -1,4 +1,6 @@
-use std::{collections::HashMap, fmt};
+use std::fmt;
+
+use linked_hash_map::LinkedHashMap;
 
 use crate::language::typed::typed_declaration::{
     TypedEnumDeclaration, TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration,
@@ -8,11 +10,11 @@ use crate::language::typed::typed_declaration::{
 // TODO: will need to use concurrent structure like https://github.com/xacrimon/dashmaps
 #[derive(Default)]
 pub(crate) struct DeclarationEngine {
-    functions: HashMap<String, TypedFunctionDeclaration>,
-    structs: HashMap<String, TypedStructDeclaration>,
-    enums: HashMap<String, TypedEnumDeclaration>,
-    traits: HashMap<String, TypedTraitDeclaration>,
-    trait_impls: HashMap<(String, String), TypedTraitImpl>,
+    functions: LinkedHashMap<String, TypedFunctionDeclaration>,
+    structs: LinkedHashMap<String, TypedStructDeclaration>,
+    enums: LinkedHashMap<String, TypedEnumDeclaration>,
+    traits: LinkedHashMap<String, TypedTraitDeclaration>,
+    trait_impls: LinkedHashMap<(String, String), TypedTraitImpl>,
 }
 
 impl fmt::Display for DeclarationEngine {
@@ -25,25 +27,25 @@ impl fmt::Display for DeclarationEngine {
             builder.push_str(name);
         }
 
-        builder.push_str("\n  structs:\n");
+        builder.push_str("\n\n  structs:\n");
         for r#struct in self.structs.keys() {
             builder.push_str("\n    ");
             builder.push_str(r#struct);
         }
 
-        builder.push_str("\n  enums:\n");
+        builder.push_str("\n\n  enums:\n");
         for r#enum in self.enums.keys() {
             builder.push_str("\n    ");
             builder.push_str(r#enum);
         }
 
-        builder.push_str("\n  traits:\n");
+        builder.push_str("\n\n  traits:\n");
         for r#trait in self.traits.keys() {
             builder.push_str("\n    ");
             builder.push_str(r#trait);
         }
 
-        builder.push_str("\n  trait_impls:\n");
+        builder.push_str("\n\n  trait_impls:\n");
         for (trait_name, type_implementing_for) in self.trait_impls.keys() {
             builder.push_str("\n    ");
             builder.push_str(trait_name);
@@ -90,7 +92,7 @@ impl DeclarationEngine {
 
     pub fn debug_print(&self) {
         println!(
-            "\n\n~~~~~~~~~~\n\nDeclaration Engine:\n\n{}\n\n~~~~~~~~~~",
+            "\n\n~~~~~~~~~~\n\nDeclaration Engine:\n{}\n\n~~~~~~~~~~",
             self
         );
     }

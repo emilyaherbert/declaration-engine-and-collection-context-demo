@@ -46,20 +46,9 @@ impl fmt::Display for ResolvedExpressionVariant {
         match self {
             ResolvedExpressionVariant::Literal { value } => write!(f, "{}", value),
             ResolvedExpressionVariant::Variable { name } => write!(f, "{}", name),
-            ResolvedExpressionVariant::FunctionApplication {
-                name,
-                function_declaration,
-                arguments,
-            } => todo!(),
-            ResolvedExpressionVariant::Struct {
-                struct_name,
-                fields,
-            } => todo!(),
-            ResolvedExpressionVariant::Enum {
-                enum_name,
-                variant_name,
-                value,
-            } => todo!(),
+            ResolvedExpressionVariant::FunctionApplication { .. } => todo!(),
+            ResolvedExpressionVariant::Struct { .. } => todo!(),
+            ResolvedExpressionVariant::Enum { .. } => todo!(),
         }
     }
 }
