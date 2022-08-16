@@ -3,17 +3,18 @@
 use collection_context::collection_context::CollectionContext;
 use declaration_engine::declaration_engine::DeclarationEngine;
 use language::{resolved::ResolvedTree, untyped::Tree};
+use namespace::Namespace;
 use semantic_analysis::{collection::collect, inference::analyze, resolution::resolve};
-use type_system::type_engine::TypeEngine;
 
 mod collection_context;
 mod declaration_engine;
 pub mod language;
+mod namespace;
 mod semantic_analysis;
 mod type_system;
 
 #[allow(clippy::let_and_return)]
-pub fn compile(program: Tree) -> ResolvedTree {
+pub fn compile(program: Tree) -> Result<ResolvedTree, String> {
     // parsing happens here
 
     // fill the collection context
@@ -21,14 +22,14 @@ pub fn compile(program: Tree) -> ResolvedTree {
     collect(&mut collection_context, &program);
 
     // do type inference
-    let mut type_engine = TypeEngine::default();
+    let mut namespace = Namespace::default();
     let mut declaration_engine = DeclarationEngine::default();
-    let typed_program = analyze(&mut type_engine, &mut declaration_engine, program);
+    let typed_program = analyze(&mut namespace, &mut declaration_engine, program)?;
 
     // resolve all types
     let resolved_program = resolve(typed_program);
 
     // ir generation happens
 
-    resolved_program
+    Ok(resolved_program)
 }

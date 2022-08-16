@@ -1,7 +1,9 @@
 use crate::{
     declaration_engine::declaration_engine::DeclarationEngine,
     language::{
-        resolved::resolved_expression::{ResolvedExpression, ResolvedStructExpressionField},
+        resolved::resolved_expression::{
+            ResolvedExpression, ResolvedExpressionVariant, ResolvedStructExpressionField,
+        },
         typed::typed_expression::{
             TypedExpression, TypedExpressionVariant, TypedStructExpressionField,
         },
@@ -12,16 +14,20 @@ pub(super) fn resolve_expression(
     declaration_engine: &mut DeclarationEngine,
     expression: TypedExpression,
 ) -> ResolvedExpression {
-    resolve_expression_variant(declaration_engine, expression.variant)
+    let variant = resolve_expression_variant(declaration_engine, expression.variant);
+    ResolvedExpression {
+        variant,
+        type_id: expression.type_id,
+    }
 }
 
 fn resolve_expression_variant(
     declaration_engine: &mut DeclarationEngine,
     variant: TypedExpressionVariant,
-) -> ResolvedExpression {
+) -> ResolvedExpressionVariant {
     match variant {
-        TypedExpressionVariant::Literal { value } => ResolvedExpression::Literal { value },
-        TypedExpressionVariant::Variable { name } => ResolvedExpression::Variable { name },
+        TypedExpressionVariant::Literal { value } => ResolvedExpressionVariant::Literal { value },
+        TypedExpressionVariant::Variable { name } => ResolvedExpressionVariant::Variable { name },
         TypedExpressionVariant::FunctionApplication { name, arguments } => {
             // TODO: check to see that it exists
             // TODO: monomorphize it
@@ -33,7 +39,7 @@ fn resolve_expression_variant(
                 .into_iter()
                 .map(|argument| resolve_expression(declaration_engine, argument))
                 .collect::<Vec<_>>();
-            ResolvedExpression::FunctionApplication {
+            ResolvedExpressionVariant::FunctionApplication {
                 name,
                 function_declaration,
                 arguments: new_arguments,
@@ -47,7 +53,7 @@ fn resolve_expression_variant(
                 .into_iter()
                 .map(|field| resolve_struct_expression_field(declaration_engine, field))
                 .collect::<Vec<_>>();
-            ResolvedExpression::Struct {
+            ResolvedExpressionVariant::Struct {
                 struct_name,
                 fields: new_fields,
             }
@@ -58,7 +64,7 @@ fn resolve_expression_variant(
             value,
         } => {
             let new_value = resolve_expression(declaration_engine, *value);
-            ResolvedExpression::Enum {
+            ResolvedExpressionVariant::Enum {
                 enum_name,
                 variant_name,
                 value: Box::new(new_value),

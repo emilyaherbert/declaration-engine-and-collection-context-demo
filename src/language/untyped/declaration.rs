@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::type_system::{type_info::TypeInfo, type_parameter::TypeParameter};
 
 use super::{expression::*, Node};
@@ -13,11 +15,35 @@ pub enum Declaration {
     SelfImpl(SelfImpl),
 }
 
+impl fmt::Display for Declaration {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Declaration::Variable(decl) => write!(f, "{}", decl),
+            Declaration::Function(_) => todo!(),
+            Declaration::Trait(_) => todo!(),
+            Declaration::Struct(_) => todo!(),
+            Declaration::Enum(_) => todo!(),
+            Declaration::TraitImpl(_) => todo!(),
+            Declaration::SelfImpl(_) => todo!(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct VariableDeclaration {
     pub(crate) name: String,
     pub(crate) type_ascription: TypeInfo,
     pub(crate) body: Expression,
+}
+
+impl fmt::Display for VariableDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "let {}: {} = {}",
+            self.name, self.type_ascription, self.body
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

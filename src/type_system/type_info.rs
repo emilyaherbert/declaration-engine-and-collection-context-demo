@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::{
     declaration_engine::declaration_ref::DeclarationRef,
     language::typed::typed_declaration::{TypedEnumVariant, TypedStructField},
@@ -29,5 +31,27 @@ pub enum TypeInfo {
 impl Default for TypeInfo {
     fn default() -> Self {
         TypeInfo::Unknown
+    }
+}
+
+impl fmt::Display for TypeInfo {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            TypeInfo::Unknown => write!(f, "UNK"),
+            TypeInfo::UnknownGeneric { name } => write!(f, "{}", name),
+            TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
+            TypeInfo::Enum {
+                name,
+                type_parameters,
+                variant_types,
+            } => todo!(),
+            TypeInfo::Struct {
+                name,
+                type_parameters,
+                fields,
+            } => todo!(),
+            TypeInfo::Ref(_) => todo!(),
+            TypeInfo::DeclarationRef(_) => todo!(),
+        }
     }
 }

@@ -10,8 +10,8 @@ fn var_decl_test() {
     let program = Tree {
         nodes: vec![var_decl("x", None, u8(5u8)), exp(var("x"))],
     };
-    println!("{:#?}", program);
+    println!("{}", program);
     let resolved_program = compile(program);
-    println!("{:#?}", resolved_program);
-    assert!(false);
+    println!("{}", resolved_program.unwrap());
+    panic!();
 }

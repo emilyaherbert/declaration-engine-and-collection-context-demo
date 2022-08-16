@@ -10,49 +10,53 @@ use crate::{
         typed::{TypedNode, TypedTree},
         untyped::{Node, Tree},
     },
-    type_system::type_engine::TypeEngine,
+    namespace::Namespace,
 };
 
 pub(crate) fn analyze(
-    type_engine: &mut TypeEngine,
+    namespace: &mut Namespace,
+
     declaration_engine: &mut DeclarationEngine,
     tree: Tree,
-) -> TypedTree {
-    let new_nodes = analyze_nodes(type_engine, declaration_engine, tree.nodes);
-    TypedTree { nodes: new_nodes }
+) -> Result<TypedTree, String> {
+    let new_nodes = analyze_nodes(namespace, declaration_engine, tree.nodes)?;
+    Ok(TypedTree { nodes: new_nodes })
 }
 
 fn analyze_nodes(
-    type_engine: &mut TypeEngine,
+    namespace: &mut Namespace,
+
     declaration_engine: &mut DeclarationEngine,
     nodes: Vec<Node>,
-) -> Vec<TypedNode> {
+) -> Result<Vec<TypedNode>, String> {
     nodes
         .into_iter()
-        .map(|node| analyze_node(type_engine, declaration_engine, node))
+        .map(|node| analyze_node(namespace, declaration_engine, node))
         .collect()
 }
 
 fn analyze_node(
-    type_engine: &mut TypeEngine,
+    namespace: &mut Namespace,
+
     declaration_engine: &mut DeclarationEngine,
     node: Node,
-) -> TypedNode {
-    match node {
+) -> Result<TypedNode, String> {
+    let typed_node = match node {
         Node::Declaration(declaration) => TypedNode::Declaration(analyze_declaration(
-            type_engine,
+            namespace,
             declaration_engine,
             declaration,
-        )),
+        )?),
         Node::Expression(expression) => TypedNode::Expression(analyze_expression(
-            type_engine,
+            namespace,
             declaration_engine,
             expression,
-        )),
+        )?),
         Node::ReturnStatement(expression) => TypedNode::ReturnStatement(analyze_expression(
-            type_engine,
+            namespace,
             declaration_engine,
             expression,
-        )),
-    }
+        )?),
+    };
+    Ok(typed_node)
 }

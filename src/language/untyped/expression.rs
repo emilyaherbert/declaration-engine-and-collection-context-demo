@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::{language::literal::Literal, type_system::type_argument::TypeArgument};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -24,6 +26,31 @@ pub enum Expression {
         type_arguments: Vec<TypeArgument>,
         value: Box<Expression>,
     },
+}
+
+impl fmt::Display for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Expression::Literal { value } => write!(f, "{}", value),
+            Expression::Variable { name } => write!(f, "{}", name),
+            Expression::FunctionApplication {
+                name,
+                type_arguments,
+                arguments,
+            } => todo!(),
+            Expression::Struct {
+                struct_name,
+                type_arguments,
+                fields,
+            } => todo!(),
+            Expression::Enum {
+                enum_name,
+                variant_name,
+                type_arguments,
+                value,
+            } => todo!(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

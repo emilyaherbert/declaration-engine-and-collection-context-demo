@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::type_system::{type_info::TypeInfo, IntegerBits};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -17,5 +19,16 @@ impl Literal {
             Literal::U64(_) => IntegerBits::SixtyFour,
         };
         TypeInfo::UnsignedInteger(bits)
+    }
+}
+
+impl fmt::Display for Literal {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Literal::U8(value) => write!(f, "{}u8", value),
+            Literal::U16(value) => write!(f, "{}u16", value),
+            Literal::U32(value) => write!(f, "{}u32", value),
+            Literal::U64(value) => write!(f, "{}u64", value),
+        }
     }
 }

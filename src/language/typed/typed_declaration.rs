@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{typed_expression::*, TypedNode};
 
 use crate::{
@@ -15,11 +17,31 @@ pub(crate) enum TypedDeclaration {
     TraitImpl(TypedTraitImpl),
 }
 
+impl TypedDeclaration {
+    pub(crate) fn expect_variable(self) -> Result<TypedVariableDeclaration, String> {
+        if let TypedDeclaration::Variable(variable_declaration) = self {
+            Ok(variable_declaration)
+        } else {
+            Err("not a variable declaration".to_string())
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct TypedVariableDeclaration {
     pub(crate) name: String,
-    pub(crate) body: TypedExpression,
     pub(crate) type_ascription: TypeId,
+    pub(crate) body: TypedExpression,
+}
+
+impl fmt::Display for TypedVariableDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(
+            f,
+            "let {}: {} = {}",
+            self.name, self.type_ascription, self.body
+        )
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
