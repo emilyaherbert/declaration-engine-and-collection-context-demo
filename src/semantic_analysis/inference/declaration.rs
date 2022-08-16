@@ -19,14 +19,13 @@ use super::{analyze_expression, analyze_nodes};
 
 pub(super) fn analyze_declaration(
     namespace: &mut Namespace,
-
     declaration_engine: &mut DeclarationEngine,
     declaration: Declaration,
-) -> Result<TypedDeclaration, String> {
-    let decl = match declaration {
+) -> TypedDeclaration {
+    match declaration {
         Declaration::Variable(variable_declaration) => {
             let typed_variable_declaration =
-                analyze_variable(namespace, declaration_engine, variable_declaration)?;
+                analyze_variable(namespace, declaration_engine, variable_declaration);
             let name = typed_variable_declaration.name.clone();
             let decl = TypedDeclaration::Variable(typed_variable_declaration);
             namespace.insert_symbol(name, decl.clone());
@@ -34,7 +33,7 @@ pub(super) fn analyze_declaration(
         }
         Declaration::Function(function_declaration) => {
             let typed_function_declaration =
-                analyze_function(namespace, declaration_engine, function_declaration)?;
+                analyze_function(namespace, declaration_engine, function_declaration);
             let name = typed_function_declaration.name.clone();
             declaration_engine.insert_function(name.clone(), typed_function_declaration);
             TypedDeclaration::Function(name)
@@ -62,50 +61,49 @@ pub(super) fn analyze_declaration(
         }
         Declaration::TraitImpl(_) => unimplemented!(),
         Declaration::SelfImpl(_) => unimplemented!(),
-    };
-    Ok(decl)
+    }
 }
 
 fn analyze_variable(
     namespace: &mut Namespace,
-
     declaration_engine: &mut DeclarationEngine,
     variable_declaration: VariableDeclaration,
-) -> Result<TypedVariableDeclaration, String> {
-    let new_body = analyze_expression(namespace, declaration_engine, variable_declaration.body)?;
+) -> TypedVariableDeclaration {
+    let new_body = analyze_expression(namespace, declaration_engine, variable_declaration.body);
     let new_type_ascription = insert_type(variable_declaration.type_ascription);
-    unify(new_body.type_id, new_type_ascription)?;
-    Ok(TypedVariableDeclaration {
+    unify(new_body.type_id, new_type_ascription).unwrap();
+    TypedVariableDeclaration {
         name: variable_declaration.name,
         body: new_body,
         type_ascription: new_type_ascription,
-    })
+    }
 }
 
 fn analyze_function(
     namespace: &mut Namespace,
-
     declaration_engine: &mut DeclarationEngine,
     function_declaration: FunctionDeclaration,
-) -> Result<TypedFunctionDeclaration, String> {
+) -> TypedFunctionDeclaration {
+    if !function_declaration.type_parameters.is_empty() {
+        panic!()
+    }
     let new_parameters = function_declaration
         .parameters
         .into_iter()
         .map(|parameter| analyze_function_parameter(namespace, declaration_engine, parameter))
         .collect::<Vec<_>>();
-    let new_body = analyze_nodes(namespace, declaration_engine, function_declaration.body)?;
-    Ok(TypedFunctionDeclaration {
+    let new_body = analyze_nodes(namespace, declaration_engine, function_declaration.body);
+    TypedFunctionDeclaration {
         name: function_declaration.name,
-        type_parameters: todo!(),
+        type_parameters: vec![],
         parameters: new_parameters,
         body: new_body,
         return_type: insert_type(function_declaration.return_type),
-    })
+    }
 }
 
 fn analyze_function_parameter(
-    namespace: &mut Namespace,
-
+    _namespace: &mut Namespace,
     _declaration_engine: &mut DeclarationEngine,
     function_parameter: FunctionParameter,
 ) -> TypedFunctionParameter {
@@ -117,7 +115,6 @@ fn analyze_function_parameter(
 
 fn analyze_trait(
     namespace: &mut Namespace,
-
     declaration_engine: &mut DeclarationEngine,
     trait_declaration: TraitDeclaration,
 ) -> TypedTraitDeclaration {
@@ -135,7 +132,6 @@ fn analyze_trait(
 
 fn analyze_trait_fn(
     namespace: &mut Namespace,
-
     declaration_engine: &mut DeclarationEngine,
     trait_fn: TraitFn,
 ) -> TypedTraitFn {
@@ -153,10 +149,12 @@ fn analyze_trait_fn(
 
 fn analyze_struct(
     namespace: &mut Namespace,
-
     declaration_engine: &mut DeclarationEngine,
     struct_declaration: StructDeclaration,
 ) -> TypedStructDeclaration {
+    if !struct_declaration.type_parameters.is_empty() {
+        panic!()
+    }
     let new_fields = struct_declaration
         .fields
         .into_iter()
@@ -164,14 +162,13 @@ fn analyze_struct(
         .collect::<Vec<_>>();
     TypedStructDeclaration {
         name: struct_declaration.name,
-        type_parameters: todo!(),
+        type_parameters: vec![],
         fields: new_fields,
     }
 }
 
 fn analyze_struct_field(
-    namespace: &mut Namespace,
-
+    _namespace: &mut Namespace,
     _declaration_engine: &mut DeclarationEngine,
     struct_field: StructField,
 ) -> TypedStructField {
@@ -183,10 +180,12 @@ fn analyze_struct_field(
 
 fn analyze_enum(
     namespace: &mut Namespace,
-
     declaration_engine: &mut DeclarationEngine,
     enum_declaration: EnumDeclaration,
 ) -> TypedEnumDeclaration {
+    if !enum_declaration.type_parameters.is_empty() {
+        panic!()
+    }
     let new_variants = enum_declaration
         .variants
         .into_iter()
@@ -194,14 +193,13 @@ fn analyze_enum(
         .collect::<Vec<_>>();
     TypedEnumDeclaration {
         name: enum_declaration.name,
-        type_parameters: todo!(),
+        type_parameters: vec![],
         variants: new_variants,
     }
 }
 
 fn analyze_enum_variant(
-    namespace: &mut Namespace,
-
+    _namespace: &mut Namespace,
     _declaration_engine: &mut DeclarationEngine,
     enum_variant: EnumVariant,
 ) -> TypedEnumVariant {

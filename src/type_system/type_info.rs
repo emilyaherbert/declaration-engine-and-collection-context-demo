@@ -55,3 +55,25 @@ impl fmt::Display for TypeInfo {
         }
     }
 }
+
+pub mod constructors {
+    use crate::type_system::IntegerBits;
+
+    use super::TypeInfo;
+
+    pub fn t_u8() -> TypeInfo {
+        TypeInfo::UnsignedInteger(IntegerBits::Eight)
+    }
+
+    pub fn t_u16() -> TypeInfo {
+        TypeInfo::UnsignedInteger(IntegerBits::Sixteen)
+    }
+
+    pub fn t_u32() -> TypeInfo {
+        TypeInfo::UnsignedInteger(IntegerBits::ThirtyTwo)
+    }
+
+    pub fn t_u64() -> TypeInfo {
+        TypeInfo::UnsignedInteger(IntegerBits::SixtyFour)
+    }
+}

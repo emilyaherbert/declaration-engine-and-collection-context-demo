@@ -19,7 +19,7 @@ impl fmt::Display for Declaration {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Declaration::Variable(decl) => write!(f, "{}", decl),
-            Declaration::Function(_) => todo!(),
+            Declaration::Function(decl) => write!(f, "{}", decl),
             Declaration::Trait(_) => todo!(),
             Declaration::Struct(_) => todo!(),
             Declaration::Enum(_) => todo!(),
@@ -55,10 +55,55 @@ pub struct FunctionDeclaration {
     pub(crate) return_type: TypeInfo,
 }
 
+impl fmt::Display for FunctionDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut builder = String::new();
+        builder.push_str("fn ");
+        builder.push_str(&self.name);
+        if !self.type_parameters.is_empty() {
+            builder.push('<');
+            builder.push_str(
+                &self
+                    .type_parameters
+                    .iter()
+                    .map(|type_parameter| type_parameter.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+            );
+            builder.push('>');
+        }
+        builder.push('(');
+        builder.push_str(
+            &self
+                .parameters
+                .iter()
+                .map(|parameter| parameter.to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+        );
+        builder.push_str(") -> ");
+        builder.push_str(&self.return_type.to_string());
+        builder.push_str(" {");
+        for line in self.body.iter() {
+            builder.push_str("\n  ");
+            builder.push_str(&line.to_string());
+            builder.push(';');
+        }
+        builder.push_str("\n{");
+        write!(f, "{}", builder)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct FunctionParameter {
     pub(crate) name: String,
     pub(crate) type_info: TypeInfo,
+}
+
+impl fmt::Display for FunctionParameter {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.type_info)
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

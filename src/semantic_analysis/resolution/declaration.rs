@@ -7,7 +7,7 @@ use crate::{
 };
 
 pub(super) fn resolve_declaration(
-    declaration_engine: &mut DeclarationEngine,
+    declaration_engine: &DeclarationEngine,
     declaration: TypedDeclaration,
 ) -> ResolvedDeclaration {
     match declaration {
@@ -15,6 +15,7 @@ pub(super) fn resolve_declaration(
             ResolvedDeclaration::Variable(variable_declaration)
         }
         TypedDeclaration::Function(name) => {
+            declaration_engine.debug_print();
             let declaration = declaration_engine.get_function(name).cloned().unwrap();
             ResolvedDeclaration::Function(declaration)
         }

@@ -11,7 +11,7 @@ use crate::{
 };
 
 pub(super) fn resolve_expression(
-    declaration_engine: &mut DeclarationEngine,
+    declaration_engine: &DeclarationEngine,
     expression: TypedExpression,
 ) -> ResolvedExpression {
     let variant = resolve_expression_variant(declaration_engine, expression.variant);
@@ -22,7 +22,7 @@ pub(super) fn resolve_expression(
 }
 
 fn resolve_expression_variant(
-    declaration_engine: &mut DeclarationEngine,
+    declaration_engine: &DeclarationEngine,
     variant: TypedExpressionVariant,
 ) -> ResolvedExpressionVariant {
     match variant {
@@ -74,7 +74,7 @@ fn resolve_expression_variant(
 }
 
 fn resolve_struct_expression_field(
-    declaration_engine: &mut DeclarationEngine,
+    declaration_engine: &DeclarationEngine,
     struct_expression_field: TypedStructExpressionField,
 ) -> ResolvedStructExpressionField {
     let new_value = resolve_expression(declaration_engine, struct_expression_field.value);

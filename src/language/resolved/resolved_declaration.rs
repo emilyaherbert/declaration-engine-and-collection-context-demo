@@ -19,7 +19,7 @@ impl fmt::Display for ResolvedDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ResolvedDeclaration::Variable(decl) => write!(f, "{}", decl),
-            ResolvedDeclaration::Function(_) => todo!(),
+            ResolvedDeclaration::Function(decl) => write!(f, "{}", decl),
             ResolvedDeclaration::Trait(_) => todo!(),
             ResolvedDeclaration::Struct(_) => todo!(),
             ResolvedDeclaration::Enum(_) => todo!(),

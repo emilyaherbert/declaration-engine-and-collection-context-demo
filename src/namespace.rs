@@ -1,10 +1,20 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
 
 use crate::language::typed::typed_declaration::TypedDeclaration;
 
 #[derive(Debug, Default)]
 pub(crate) struct Namespace {
     symbols: HashMap<String, TypedDeclaration>,
+}
+
+impl fmt::Display for Namespace {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut builder = String::new();
+        for symbol in self.symbols.keys() {
+            builder.push_str("\n  {symbol}");
+        }
+        write!(f, "{}", builder)
+    }
 }
 
 impl Namespace {
@@ -23,5 +33,12 @@ impl Namespace {
             .get(name)
             .cloned()
             .ok_or_else(|| "not found".to_string())
+    }
+
+    pub fn debug_print(&self) {
+        println!(
+            "\n\n~~~~~~~~~~\n\nDeclaration Engine:\n\n{}\n\n~~~~~~~~~~",
+            self
+        );
     }
 }
