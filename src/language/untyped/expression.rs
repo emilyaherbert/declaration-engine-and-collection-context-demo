@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{language::literal::Literal, type_system::type_argument::TypeArgument};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Expression {
     Literal {
         value: Literal,
@@ -67,7 +67,7 @@ impl fmt::Display for Expression {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct StructExpressionField {
     pub(crate) name: String,
     pub(crate) value: Expression,

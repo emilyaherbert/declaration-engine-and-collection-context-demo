@@ -1,14 +1,10 @@
 use std::fmt;
 
-use crate::{
-    language::{literal::Literal, typed::typed_declaration::TypedFunctionDeclaration},
-    type_system::type_id::TypeId,
-};
+use crate::{language::literal::Literal, type_system::resolved_types::ResolvedType};
 
-#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct ResolvedExpression {
     pub(crate) variant: ResolvedExpressionVariant,
-    pub(crate) type_id: TypeId,
+    pub(crate) type_info: ResolvedType,
 }
 
 impl fmt::Display for ResolvedExpression {
@@ -17,7 +13,6 @@ impl fmt::Display for ResolvedExpression {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum ResolvedExpressionVariant {
     Literal {
         value: Literal,
@@ -27,7 +22,6 @@ pub(crate) enum ResolvedExpressionVariant {
     },
     FunctionApplication {
         name: String,
-        function_declaration: TypedFunctionDeclaration,
         arguments: Vec<ResolvedExpression>,
     },
     Struct {
@@ -46,14 +40,24 @@ impl fmt::Display for ResolvedExpressionVariant {
         match self {
             ResolvedExpressionVariant::Literal { value } => write!(f, "{}", value),
             ResolvedExpressionVariant::Variable { name } => write!(f, "{}", name),
-            ResolvedExpressionVariant::FunctionApplication { .. } => todo!(),
+            ResolvedExpressionVariant::FunctionApplication { name, arguments } => {
+                write!(
+                    f,
+                    "{}({})",
+                    name,
+                    &arguments
+                        .iter()
+                        .map(|argument| argument.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
             ResolvedExpressionVariant::Struct { .. } => todo!(),
             ResolvedExpressionVariant::Enum { .. } => todo!(),
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct ResolvedStructExpressionField {
     pub(crate) name: String,
     pub(crate) value: ResolvedExpression,

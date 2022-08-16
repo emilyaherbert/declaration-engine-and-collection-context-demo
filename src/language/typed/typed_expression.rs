@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{language::literal::Literal, type_system::type_id::TypeId};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TypedExpression {
     pub(crate) variant: TypedExpressionVariant,
     pub(crate) type_id: TypeId,
@@ -14,7 +14,7 @@ impl fmt::Display for TypedExpression {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) enum TypedExpressionVariant {
     Literal {
         value: Literal,
@@ -42,14 +42,25 @@ impl fmt::Display for TypedExpressionVariant {
         match self {
             TypedExpressionVariant::Literal { value } => write!(f, "{}", value),
             TypedExpressionVariant::Variable { name } => write!(f, "{}", name),
-            TypedExpressionVariant::FunctionApplication { .. } => todo!(),
+            TypedExpressionVariant::FunctionApplication { name, arguments } => {
+                write!(
+                    f,
+                    "{}({})",
+                    name,
+                    &arguments
+                        .iter()
+                        .map(|argument| argument.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
             TypedExpressionVariant::Struct { .. } => todo!(),
             TypedExpressionVariant::Enum { .. } => todo!(),
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TypedStructExpressionField {
     pub(crate) name: String,
     pub(crate) value: TypedExpression,

@@ -9,7 +9,7 @@ use crate::{
 use super::type_engine::look_up_type_id;
 use super::{type_id::*, type_parameter::*, IntegerBits};
 
-#[derive(Debug, Clone, Eq)]
+#[derive(Clone, Eq)]
 pub enum TypeInfo {
     Unknown,
     UnknownGeneric {
@@ -45,7 +45,7 @@ impl fmt::Display for TypeInfo {
             TypeInfo::Enum { .. } => todo!(),
             TypeInfo::Struct { .. } => todo!(),
             TypeInfo::Ref(_) => todo!(),
-            TypeInfo::DeclarationRef(_) => todo!(),
+            TypeInfo::DeclarationRef(_) => write!(f, "ERR"),
         }
     }
 }

@@ -2,10 +2,12 @@ use std::fmt;
 
 use linked_hash_map::LinkedHashMap;
 
+use super::path::Path;
 use crate::language::typed::typed_declaration::TypedDeclaration;
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub(crate) struct Namespace {
+    pub(crate) current_path: Path,
     symbols: LinkedHashMap<String, TypedDeclaration>,
 }
 
@@ -21,8 +23,9 @@ impl fmt::Display for Namespace {
 }
 
 impl Namespace {
-    pub(crate) fn scoped(&mut self) -> Namespace {
+    pub(crate) fn scoped(&mut self, name: String) -> Namespace {
         Namespace {
+            current_path: self.current_path.clone().scoped(name),
             symbols: self.symbols.clone(),
         }
     }

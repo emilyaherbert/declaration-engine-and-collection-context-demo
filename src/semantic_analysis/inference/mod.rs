@@ -37,7 +37,7 @@ fn analyze_file(
     file: File,
 ) -> TypedFile {
     let new_nodes = analyze_nodes(
-        namespace,
+        &mut namespace.scoped(file.name.clone()),
         collection_context,
         declaration_engine,
         file.nodes,

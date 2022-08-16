@@ -14,7 +14,7 @@ pub(crate) struct TypedFile {
     pub(crate) nodes: Vec<TypedNode>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) enum TypedNode {
     StarImport(String),
     Declaration(TypedDeclaration),

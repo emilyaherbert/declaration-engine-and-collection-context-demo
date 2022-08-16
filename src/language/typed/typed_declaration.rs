@@ -7,7 +7,7 @@ use crate::{
     type_system::{type_id::TypeId, type_parameter::TypeParameter},
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) enum TypedDeclaration {
     Variable(TypedVariableDeclaration),
     Function(String),
@@ -40,7 +40,7 @@ impl TypedDeclaration {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TypedVariableDeclaration {
     pub(crate) name: String,
     pub(crate) type_ascription: TypeId,
@@ -57,7 +57,7 @@ impl fmt::Display for TypedVariableDeclaration {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TypedFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
@@ -105,7 +105,7 @@ impl fmt::Display for TypedFunctionDeclaration {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TypedFunctionParameter {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
@@ -117,48 +117,48 @@ impl fmt::Display for TypedFunctionParameter {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TypedTraitDeclaration {
     pub(crate) name: String,
     pub(crate) interface_surface: Vec<TypedTraitFn>,
     pub(crate) methods: Vec<FunctionDeclaration>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TypedTraitFn {
     pub(crate) name: String,
     pub(crate) parameters: Vec<TypedFunctionParameter>,
     pub(crate) return_type: TypeId,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TypedStructDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) fields: Vec<TypedStructField>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct TypedStructField {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TypedEnumDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) variants: Vec<TypedEnumVariant>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct TypedEnumVariant {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
     pub(crate) tag: usize,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TypedTraitImpl {
     pub(crate) trait_name: String,
     pub(crate) type_implementing_for: TypeId,

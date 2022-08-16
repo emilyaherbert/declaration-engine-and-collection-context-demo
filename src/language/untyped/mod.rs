@@ -53,7 +53,7 @@ impl fmt::Display for File {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub enum Node {
     StarImport(String),
     Declaration(Declaration),

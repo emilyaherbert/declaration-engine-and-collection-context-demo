@@ -13,7 +13,7 @@ use crate::{
         },
     },
     namespace::namespace::Namespace,
-    type_system::type_engine::{insert_type, unify},
+    type_system::type_engine::{insert_type, unify_types},
 };
 
 use super::{analyze_expression, analyze_nodes};
@@ -102,7 +102,7 @@ fn analyze_variable(
         variable_declaration.body,
     );
     let new_type_ascription = insert_type(variable_declaration.type_ascription);
-    unify(new_body.type_id, new_type_ascription).unwrap();
+    unify_types(new_body.type_id, new_type_ascription).unwrap();
     TypedVariableDeclaration {
         name: variable_declaration.name,
         body: new_body,
@@ -127,7 +127,7 @@ fn analyze_function(
         })
         .collect::<Vec<_>>();
     let new_body = analyze_nodes(
-        &mut namespace.scoped(),
+        &mut namespace.scoped(function_declaration.name.clone()),
         collection_context,
         declaration_engine,
         function_declaration.body,

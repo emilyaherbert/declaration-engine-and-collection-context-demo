@@ -215,30 +215,26 @@ impl CollectionContext {
         // }
     }
 
-    pub(crate) fn get_function(
-        &mut self,
-        current_path: Path,
-        name: String,
-    ) -> Option<&FunctionInfo> {
-        for (path, info) in self.functions.get(&name)?.iter() {
-            if path == &current_path {
+    pub(crate) fn get_function(&self, current_path: &Path, name: &str) -> Option<&FunctionInfo> {
+        for (path, info) in self.functions.get(name)?.iter() {
+            if path == current_path {
                 return Some(info);
             }
         }
         None
     }
 
-    pub(crate) fn get_struct(&mut self, _name: String) -> Option<&StructInfo> {
+    pub(crate) fn get_struct(&self, _name: String) -> Option<&StructInfo> {
         unimplemented!();
         // self.structs.get(&name)
     }
 
-    pub(crate) fn get_enum(&mut self, _name: String) -> Option<&EnumInfo> {
+    pub(crate) fn get_enum(&self, _name: String) -> Option<&EnumInfo> {
         unimplemented!();
         // self.enums.get(&name)
     }
 
-    pub(crate) fn get_trait(&mut self, _name: String) -> Option<&TraitInfo> {
+    pub(crate) fn get_trait(&self, _name: String) -> Option<&TraitInfo> {
         unimplemented!();
         // self.traits.get(&name)
     }

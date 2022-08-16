@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::type_system::{type_info::TypeInfo, IntegerBits};
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Clone, Eq, PartialEq)]
 pub enum Literal {
     U8(u8),
     U16(u16),

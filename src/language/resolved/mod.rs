@@ -27,7 +27,6 @@ impl fmt::Display for ResolvedApplication {
     }
 }
 
-#[derive(Debug)]
 pub struct ResolvedFile {
     pub(crate) name: String,
     pub(crate) nodes: Vec<ResolvedNode>,
@@ -54,7 +53,6 @@ impl fmt::Display for ResolvedFile {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum ResolvedNode {
     StarImport(String),
     Declaration(ResolvedDeclaration),

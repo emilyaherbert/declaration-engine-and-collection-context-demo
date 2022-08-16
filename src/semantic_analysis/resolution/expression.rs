@@ -8,6 +8,7 @@ use crate::{
             TypedExpression, TypedExpressionVariant, TypedStructExpressionField,
         },
     },
+    type_system::type_engine::resolve_type,
 };
 
 pub(super) fn resolve_expression(
@@ -17,7 +18,7 @@ pub(super) fn resolve_expression(
     let variant = resolve_expression_variant(declaration_engine, expression.variant);
     ResolvedExpression {
         variant,
-        type_id: expression.type_id,
+        type_info: resolve_type(declaration_engine, expression.type_id).unwrap(),
     }
 }
 
@@ -31,17 +32,12 @@ fn resolve_expression_variant(
         TypedExpressionVariant::FunctionApplication { name, arguments } => {
             // TODO: check to see that it exists
             // TODO: monomorphize it
-            let function_declaration = declaration_engine
-                .get_function(name.clone())
-                .cloned()
-                .unwrap();
             let new_arguments = arguments
                 .into_iter()
                 .map(|argument| resolve_expression(declaration_engine, argument))
                 .collect::<Vec<_>>();
             ResolvedExpressionVariant::FunctionApplication {
                 name,
-                function_declaration,
                 arguments: new_arguments,
             }
         }

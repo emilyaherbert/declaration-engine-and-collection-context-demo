@@ -1,6 +1,6 @@
 use crate::{
     collection_context::collection_context::CollectionContext,
-    declaration_engine::declaration_engine::DeclarationEngine,
+    declaration_engine::{declaration_engine::DeclarationEngine, declaration_ref::DeclarationRef},
     language::{
         typed::typed_expression::{
             TypedExpression, TypedExpressionVariant, TypedStructExpressionField,
@@ -8,7 +8,7 @@ use crate::{
         untyped::expression::{Expression, StructExpressionField},
     },
     namespace::namespace::Namespace,
-    type_system::type_engine::insert_type,
+    type_system::{type_engine::insert_type, type_info::TypeInfo},
 };
 
 pub(super) fn analyze_expression(
@@ -43,8 +43,18 @@ pub(super) fn analyze_expression(
                 .map(|argument| {
                     analyze_expression(namespace, collection_context, declaration_engine, argument)
                 })
-                .collect();
-            let type_id = todo!();
+                .collect::<Vec<_>>();
+            let _ = collection_context
+                .get_function(&namespace.current_path, &name)
+                .unwrap();
+            let type_id = insert_type(TypeInfo::DeclarationRef(DeclarationRef::Function(
+                name.clone(),
+                vec![],
+                new_arguments
+                    .iter()
+                    .map(|argument| argument.type_id)
+                    .collect::<Vec<_>>(),
+            )));
             let variant = TypedExpressionVariant::FunctionApplication {
                 name,
                 arguments: new_arguments,

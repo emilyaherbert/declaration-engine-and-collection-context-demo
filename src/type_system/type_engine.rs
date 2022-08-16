@@ -1,4 +1,14 @@
-use super::{concurrent_slab::ConcurrentSlab, type_id::TypeId, type_info::TypeInfo, IntegerBits};
+use crate::declaration_engine::{
+    declaration_engine::DeclarationEngine, declaration_ref::DeclarationRef,
+};
+
+use super::{
+    concurrent_slab::ConcurrentSlab,
+    resolved_types::{ResolvedEnumVariant, ResolvedType, ResolvedTypeParameter},
+    type_id::TypeId,
+    type_info::TypeInfo,
+    IntegerBits,
+};
 
 use lazy_static::lazy_static;
 
@@ -6,7 +16,7 @@ lazy_static! {
     static ref TYPE_ENGINE: TypeEngine = TypeEngine::default();
 }
 
-#[derive(Debug, Default)]
+#[derive(Default)]
 struct TypeEngine {
     slab: ConcurrentSlab<TypeInfo>,
 }
@@ -27,7 +37,7 @@ impl TypeEngine {
         }
     }
 
-    fn unify(&self, received: TypeId, expected: TypeId) -> Result<(), String> {
+    fn unify_types(&self, received: TypeId, expected: TypeId) -> Result<(), String> {
         match (self.slab.get(received), self.slab.get(expected)) {
             // if the two types are the same literal then we are done
             (TypeInfo::UnsignedInteger(a), TypeInfo::UnsignedInteger(b)) => match (a, b) {
@@ -45,7 +55,7 @@ impl TypeEngine {
                     .replace(received, &TypeInfo::Unknown, TypeInfo::Ref(expected))
                 {
                     None => Ok(()),
-                    Some(_) => self.unify(received, expected),
+                    Some(_) => self.unify_types(received, expected),
                 }
             }
             (_, TypeInfo::Unknown) => {
@@ -54,14 +64,14 @@ impl TypeEngine {
                     .replace(expected, &TypeInfo::Unknown, TypeInfo::Ref(received))
                 {
                     None => Ok(()),
-                    Some(_) => self.unify(received, expected),
+                    Some(_) => self.unify_types(received, expected),
                 }
             }
 
             // follow any references
             (TypeInfo::Ref(received), TypeInfo::Ref(expected)) if received == expected => Ok(()),
-            (TypeInfo::Ref(received), _) => self.unify(received, expected),
-            (_, TypeInfo::Ref(expected)) => self.unify(received, expected),
+            (TypeInfo::Ref(received), _) => self.unify_types(received, expected),
+            (_, TypeInfo::Ref(expected)) => self.unify_types(received, expected),
 
             (
                 TypeInfo::UnknownGeneric { name: l_name },
@@ -98,10 +108,10 @@ impl TypeEngine {
                     return Err("type mismatch".to_string());
                 }
                 for (a_field, b_field) in a_fields.iter().zip(b_fields.iter()) {
-                    self.unify(a_field.type_id, b_field.type_id)?;
+                    self.unify_types(a_field.type_id, b_field.type_id)?;
                 }
                 for (a_param, b_param) in a_parameters.iter().zip(b_parameters.iter()) {
-                    self.unify(a_param.type_id, b_param.type_id)?;
+                    self.unify_types(a_param.type_id, b_param.type_id)?;
                 }
                 Ok(())
             }
@@ -125,16 +135,68 @@ impl TypeEngine {
                     return Err("type mismatch".to_string());
                 }
                 for (a_variant, b_variant) in a_variants.iter().zip(b_variants.iter()) {
-                    self.unify(a_variant.type_id, b_variant.type_id)?;
+                    self.unify_types(a_variant.type_id, b_variant.type_id)?;
                 }
                 for (a_param, b_param) in a_parameters.iter().zip(b_parameters.iter()) {
-                    self.unify(a_param.type_id, b_param.type_id)?;
+                    self.unify_types(a_param.type_id, b_param.type_id)?;
                 }
                 Ok(())
             }
 
             (TypeInfo::DeclarationRef(_), _) => Err("not done yet".to_string()),
             _ => Err("type mismatch".to_string()),
+        }
+    }
+
+    fn resolve_type(
+        &self,
+        declaration_engine: &DeclarationEngine,
+        type_id: TypeId,
+    ) -> Result<ResolvedType, String> {
+        match self.slab.get(type_id) {
+            TypeInfo::Unknown => Err("type error".to_string()),
+            TypeInfo::UnknownGeneric { .. } => Err("type error".to_string()),
+            TypeInfo::UnsignedInteger(bits) => Ok(ResolvedType::UnsignedInteger(bits)),
+            TypeInfo::Ref(id) => self.resolve_type(declaration_engine, id),
+            TypeInfo::Enum {
+                name,
+                type_parameters,
+                variant_types,
+            } => {
+                let type_parameters = type_parameters
+                    .into_iter()
+                    .map(|type_parameter| {
+                        Ok(ResolvedTypeParameter {
+                            name_ident: type_parameter.name_ident,
+                            type_info: self
+                                .resolve_type(declaration_engine, type_parameter.type_id)?,
+                        })
+                    })
+                    .collect::<Result<_, String>>()?;
+                let variant_types = variant_types
+                    .into_iter()
+                    .map(|variant_type| {
+                        Ok(ResolvedEnumVariant {
+                            name: variant_type.name,
+                            type_info: self
+                                .resolve_type(declaration_engine, variant_type.type_id)?,
+                            tag: variant_type.tag,
+                        })
+                    })
+                    .collect::<Result<_, String>>()?;
+                Ok(ResolvedType::Enum {
+                    name,
+                    type_parameters,
+                    variant_types,
+                })
+            }
+            TypeInfo::Struct { .. } => todo!(),
+            TypeInfo::DeclarationRef(decl_ref) => match decl_ref {
+                DeclarationRef::Function(name, _, _) => {
+                    let func = declaration_engine.get_function(name).unwrap();
+                    self.resolve_type(declaration_engine, func.return_type)
+                }
+            },
         }
     }
 }
@@ -147,6 +209,13 @@ pub(crate) fn look_up_type_id(id: TypeId) -> TypeInfo {
     TYPE_ENGINE.look_up_type_id(id)
 }
 
-pub(crate) fn unify(a: TypeId, b: TypeId) -> Result<(), String> {
-    TYPE_ENGINE.unify(a, b)
+pub(crate) fn unify_types(a: TypeId, b: TypeId) -> Result<(), String> {
+    TYPE_ENGINE.unify_types(a, b)
+}
+
+pub(crate) fn resolve_type(
+    declaration_engine: &DeclarationEngine,
+    type_id: TypeId,
+) -> Result<ResolvedType, String> {
+    TYPE_ENGINE.resolve_type(declaration_engine, type_id)
 }
