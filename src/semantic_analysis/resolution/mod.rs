@@ -55,5 +55,6 @@ fn resolve_node(declaration_engine: &DeclarationEngine, node: TypedNode) -> Reso
         TypedNode::ReturnStatement(expression) => {
             ResolvedNode::ReturnStatement(resolve_expression(declaration_engine, expression))
         }
+        TypedNode::StarImport(_) => todo!(),
     }
 }

@@ -56,6 +56,7 @@ impl fmt::Display for ResolvedFile {
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum ResolvedNode {
+    StarImport(String),
     Declaration(ResolvedDeclaration),
     Expression(ResolvedExpression),
     ReturnStatement(ResolvedExpression),
@@ -67,6 +68,7 @@ impl fmt::Display for ResolvedNode {
             ResolvedNode::Declaration(declaration) => write!(f, "{}", declaration),
             ResolvedNode::Expression(expression) => write!(f, "{}", expression),
             ResolvedNode::ReturnStatement(expression) => write!(f, "return {}", expression),
+            ResolvedNode::StarImport(name) => write!(f, "use {}::*", name),
         }
     }
 }

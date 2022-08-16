@@ -1,6 +1,14 @@
-#[derive(PartialEq)]
+use std::fmt;
+
+#[derive(PartialEq, Default, Clone)]
 pub(crate) struct Path {
     path: Vec<String>,
+}
+
+impl fmt::Display for Path {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.path.join(""))
+    }
 }
 
 impl Path {

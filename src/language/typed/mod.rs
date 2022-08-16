@@ -16,6 +16,7 @@ pub(crate) struct TypedFile {
 
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) enum TypedNode {
+    StarImport(String),
     Declaration(TypedDeclaration),
     Expression(TypedExpression),
     ReturnStatement(TypedExpression),
@@ -27,6 +28,7 @@ impl fmt::Display for TypedNode {
             TypedNode::Declaration(declaration) => write!(f, "{}", declaration),
             TypedNode::Expression(expression) => write!(f, "{}", expression),
             TypedNode::ReturnStatement(expression) => write!(f, "return {}", expression),
+            TypedNode::StarImport(name) => write!(f, "use {}::*", name),
         }
     }
 }

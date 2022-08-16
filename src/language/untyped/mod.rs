@@ -55,6 +55,7 @@ impl fmt::Display for File {
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum Node {
+    StarImport(String),
     Declaration(Declaration),
     Expression(Expression),
     ReturnStatement(Expression),
@@ -66,6 +67,7 @@ impl fmt::Display for Node {
             Node::Declaration(declaration) => write!(f, "{}", declaration),
             Node::Expression(expression) => write!(f, "{}", expression),
             Node::ReturnStatement(expression) => write!(f, "return {}", expression),
+            Node::StarImport(name) => write!(f, "use {}::*", name),
         }
     }
 }

@@ -1,4 +1,6 @@
-use std::collections::HashMap;
+use std::fmt;
+
+use linked_hash_map::LinkedHashMap;
 
 use crate::{
     language::untyped::declaration::{
@@ -12,12 +14,60 @@ use super::collection_info::{EnumInfo, FunctionInfo, StructInfo, TraitInfo};
 
 #[derive(Default)]
 pub(crate) struct CollectionContext {
-    functions: HashMap<String, Vec<(Path, FunctionInfo)>>,
-    structs: HashMap<String, Vec<(Path, StructInfo)>>,
-    enums: HashMap<String, Vec<(Path, EnumInfo)>>,
-    traits: HashMap<String, Vec<(Path, TraitInfo)>>,
-    // trait_impls: HashMap<(String, String), Vec<TraitImplInfo>>,
-    // self_impls: HashMap<String, Vec<SelfImplInfo>>,
+    functions: LinkedHashMap<String, Vec<(Path, FunctionInfo)>>,
+    structs: LinkedHashMap<String, Vec<(Path, StructInfo)>>,
+    enums: LinkedHashMap<String, Vec<(Path, EnumInfo)>>,
+    traits: LinkedHashMap<String, Vec<(Path, TraitInfo)>>,
+    // trait_impls: LinkedHashMap<(String, String), Vec<TraitImplInfo>>,
+    // self_impls: LinkedHashMap<String, Vec<SelfImplInfo>>,
+}
+
+impl fmt::Display for CollectionContext {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut builder = String::new();
+
+        builder.push_str("\n  functions:\n");
+        for (name, values) in self.functions.iter() {
+            for (path, _) in values.iter() {
+                builder.push_str("\n    ");
+                builder.push_str(name);
+                builder.push_str(", ");
+                builder.push_str(&path.to_string());
+            }
+        }
+
+        builder.push_str("\n\n  structs:\n");
+        for (name, values) in self.structs.iter() {
+            for (path, _) in values.iter() {
+                builder.push_str("\n    ");
+                builder.push_str(name);
+                builder.push_str(", ");
+                builder.push_str(&path.to_string());
+            }
+        }
+
+        builder.push_str("\n\n  enums:\n");
+        for (name, values) in self.enums.iter() {
+            for (path, _) in values.iter() {
+                builder.push_str("\n    ");
+                builder.push_str(name);
+                builder.push_str(", ");
+                builder.push_str(&path.to_string());
+            }
+        }
+
+        builder.push_str("\n\n  traits:\n");
+        for (name, values) in self.traits.iter() {
+            for (path, _) in values.iter() {
+                builder.push_str("\n    ");
+                builder.push_str(name);
+                builder.push_str(", ");
+                builder.push_str(&path.to_string());
+            }
+        }
+
+        write!(f, "{}", builder)
+    }
 }
 
 impl CollectionContext {
@@ -191,5 +241,12 @@ impl CollectionContext {
     pub(crate) fn get_trait(&mut self, _name: String) -> Option<&TraitInfo> {
         unimplemented!();
         // self.traits.get(&name)
+    }
+
+    pub fn debug_print(&self) {
+        println!(
+            "\n\n~~~~~~~~~~\n\nCollection Context:\n{}\n\n~~~~~~~~~~",
+            self
+        );
     }
 }

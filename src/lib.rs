@@ -21,6 +21,8 @@ pub fn compile(application: Application) -> ResolvedApplication {
     let mut collection_context = CollectionContext::default();
     collect(&mut collection_context, &application);
 
+    collection_context.debug_print();
+
     // do type inference
     let mut namespace = Namespace::default();
     let mut declaration_engine = DeclarationEngine::default();

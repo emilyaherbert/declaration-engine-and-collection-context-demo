@@ -85,5 +85,6 @@ fn analyze_node(
             declaration_engine,
             expression,
         )),
+        Node::StarImport(_) => todo!(),
     }
 }
