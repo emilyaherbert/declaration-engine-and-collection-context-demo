@@ -2,10 +2,7 @@ use std::fmt;
 
 use linked_hash_map::LinkedHashMap;
 
-use crate::language::typed::typed_declaration::{
-    TypedEnumDeclaration, TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration,
-    TypedTraitImpl,
-};
+use crate::language::typed::typed_declaration::TypedFunctionDeclaration;
 
 // TODO: will need to use concurrent structure like https://github.com/xacrimon/dashmaps
 #[derive(Default)]

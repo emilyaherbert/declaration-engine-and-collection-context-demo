@@ -1,12 +1,8 @@
-#![allow(dead_code)]
-
 use crate::declaration_engine::declaration_engine::DeclarationEngine;
-use collection_context::collection_context::CollectionContext;
 use language::{resolved::ResolvedApplication, untyped::Application};
 use namespace::namespace::Namespace;
-use semantic_analysis::{collection::collect, inference::analyze, resolution::resolve};
+use semantic_analysis::{inference::analyze, resolution::resolve};
 
-mod collection_context;
 mod declaration_engine;
 pub mod language;
 mod namespace;
@@ -17,18 +13,11 @@ pub mod type_system;
 pub fn compile(application: Application) -> ResolvedApplication {
     // parsing happens here
 
-    // fill the collection context
-    let mut collection_context = CollectionContext::default();
-    collect(&mut collection_context, &application);
-
-    collection_context.debug_print();
-
     // do type inference
     let mut namespace = Namespace::default();
     let mut declaration_engine = DeclarationEngine::default();
     let typed_application = analyze(
         &mut namespace,
-        &collection_context,
         &mut declaration_engine,
         application,
     );

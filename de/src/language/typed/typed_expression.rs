@@ -26,15 +26,15 @@ pub(crate) enum TypedExpressionVariant {
         name: String,
         arguments: Vec<TypedExpression>,
     },
-    Struct {
-        struct_name: String,
-        fields: Vec<TypedStructExpressionField>,
-    },
-    Enum {
-        enum_name: String,
-        variant_name: String,
-        value: Box<TypedExpression>,
-    },
+    // Struct {
+    //     struct_name: String,
+    //     fields: Vec<TypedStructExpressionField>,
+    // },
+    // Enum {
+    //     enum_name: String,
+    //     variant_name: String,
+    //     value: Box<TypedExpression>,
+    // },
 }
 
 impl fmt::Display for TypedExpressionVariant {
@@ -54,8 +54,8 @@ impl fmt::Display for TypedExpressionVariant {
                         .join(", ")
                 )
             }
-            TypedExpressionVariant::Struct { .. } => todo!(),
-            TypedExpressionVariant::Enum { .. } => todo!(),
+            // TypedExpressionVariant::Struct { .. } => todo!(),
+            // TypedExpressionVariant::Enum { .. } => todo!(),
         }
     }
 }

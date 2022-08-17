@@ -2,10 +2,10 @@ use crate::{
     declaration_engine::declaration_engine::DeclarationEngine,
     language::{
         resolved::resolved_expression::{
-            ResolvedExpression, ResolvedExpressionVariant, ResolvedStructExpressionField,
+            ResolvedExpression, ResolvedExpressionVariant,
         },
         typed::typed_expression::{
-            TypedExpression, TypedExpressionVariant, TypedStructExpressionField,
+            TypedExpression, TypedExpressionVariant,
         },
     },
     type_system::type_engine::resolve_type,
@@ -41,41 +41,41 @@ fn resolve_expression_variant(
                 arguments: new_arguments,
             }
         }
-        TypedExpressionVariant::Struct {
-            struct_name,
-            fields,
-        } => {
-            let new_fields = fields
-                .into_iter()
-                .map(|field| resolve_struct_expression_field(declaration_engine, field))
-                .collect::<Vec<_>>();
-            ResolvedExpressionVariant::Struct {
-                struct_name,
-                fields: new_fields,
-            }
-        }
-        TypedExpressionVariant::Enum {
-            enum_name,
-            variant_name,
-            value,
-        } => {
-            let new_value = resolve_expression(declaration_engine, *value);
-            ResolvedExpressionVariant::Enum {
-                enum_name,
-                variant_name,
-                value: Box::new(new_value),
-            }
-        }
+        // TypedExpressionVariant::Struct {
+        //     struct_name,
+        //     fields,
+        // } => {
+        //     let new_fields = fields
+        //         .into_iter()
+        //         .map(|field| resolve_struct_expression_field(declaration_engine, field))
+        //         .collect::<Vec<_>>();
+        //     ResolvedExpressionVariant::Struct {
+        //         struct_name,
+        //         fields: new_fields,
+        //     }
+        // }
+        // TypedExpressionVariant::Enum {
+        //     enum_name,
+        //     variant_name,
+        //     value,
+        // } => {
+        //     let new_value = resolve_expression(declaration_engine, *value);
+        //     ResolvedExpressionVariant::Enum {
+        //         enum_name,
+        //         variant_name,
+        //         value: Box::new(new_value),
+        //     }
+        // }
     }
 }
 
-fn resolve_struct_expression_field(
-    declaration_engine: &DeclarationEngine,
-    struct_expression_field: TypedStructExpressionField,
-) -> ResolvedStructExpressionField {
-    let new_value = resolve_expression(declaration_engine, struct_expression_field.value);
-    ResolvedStructExpressionField {
-        name: struct_expression_field.name,
-        value: new_value,
-    }
-}
+// fn resolve_struct_expression_field(
+//     declaration_engine: &DeclarationEngine,
+//     struct_expression_field: TypedStructExpressionField,
+// ) -> ResolvedStructExpressionField {
+//     let new_value = resolve_expression(declaration_engine, struct_expression_field.value);
+//     ResolvedStructExpressionField {
+//         name: struct_expression_field.name,
+//         value: new_value,
+//     }
+// }

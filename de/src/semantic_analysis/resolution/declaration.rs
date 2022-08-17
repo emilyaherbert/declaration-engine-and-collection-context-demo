@@ -31,10 +31,10 @@ pub(super) fn resolve_declaration(
                 resolve_function_declaration(declaration_engine, function_declaration);
             ResolvedDeclaration::Function(function_declaration)
         }
-        TypedDeclaration::Trait(_) => todo!(),
-        TypedDeclaration::Struct(_) => todo!(),
-        TypedDeclaration::Enum(_) => todo!(),
-        TypedDeclaration::TraitImpl(_) => todo!(),
+        // TypedDeclaration::Trait(_) => todo!(),
+        // TypedDeclaration::Struct(_) => todo!(),
+        // TypedDeclaration::Enum(_) => todo!(),
+        // TypedDeclaration::TraitImpl(_) => todo!(),
     }
 }
 

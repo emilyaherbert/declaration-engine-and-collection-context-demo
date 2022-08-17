@@ -24,15 +24,15 @@ pub(crate) enum ResolvedExpressionVariant {
         name: String,
         arguments: Vec<ResolvedExpression>,
     },
-    Struct {
-        struct_name: String,
-        fields: Vec<ResolvedStructExpressionField>,
-    },
-    Enum {
-        enum_name: String,
-        variant_name: String,
-        value: Box<ResolvedExpression>,
-    },
+    // Struct {
+    //     struct_name: String,
+    //     fields: Vec<ResolvedStructExpressionField>,
+    // },
+    // Enum {
+    //     enum_name: String,
+    //     variant_name: String,
+    //     value: Box<ResolvedExpression>,
+    // },
 }
 
 impl fmt::Display for ResolvedExpressionVariant {
@@ -52,13 +52,13 @@ impl fmt::Display for ResolvedExpressionVariant {
                         .join(", ")
                 )
             }
-            ResolvedExpressionVariant::Struct { .. } => todo!(),
-            ResolvedExpressionVariant::Enum { .. } => todo!(),
+            // ResolvedExpressionVariant::Struct { .. } => todo!(),
+            // ResolvedExpressionVariant::Enum { .. } => todo!(),
         }
     }
 }
 
-pub(crate) struct ResolvedStructExpressionField {
-    pub(crate) name: String,
-    pub(crate) value: ResolvedExpression,
-}
+// pub(crate) struct ResolvedStructExpressionField {
+//     pub(crate) name: String,
+//     pub(crate) value: ResolvedExpression,
+// }

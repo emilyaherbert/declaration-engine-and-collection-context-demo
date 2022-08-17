@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{language::literal::Literal, type_system::type_argument::TypeArgument};
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub enum Expression {
     Literal {
         value: Literal,
@@ -15,17 +15,17 @@ pub enum Expression {
         type_arguments: Vec<TypeArgument>,
         arguments: Vec<Expression>,
     },
-    Struct {
-        struct_name: String,
-        type_arguments: Vec<TypeArgument>,
-        fields: Vec<StructExpressionField>,
-    },
-    Enum {
-        enum_name: String,
-        variant_name: String,
-        type_arguments: Vec<TypeArgument>,
-        value: Box<Expression>,
-    },
+    // Struct {
+    //     struct_name: String,
+    //     type_arguments: Vec<TypeArgument>,
+    //     fields: Vec<StructExpressionField>,
+    // },
+    // Enum {
+    //     enum_name: String,
+    //     variant_name: String,
+    //     type_arguments: Vec<TypeArgument>,
+    //     value: Box<Expression>,
+    // },
 }
 
 impl fmt::Display for Expression {
@@ -61,17 +61,17 @@ impl fmt::Display for Expression {
                         .join(", ")
                 )
             }
-            Expression::Struct { .. } => todo!(),
-            Expression::Enum { .. } => todo!(),
+            // Expression::Struct { .. } => todo!(),
+            // Expression::Enum { .. } => todo!(),
         }
     }
 }
 
-#[derive(Clone, PartialEq)]
-pub struct StructExpressionField {
-    pub(crate) name: String,
-    pub(crate) value: Expression,
-}
+// #[derive(Clone)]
+// pub struct StructExpressionField {
+//     pub(crate) name: String,
+//     pub(crate) value: Expression,
+// }
 
 pub mod constructors {
     use std::u8;

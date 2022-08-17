@@ -14,9 +14,9 @@ pub(crate) struct TypedFile {
     pub(crate) nodes: Vec<TypedNode>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub(crate) enum TypedNode {
-    StarImport(String),
+    // StarImport(String),
     Declaration(TypedDeclaration),
     Expression(TypedExpression),
     ReturnStatement(TypedExpression),
@@ -28,7 +28,7 @@ impl fmt::Display for TypedNode {
             TypedNode::Declaration(declaration) => write!(f, "{}", declaration),
             TypedNode::Expression(expression) => write!(f, "{}", expression),
             TypedNode::ReturnStatement(expression) => write!(f, "return {}", expression),
-            TypedNode::StarImport(name) => write!(f, "use {}::*", name),
+            // TypedNode::StarImport(name) => write!(f, "use {}::*", name),
         }
     }
 }

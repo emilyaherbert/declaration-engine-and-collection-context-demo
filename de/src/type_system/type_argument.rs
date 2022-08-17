@@ -2,7 +2,7 @@ use std::fmt;
 
 use super::type_id::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 pub struct TypeArgument {
     pub(crate) type_id: TypeId,
 }
