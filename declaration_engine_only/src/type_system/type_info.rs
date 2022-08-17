@@ -45,7 +45,7 @@ impl fmt::Display for TypeInfo {
             TypeInfo::Enum { .. } => todo!(),
             TypeInfo::Struct { .. } => todo!(),
             TypeInfo::Ref(_) => todo!(),
-            TypeInfo::DeclarationRef(_) => write!(f, "ERR"),
+            TypeInfo::DeclarationRef(decl_ref) => write!(f, "{}", decl_ref),
         }
     }
 }

@@ -15,9 +15,9 @@ use super::collection_info::{EnumInfo, FunctionInfo, StructInfo, TraitInfo};
 #[derive(Default)]
 pub(crate) struct CollectionContext {
     functions: LinkedHashMap<String, Vec<(Path, FunctionInfo)>>,
-    structs: LinkedHashMap<String, Vec<(Path, StructInfo)>>,
-    enums: LinkedHashMap<String, Vec<(Path, EnumInfo)>>,
-    traits: LinkedHashMap<String, Vec<(Path, TraitInfo)>>,
+    // structs: LinkedHashMap<String, Vec<(Path, StructInfo)>>,
+    // enums: LinkedHashMap<String, Vec<(Path, EnumInfo)>>,
+    // traits: LinkedHashMap<String, Vec<(Path, TraitInfo)>>,
     // trait_impls: LinkedHashMap<(String, String), Vec<TraitImplInfo>>,
     // self_impls: LinkedHashMap<String, Vec<SelfImplInfo>>,
 }
@@ -36,35 +36,35 @@ impl fmt::Display for CollectionContext {
             }
         }
 
-        builder.push_str("\n\n  structs:\n");
-        for (name, values) in self.structs.iter() {
-            for (path, _) in values.iter() {
-                builder.push_str("\n    ");
-                builder.push_str(name);
-                builder.push_str(", ");
-                builder.push_str(&path.to_string());
-            }
-        }
+        // builder.push_str("\n\n  structs:\n");
+        // for (name, values) in self.structs.iter() {
+        //     for (path, _) in values.iter() {
+        //         builder.push_str("\n    ");
+        //         builder.push_str(name);
+        //         builder.push_str(", ");
+        //         builder.push_str(&path.to_string());
+        //     }
+        // }
 
-        builder.push_str("\n\n  enums:\n");
-        for (name, values) in self.enums.iter() {
-            for (path, _) in values.iter() {
-                builder.push_str("\n    ");
-                builder.push_str(name);
-                builder.push_str(", ");
-                builder.push_str(&path.to_string());
-            }
-        }
+        // builder.push_str("\n\n  enums:\n");
+        // for (name, values) in self.enums.iter() {
+        //     for (path, _) in values.iter() {
+        //         builder.push_str("\n    ");
+        //         builder.push_str(name);
+        //         builder.push_str(", ");
+        //         builder.push_str(&path.to_string());
+        //     }
+        // }
 
-        builder.push_str("\n\n  traits:\n");
-        for (name, values) in self.traits.iter() {
-            for (path, _) in values.iter() {
-                builder.push_str("\n    ");
-                builder.push_str(name);
-                builder.push_str(", ");
-                builder.push_str(&path.to_string());
-            }
-        }
+        // builder.push_str("\n\n  traits:\n");
+        // for (name, values) in self.traits.iter() {
+        //     for (path, _) in values.iter() {
+        //         builder.push_str("\n    ");
+        //         builder.push_str(name);
+        //         builder.push_str(", ");
+        //         builder.push_str(&path.to_string());
+        //     }
+        // }
 
         write!(f, "{}", builder)
     }

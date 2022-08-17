@@ -25,7 +25,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "declaration-engine"
+name = "declaration-engine-only"
 version = "0.1.0"
 dependencies = [
  "colored",

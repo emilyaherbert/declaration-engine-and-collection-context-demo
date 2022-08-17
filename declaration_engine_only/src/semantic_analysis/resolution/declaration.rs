@@ -20,7 +20,7 @@ pub(super) fn resolve_declaration(
     declaration: TypedDeclaration,
 ) -> ResolvedDeclaration {
     match declaration {
-        TypedDeclaration::Variable(mut variable_declaration) => {
+        TypedDeclaration::Variable(variable_declaration) => {
             let variable_declaration =
                 resolve_variable_declaration(declaration_engine, variable_declaration);
             ResolvedDeclaration::Variable(variable_declaration)

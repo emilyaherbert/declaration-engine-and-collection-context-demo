@@ -143,8 +143,32 @@ impl TypeEngine {
                 Ok(())
             }
 
-            (TypeInfo::DeclarationRef(_), _) => Err("not done yet".to_string()),
-            _ => Err("type mismatch".to_string()),
+            (TypeInfo::DeclarationRef(a), TypeInfo::DeclarationRef(b)) => match (a, b) {
+                (
+                    DeclarationRef::Function(a_name, a_type_parameters, a_parameters),
+                    DeclarationRef::Function(b_name, b_type_parameters, b_parameters),
+                ) => {
+                    if a_name != b_name
+                        || a_type_parameters.len() != b_type_parameters.len()
+                        || a_parameters.len() != b_parameters.len()
+                    {
+                        return Err("type mismatch".to_string());
+                    }
+                    for (a_type_param, b_type_param) in
+                        a_type_parameters.iter().zip(b_type_parameters.iter())
+                    {
+                        self.unify_types(*a_type_param, *b_type_param)?;
+                    }
+                    for (a_param, b_param) in a_parameters.iter().zip(b_parameters.iter()) {
+                        self.unify_types(*a_param, *b_param)?;
+                    }
+                    Ok(())
+                }
+            },
+            (received, expected) => Err(format!(
+                "type mismatch, recieved: {}, expected: {}",
+                received, expected
+            )),
         }
     }
 
