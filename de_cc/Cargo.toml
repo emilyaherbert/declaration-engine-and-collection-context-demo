@@ -1,5 +1,5 @@
 [package]
-name = "declaration-engine-only"
+name = "de_cc"
 version = "0.1.0"
 edition = "2021"
 

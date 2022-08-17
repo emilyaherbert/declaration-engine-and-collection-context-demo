@@ -1,4 +1,4 @@
-use declaration_engine::{
+use de_cc::{
     compile,
     language::untyped::{
         constructors::*, declaration::constructors::*, expression::constructors::*, Application,
