@@ -2,7 +2,8 @@ use crate::{
     declaration_engine::declaration_engine::DeclarationEngine,
     language::{
         typed::typed_declaration::{
-            TypedDeclaration, TypedFunctionDeclaration, TypedVariableDeclaration, TypedFunctionParameter,
+            TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter,
+            TypedVariableDeclaration,
         },
         untyped::declaration::{
             Declaration, FunctionDeclaration, FunctionParameter, VariableDeclaration,
@@ -31,14 +32,15 @@ pub(super) fn analyze_declaration(
         Declaration::Function(function_declaration) => {
             let typed_function_declaration =
                 analyze_function(namespace, declaration_engine, function_declaration);
-            let name = typed_function_declaration.name.clone();
+            let decl_id = declaration_engine.insert_function(typed_function_declaration);
+            let decl = TypedDeclaration::Function(name);
+            declaration_engine.insert_declaration(decl);
             declaration_engine.insert_function(name.clone(), typed_function_declaration);
             TypedDeclaration::Function(name)
         }
         // Declaration::Trait(_) => {
         //     let typed_trait_declaration = analyze_trait(
         //         namespace,
-            
         //         declaration_engine,
         //         trait_declaration,
         //     );
@@ -49,7 +51,6 @@ pub(super) fn analyze_declaration(
         // Declaration::Struct(_) => {
         //     let typed_struct_declaration = analyze_struct(
         //         namespace,
-            
         //         declaration_engine,
         //         struct_declaration,
         //     );
@@ -60,7 +61,6 @@ pub(super) fn analyze_declaration(
         // Declaration::Enum(_) => {
         //     let typed_enum_declaration = analyze_enum(
         //         namespace,
-            
         //         declaration_engine,
         //         enum_declaration,
         //     );

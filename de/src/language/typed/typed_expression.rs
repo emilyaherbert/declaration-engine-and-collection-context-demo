@@ -1,6 +1,7 @@
-use std::fmt;
-
-use crate::{language::literal::Literal, type_system::type_id::TypeId};
+use crate::{
+    declaration_engine::declaration_engine::DeclarationEngine, language::literal::Literal,
+    type_system::type_id::TypeId, types::pretty_print::PrettyPrint,
+};
 
 #[derive(Clone, PartialEq)]
 pub(crate) struct TypedExpression {
@@ -8,9 +9,9 @@ pub(crate) struct TypedExpression {
     pub(crate) type_id: TypeId,
 }
 
-impl fmt::Display for TypedExpression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.variant)
+impl PrettyPrint for TypedExpression {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        format!("{}", self.variant.pretty_print(declaration_engine))
     }
 }
 
@@ -37,25 +38,22 @@ pub(crate) enum TypedExpressionVariant {
     // },
 }
 
-impl fmt::Display for TypedExpressionVariant {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl PrettyPrint for TypedExpressionVariant {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         match self {
-            TypedExpressionVariant::Literal { value } => write!(f, "{}", value),
-            TypedExpressionVariant::Variable { name } => write!(f, "{}", name),
+            TypedExpressionVariant::Literal { value } => format!("{}", value),
+            TypedExpressionVariant::Variable { name } => format!("{}", name),
             TypedExpressionVariant::FunctionApplication { name, arguments } => {
-                write!(
-                    f,
+                format!(
                     "{}({})",
                     name,
                     &arguments
                         .iter()
-                        .map(|argument| argument.to_string())
+                        .map(|argument| argument.pretty_print(declaration_engine))
                         .collect::<Vec<_>>()
                         .join(", ")
                 )
             }
-            // TypedExpressionVariant::Struct { .. } => todo!(),
-            // TypedExpressionVariant::Enum { .. } => todo!(),
         }
     }
 }

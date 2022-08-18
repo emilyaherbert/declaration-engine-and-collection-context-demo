@@ -1,5 +1,7 @@
-use std::fmt;
 use std::hash::{Hash, Hasher};
+
+use crate::declaration_engine::declaration_engine::DeclarationEngine;
+use crate::types::pretty_print::PrettyPrint;
 
 use super::type_engine::look_up_type_id;
 
@@ -19,9 +21,12 @@ impl From<usize> for TypeId {
     }
 }
 
-impl fmt::Display for TypeId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", look_up_type_id(*self))
+impl PrettyPrint for TypeId {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        format!(
+            "{}",
+            look_up_type_id(*self).pretty_print(declaration_engine)
+        )
     }
 }
 

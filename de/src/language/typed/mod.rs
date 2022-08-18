@@ -1,4 +1,6 @@
-use std::fmt;
+use crate::{
+    declaration_engine::declaration_engine::DeclarationEngine, types::pretty_print::PrettyPrint,
+};
 
 use self::{typed_declaration::TypedDeclaration, typed_expression::TypedExpression};
 
@@ -22,13 +24,18 @@ pub(crate) enum TypedNode {
     ReturnStatement(TypedExpression),
 }
 
-impl fmt::Display for TypedNode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl PrettyPrint for TypedNode {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         match self {
-            TypedNode::Declaration(declaration) => write!(f, "{}", declaration),
-            TypedNode::Expression(expression) => write!(f, "{}", expression),
-            TypedNode::ReturnStatement(expression) => write!(f, "return {}", expression),
-            // TypedNode::StarImport(name) => write!(f, "use {}::*", name),
+            TypedNode::Declaration(declaration) => {
+                format!("{}", declaration.pretty_print(declaration_engine))
+            }
+            TypedNode::Expression(expression) => {
+                format!("{}", expression.pretty_print(declaration_engine))
+            }
+            TypedNode::ReturnStatement(expression) => {
+                format!("return {}", expression.pretty_print(declaration_engine))
+            }
         }
     }
 }

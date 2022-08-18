@@ -1,9 +1,9 @@
 use std::hash::Hash;
-use std::{fmt, hash::Hasher};
+use std::hash::Hasher;
 
-use crate::{
-    declaration_engine::declaration_ref::DeclarationRef,
-};
+use crate::declaration_engine::declaration_engine::DeclarationEngine;
+use crate::declaration_engine::declaration_ref::DeclarationRef;
+use crate::types::pretty_print::PrettyPrint;
 
 use super::type_engine::look_up_type_id;
 use super::{type_id::*, IntegerBits};
@@ -11,9 +11,7 @@ use super::{type_id::*, IntegerBits};
 #[derive(Clone, Eq)]
 pub enum TypeInfo {
     Unknown,
-    UnknownGeneric {
-        name: String,
-    },
+    UnknownGeneric { name: String },
     Ref(TypeId),
     DeclarationRef(DeclarationRef),
     UnsignedInteger(IntegerBits),
@@ -35,16 +33,14 @@ impl Default for TypeInfo {
     }
 }
 
-impl fmt::Display for TypeInfo {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl PrettyPrint for TypeInfo {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         match self {
-            TypeInfo::Unknown => write!(f, "UNK"),
-            TypeInfo::UnknownGeneric { name } => write!(f, "{}", name),
-            TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
+            TypeInfo::Unknown => format!("UNK"),
+            TypeInfo::UnknownGeneric { name } => format!("{}", name),
+            TypeInfo::UnsignedInteger(bits) => format!("{}", bits),
             TypeInfo::Ref(_) => todo!(),
-            TypeInfo::DeclarationRef(decl_ref) => write!(f, "{}", decl_ref),
-            // TypeInfo::Enum { .. } => todo!(),
-            // TypeInfo::Struct { .. } => todo!(),
+            TypeInfo::DeclarationRef(decl_ref) => format!("{}", decl_ref),
         }
     }
 }
@@ -103,34 +99,6 @@ impl PartialEq for TypeInfo {
             (TypeInfo::UnsignedInteger(l), TypeInfo::UnsignedInteger(r)) => l == r,
             (TypeInfo::Ref(l), TypeInfo::Ref(r)) => look_up_type_id(*l) == look_up_type_id(*r),
             (TypeInfo::DeclarationRef(_), _) => todo!(),
-            // (
-            //     TypeInfo::Enum {
-            //         name: l_name,
-            //         variant_types: l_variant_types,
-            //         type_parameters: l_type_parameters,
-            //     },
-            //     TypeInfo::Enum {
-            //         name: r_name,
-            //         variant_types: r_variant_types,
-            //         type_parameters: r_type_parameters,
-            //     },
-            // ) => {
-            //     l_name == r_name
-            //         && l_variant_types == r_variant_types
-            //         && l_type_parameters == r_type_parameters
-            // }
-            // (
-            //     TypeInfo::Struct {
-            //         name: l_name,
-            //         fields: l_fields,
-            //         type_parameters: l_type_parameters,
-            //     },
-            //     TypeInfo::Struct {
-            //         name: r_name,
-            //         fields: r_fields,
-            //         type_parameters: r_type_parameters,
-            //     },
-            // ) => l_name == r_name && l_fields == r_fields && l_type_parameters == r_type_parameters,
             _ => false,
         }
     }

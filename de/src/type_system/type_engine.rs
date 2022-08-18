@@ -1,14 +1,9 @@
-use crate::declaration_engine::{
-    declaration_engine::DeclarationEngine, declaration_ref::DeclarationRef,
+use crate::{
+    concurrent_slab::ConcurrentSlab,
+    declaration_engine::{declaration_engine::DeclarationEngine, declaration_ref::DeclarationRef},
 };
 
-use super::{
-    concurrent_slab::ConcurrentSlab,
-    resolved_types::ResolvedType,
-    type_id::TypeId,
-    type_info::TypeInfo,
-    IntegerBits,
-};
+use super::{resolved_types::ResolvedType, type_id::TypeId, type_info::TypeInfo, IntegerBits};
 
 use lazy_static::lazy_static;
 
@@ -138,7 +133,6 @@ impl TypeEngine {
             //     }
             //     Ok(())
             // }
-
             (TypeInfo::DeclarationRef(a), TypeInfo::DeclarationRef(b)) => match (a, b) {
                 (
                     DeclarationRef::Function(a_name, a_type_parameters, a_parameters),

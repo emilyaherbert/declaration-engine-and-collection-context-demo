@@ -1,5 +1,7 @@
-use std::fmt;
 use std::hash::Hash;
+
+use crate::declaration_engine::declaration_engine::DeclarationEngine;
+use crate::types::pretty_print::PrettyPrint;
 
 use super::type_id::TypeId;
 
@@ -9,8 +11,8 @@ pub struct TypeParameter {
     pub(crate) type_id: TypeId,
 }
 
-impl fmt::Display for TypeParameter {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.name_ident)
+impl PrettyPrint for TypeParameter {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        format!("{}", self.name_ident)
     }
 }

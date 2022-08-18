@@ -1,6 +1,7 @@
-use std::fmt;
-
-use crate::{language::literal::Literal, type_system::type_argument::TypeArgument};
+use crate::{
+    declaration_engine::declaration_engine::DeclarationEngine, language::literal::Literal,
+    type_system::type_argument::TypeArgument, types::pretty_print::PrettyPrint,
+};
 
 #[derive(Clone)]
 pub enum Expression {
@@ -28,18 +29,17 @@ pub enum Expression {
     // },
 }
 
-impl fmt::Display for Expression {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl PrettyPrint for Expression {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         match self {
-            Expression::Literal { value } => write!(f, "{}", value),
-            Expression::Variable { name } => write!(f, "{}", name),
+            Expression::Literal { value } => format!("{}", value),
+            Expression::Variable { name } => format!("{}", name),
             Expression::FunctionApplication {
                 name,
                 type_arguments,
                 arguments,
             } => {
-                write!(
-                    f,
+                format!(
                     "{}{}({})",
                     name,
                     if type_arguments.is_empty() {
@@ -49,20 +49,18 @@ impl fmt::Display for Expression {
                             "::<{}>",
                             type_arguments
                                 .iter()
-                                .map(|type_argument| type_argument.to_string())
+                                .map(|type_argument| type_argument.pretty_print(declaration_engine))
                                 .collect::<Vec<_>>()
                                 .join(", ")
                         )
                     },
                     &arguments
                         .iter()
-                        .map(|argument| argument.to_string())
+                        .map(|argument| argument.pretty_print(declaration_engine))
                         .collect::<Vec<_>>()
                         .join(", ")
                 )
             }
-            // Expression::Struct { .. } => todo!(),
-            // Expression::Enum { .. } => todo!(),
         }
     }
 }

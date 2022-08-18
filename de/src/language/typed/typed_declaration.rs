@@ -1,30 +1,28 @@
-use std::fmt;
-
 use super::{typed_expression::*, TypedNode};
 
 use crate::{
+    declaration_engine::{declaration_engine::DeclarationEngine, declaration_id::DeclarationId},
     type_system::{type_id::TypeId, type_parameter::TypeParameter},
+    types::pretty_print::PrettyPrint,
 };
 
 #[derive(Clone)]
 pub(crate) enum TypedDeclaration {
     Variable(TypedVariableDeclaration),
-    Function(String),
+    Function(DeclarationId),
     // Trait(String),
     // Struct(String),
     // Enum(String),
     // TraitImpl(TypedTraitImpl),
 }
 
-impl fmt::Display for TypedDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl PrettyPrint for TypedDeclaration {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         match self {
-            TypedDeclaration::Variable(decl) => write!(f, "{}", decl),
-            TypedDeclaration::Function(name) => write!(f, "{}", name),
-            // TypedDeclaration::Trait(name) => write!(f, "{}", name),
-            // TypedDeclaration::Struct(name) => write!(f, "{}", name),
-            // TypedDeclaration::Enum(name) => write!(f, "{}", name),
-            // TypedDeclaration::TraitImpl(_) => todo!(),
+            TypedDeclaration::Variable(decl) => {
+                format!("{}", decl.pretty_print(declaration_engine))
+            }
+            TypedDeclaration::Function(id) => format!("{}", id.pretty_print(declaration_engine)),
         }
     }
 }
@@ -46,12 +44,13 @@ pub(crate) struct TypedVariableDeclaration {
     pub(crate) body: TypedExpression,
 }
 
-impl fmt::Display for TypedVariableDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
+impl PrettyPrint for TypedVariableDeclaration {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        format!(
             "let {}: {} = {}",
-            self.name, self.type_ascription, self.body
+            self.name,
+            self.type_ascription.pretty_print(declaration_engine),
+            self.body.pretty_print(declaration_engine)
         )
     }
 }
@@ -65,8 +64,8 @@ pub(crate) struct TypedFunctionDeclaration {
     pub(crate) return_type: TypeId,
 }
 
-impl fmt::Display for TypedFunctionDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl PrettyPrint for TypedFunctionDeclaration {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         let mut builder = String::new();
         builder.push_str("fn ");
         builder.push_str(&self.name);
@@ -76,7 +75,7 @@ impl fmt::Display for TypedFunctionDeclaration {
                 &self
                     .type_parameters
                     .iter()
-                    .map(|type_parameter| type_parameter.to_string())
+                    .map(|type_parameter| type_parameter.pretty_print(declaration_engine))
                     .collect::<Vec<_>>()
                     .join(", "),
             );
@@ -87,32 +86,36 @@ impl fmt::Display for TypedFunctionDeclaration {
             &self
                 .parameters
                 .iter()
-                .map(|parameter| parameter.to_string())
+                .map(|parameter| parameter.pretty_print(declaration_engine))
                 .collect::<Vec<_>>()
                 .join(", "),
         );
         builder.push_str(") -> ");
-        builder.push_str(&self.return_type.to_string());
+        builder.push_str(&self.return_type.pretty_print(declaration_engine));
         builder.push_str(" {");
         for line in self.body.iter() {
             builder.push_str("\n  ");
-            builder.push_str(&line.to_string());
+            builder.push_str(&line.pretty_print(declaration_engine));
             builder.push(';');
         }
         builder.push_str("\n{");
-        write!(f, "{}", builder)
+        builder
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TypedFunctionParameter {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
 }
 
-impl fmt::Display for TypedFunctionParameter {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}: {}", self.name, self.type_id)
+impl PrettyPrint for TypedFunctionParameter {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        format!(
+            "{}: {}",
+            self.name,
+            self.type_id.pretty_print(declaration_engine)
+        )
     }
 }
 
