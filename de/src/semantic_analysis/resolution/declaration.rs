@@ -63,7 +63,6 @@ fn resolve_function_declaration(
         let monomorphized_copies = declaration_engine
             .get_monomorphized_function_copies(function_id)
             .unwrap();
-        println!("{:#?}", monomorphized_copies);
         resolve_function_declaration_inner(declaration_engine, monomorphized_copies)
     }
 }
