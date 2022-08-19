@@ -2,17 +2,17 @@ use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 
-use crate::declaration_engine::declaration_ref::DeclarationRef;
-
 use super::type_engine::look_up_type_id;
+use super::type_mapping::TypeMapping;
 use super::{type_id::*, IntegerBits};
 
 #[derive(Clone, Eq)]
 pub enum TypeInfo {
+    ErrorRecovery,
     Unknown,
     UnknownGeneric { name: String },
+    Unit,
     Ref(TypeId),
-    DeclarationRef(DeclarationRef),
     UnsignedInteger(IntegerBits),
     // Enum {
     //     name: String,
@@ -35,11 +35,12 @@ impl Default for TypeInfo {
 impl fmt::Display for TypeInfo {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            TypeInfo::ErrorRecovery => write!(f, "ERR"),
             TypeInfo::Unknown => write!(f, "UNK"),
             TypeInfo::UnknownGeneric { name } => write!(f, "{}", name),
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
             TypeInfo::Ref(_) => todo!(),
-            TypeInfo::DeclarationRef(_) => todo!(),
+            TypeInfo::Unit => write!(f, "()"),
         }
     }
 }
@@ -47,6 +48,9 @@ impl fmt::Display for TypeInfo {
 impl Hash for TypeInfo {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
+            TypeInfo::ErrorRecovery => {
+                state.write_u8(0);
+            }
             TypeInfo::Unknown => {
                 state.write_u8(1);
             }
@@ -59,30 +63,31 @@ impl Hash for TypeInfo {
                 bits.hash(state);
             }
             TypeInfo::Ref(id) => {
-                state.write_u8(6);
+                state.write_u8(4);
                 look_up_type_id(*id).hash(state);
             }
-            TypeInfo::DeclarationRef(_) => todo!(),
-            // TypeInfo::Enum {
-            //     name,
-            //     type_parameters,
-            //     variant_types,
-            // } => {
-            //     state.write_u8(4);
-            //     name.hash(state);
-            //     type_parameters.hash(state);
-            //     variant_types.hash(state);
-            // }
-            // TypeInfo::Struct {
-            //     name,
-            //     type_parameters,
-            //     fields,
-            // } => {
-            //     state.write_u8(5);
-            //     name.hash(state);
-            //     type_parameters.hash(state);
-            //     fields.hash(state);
-            // }
+            TypeInfo::Unit => {
+                state.write_u8(5);
+            } // TypeInfo::Enum {
+              //     name,
+              //     type_parameters,
+              //     variant_types,
+              // } => {
+              //     state.write_u8(4);
+              //     name.hash(state);
+              //     type_parameters.hash(state);
+              //     variant_types.hash(state);
+              // }
+              // TypeInfo::Struct {
+              //     name,
+              //     type_parameters,
+              //     fields,
+              // } => {
+              //     state.write_u8(5);
+              //     name.hash(state);
+              //     type_parameters.hash(state);
+              //     fields.hash(state);
+              // }
         }
     }
 }
@@ -97,8 +102,27 @@ impl PartialEq for TypeInfo {
             ) => l_name == r_name,
             (TypeInfo::UnsignedInteger(l), TypeInfo::UnsignedInteger(r)) => l == r,
             (TypeInfo::Ref(l), TypeInfo::Ref(r)) => look_up_type_id(*l) == look_up_type_id(*r),
-            (TypeInfo::DeclarationRef(_), _) => todo!(),
             _ => false,
+        }
+    }
+}
+
+impl TypeInfo {
+    pub(crate) fn matches_type_parameter(&self, mapping: &TypeMapping) -> Option<TypeId> {
+        match self {
+            TypeInfo::UnknownGeneric { .. } => {
+                for (param, ty_id) in mapping.iter() {
+                    if look_up_type_id(*param) == *self {
+                        return Some(*ty_id);
+                    }
+                }
+                None
+            }
+            TypeInfo::ErrorRecovery
+            | TypeInfo::Unknown
+            | TypeInfo::Unit
+            | TypeInfo::Ref(_)
+            | TypeInfo::UnsignedInteger(_) => None,
         }
     }
 }
@@ -107,6 +131,12 @@ pub mod constructors {
     use crate::type_system::IntegerBits;
 
     use super::TypeInfo;
+
+    pub fn t_(name: &str) -> TypeInfo {
+        TypeInfo::UnknownGeneric {
+            name: name.to_string(),
+        }
+    }
 
     pub fn t_u8() -> TypeInfo {
         TypeInfo::UnsignedInteger(IntegerBits::Eight)

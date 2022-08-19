@@ -5,6 +5,7 @@ pub(crate) mod type_argument;
 pub(crate) mod type_engine;
 pub(crate) mod type_id;
 pub mod type_info;
+pub(super) mod type_mapping;
 pub(crate) mod type_parameter;
 
 #[derive(Eq, PartialEq, Hash, Debug, Clone, Copy)]

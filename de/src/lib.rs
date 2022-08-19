@@ -17,7 +17,7 @@ pub fn compile(application: Application) -> ResolvedApplication {
 
     // do type inference
     let mut namespace = Namespace::default();
-    let mut declaration_engine = DeclarationEngine::default();
+    let mut declaration_engine = DeclarationEngine::new();
     let typed_application = analyze(&mut namespace, &mut declaration_engine, application);
 
     // resolve all types

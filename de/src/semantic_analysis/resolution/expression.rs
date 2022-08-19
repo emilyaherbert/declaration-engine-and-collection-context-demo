@@ -36,6 +36,9 @@ fn resolve_expression_variant(
                 name,
                 arguments: new_arguments,
             }
+        }
+        TypedExpressionVariant::FunctionParameter => {
+            panic!("did not expect to find function param here")
         } // TypedExpressionVariant::Struct {
           //     struct_name,
           //     fields,

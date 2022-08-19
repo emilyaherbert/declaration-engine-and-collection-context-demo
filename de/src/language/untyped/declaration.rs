@@ -160,7 +160,9 @@ pub struct EnumVariant {
 pub mod constructors {
     use crate::{
         language::untyped::{Expression, Node},
-        type_system::{type_info::TypeInfo, type_parameter::TypeParameter},
+        type_system::{
+            type_engine::insert_type, type_info::TypeInfo, type_parameter::TypeParameter,
+        },
     };
 
     use super::{Declaration, FunctionDeclaration, FunctionParameter, VariableDeclaration};
@@ -187,5 +189,21 @@ pub mod constructors {
             body: body.to_vec(),
             return_type,
         }))
+    }
+
+    pub fn func_param(name: &str, type_info: TypeInfo) -> FunctionParameter {
+        FunctionParameter {
+            name: name.to_string(),
+            type_info,
+        }
+    }
+
+    pub fn type_param(name: &str) -> TypeParameter {
+        TypeParameter {
+            name: name.to_string(),
+            type_id: insert_type(TypeInfo::UnknownGeneric {
+                name: name.to_string(),
+            }),
+        }
     }
 }

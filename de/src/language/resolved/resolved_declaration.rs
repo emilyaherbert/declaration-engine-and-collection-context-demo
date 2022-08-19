@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::type_system::resolved_types::{ResolvedType, ResolvedTypeParameter};
+use crate::type_system::resolved_types::ResolvedType;
 
 use super::{resolved_expression::ResolvedExpression, ResolvedNode};
 
@@ -40,7 +40,6 @@ impl fmt::Display for ResolvedVariableDeclaration {
 
 pub(crate) struct ResolvedFunctionDeclaration {
     pub(crate) name: String,
-    pub(crate) type_parameters: Vec<ResolvedTypeParameter>,
     pub(crate) parameters: Vec<ResolvedFunctionParameter>,
     pub(crate) body: Vec<ResolvedNode>,
     pub(crate) return_type: ResolvedType,
@@ -51,18 +50,6 @@ impl fmt::Display for ResolvedFunctionDeclaration {
         let mut builder = String::new();
         builder.push_str("fn ");
         builder.push_str(&self.name);
-        if !self.type_parameters.is_empty() {
-            builder.push('<');
-            builder.push_str(
-                &self
-                    .type_parameters
-                    .iter()
-                    .map(|type_parameter| type_parameter.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-            );
-            builder.push('>');
-        }
         builder.push('(');
         builder.push_str(
             &self

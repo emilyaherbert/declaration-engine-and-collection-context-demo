@@ -1,9 +1,13 @@
 use crate::{
-    concurrent_slab::ConcurrentSlab,
-    declaration_engine::{declaration_engine::DeclarationEngine, declaration_ref::DeclarationRef},
+    concurrent_slab::ConcurrentSlab, declaration_engine::declaration_engine::DeclarationEngine,
+    language::typed::typed_declaration::TypedDeclaration, namespace::namespace::Namespace,
+    types::copy_types::CopyTypes,
 };
 
-use super::{resolved_types::ResolvedType, type_id::TypeId, type_info::TypeInfo, IntegerBits};
+use super::{
+    resolved_types::ResolvedType, type_argument::TypeArgument, type_id::TypeId,
+    type_info::TypeInfo, type_mapping::insert_type_parameters, type_parameter::TypeParameter,
+};
 
 use lazy_static::lazy_static;
 
@@ -21,6 +25,10 @@ impl TypeEngine {
         self.slab.insert(ty)
     }
 
+    fn look_up_type_id_raw(&self, id: TypeId) -> TypeInfo {
+        self.slab.get(id)
+    }
+
     fn look_up_type_id(&self, id: TypeId) -> TypeInfo {
         match self.slab.get(id) {
             TypeInfo::Ref(other) => self.look_up_type_id(other),
@@ -31,13 +39,7 @@ impl TypeEngine {
     fn unify_types(&self, received: TypeId, expected: TypeId) -> Result<(), String> {
         match (self.slab.get(received), self.slab.get(expected)) {
             // if the two types are the same literal then we are done
-            (TypeInfo::UnsignedInteger(a), TypeInfo::UnsignedInteger(b)) => match (a, b) {
-                (IntegerBits::Eight, IntegerBits::Eight) => Ok(()),
-                (IntegerBits::Sixteen, IntegerBits::Sixteen) => Ok(()),
-                (IntegerBits::ThirtyTwo, IntegerBits::ThirtyTwo) => Ok(()),
-                (IntegerBits::SixtyFour, IntegerBits::SixtyFour) => Ok(()),
-                _ => Err("type mismatch".to_string()),
-            },
+            (TypeInfo::UnsignedInteger(a), TypeInfo::UnsignedInteger(b)) if a == b => Ok(()),
 
             // if either of the types are unknown
             (TypeInfo::Unknown, _) => {
@@ -133,29 +135,10 @@ impl TypeEngine {
             //     }
             //     Ok(())
             // }
-            (TypeInfo::DeclarationRef(a), TypeInfo::DeclarationRef(b)) => match (a, b) {
-                (
-                    DeclarationRef::Function(a_name, a_type_parameters, a_parameters),
-                    DeclarationRef::Function(b_name, b_type_parameters, b_parameters),
-                ) => {
-                    if a_name != b_name
-                        || a_type_parameters.len() != b_type_parameters.len()
-                        || a_parameters.len() != b_parameters.len()
-                    {
-                        return Err("type mismatch".to_string());
-                    }
-                    for (a_type_param, b_type_param) in
-                        a_type_parameters.iter().zip(b_type_parameters.iter())
-                    {
-                        self.unify_types(*a_type_param, *b_type_param)?;
-                    }
-                    for (a_param, b_param) in a_parameters.iter().zip(b_parameters.iter()) {
-                        self.unify_types(*a_param, *b_param)?;
-                    }
-                    Ok(())
-                }
-            },
-            _ => Err("type mismatch".to_string()),
+            (received_info, expected_info) => Err(format!(
+                "type mismatch, expected: {}, received: {}",
+                expected_info, received_info
+            )),
         }
     }
 
@@ -165,11 +148,10 @@ impl TypeEngine {
         type_id: TypeId,
     ) -> Result<ResolvedType, String> {
         match self.slab.get(type_id) {
-            TypeInfo::Unknown => Err("type error".to_string()),
-            TypeInfo::UnknownGeneric { .. } => Err("type error".to_string()),
             TypeInfo::UnsignedInteger(bits) => Ok(ResolvedType::UnsignedInteger(bits)),
             TypeInfo::Ref(id) => self.resolve_type(declaration_engine, id),
-            TypeInfo::DeclarationRef(_) => todo!(),
+            TypeInfo::Unit => Ok(ResolvedType::Unit),
+            found => Err(format!("type error, found: {}", found)),
             // TypeInfo::Enum {
             //     name,
             //     type_parameters,
@@ -205,6 +187,58 @@ impl TypeEngine {
             // TypeInfo::Struct { .. } => todo!(),
         }
     }
+
+    fn eval_type(&self, id: TypeId, namespace: &Namespace) -> Result<TypeId, String> {
+        match self.slab.get(id) {
+            TypeInfo::UnknownGeneric { name } => match namespace.get_symbol(&name)? {
+                TypedDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
+                    Ok(insert_type(TypeInfo::Ref(type_id)))
+                }
+                _ => Err("could not find generic declaration".to_string()),
+            },
+            TypeInfo::Ref(id) => Ok(id),
+            o => Ok(insert_type(o)),
+        }
+    }
+
+    fn monomorphize<T>(
+        &self,
+        value: &mut T,
+        type_arguments: &mut [TypeArgument],
+        namespace: &Namespace,
+    ) -> Result<(), String>
+    where
+        T: MonomorphizeHelper + CopyTypes,
+    {
+        match (
+            value.type_parameters().is_empty(),
+            type_arguments.is_empty(),
+        ) {
+            (true, true) => Ok(()),
+            (false, true) => {
+                let type_mapping = insert_type_parameters(value.type_parameters());
+                value.copy_types(&type_mapping);
+                Ok(())
+            }
+            (true, false) => Err("does not take type arguments".to_string()),
+            (false, false) => {
+                if value.type_parameters().len() != type_arguments.len() {
+                    return Err("incorrect number of type arguments".to_string());
+                }
+                for type_argument in type_arguments.iter_mut() {
+                    type_argument.type_id = self.eval_type(type_argument.type_id, namespace)?;
+                }
+                let type_mapping = insert_type_parameters(value.type_parameters());
+                for ((_, interim_type), type_argument) in
+                    type_mapping.iter().zip(type_arguments.iter())
+                {
+                    self.unify_types(*interim_type, type_argument.type_id)?;
+                }
+                value.copy_types(&type_mapping);
+                Ok(())
+            }
+        }
+    }
 }
 
 pub(crate) fn insert_type(ty: TypeInfo) -> TypeId {
@@ -213,6 +247,10 @@ pub(crate) fn insert_type(ty: TypeInfo) -> TypeId {
 
 pub(crate) fn look_up_type_id(id: TypeId) -> TypeInfo {
     TYPE_ENGINE.look_up_type_id(id)
+}
+
+pub(crate) fn look_up_type_id_raw(id: TypeId) -> TypeInfo {
+    TYPE_ENGINE.look_up_type_id_raw(id)
 }
 
 pub(crate) fn unify_types(received: TypeId, expected: TypeId) -> Result<(), String> {
@@ -224,4 +262,24 @@ pub(crate) fn resolve_type(
     type_id: TypeId,
 ) -> Result<ResolvedType, String> {
     TYPE_ENGINE.resolve_type(declaration_engine, type_id)
+}
+
+pub(crate) fn eval_type(id: TypeId, namespace: &Namespace) -> Result<TypeId, String> {
+    TYPE_ENGINE.eval_type(id, namespace)
+}
+
+pub(crate) fn monomorphize<T>(
+    value: &mut T,
+    type_arguments: &mut [TypeArgument],
+    namespace: &Namespace,
+) -> Result<(), String>
+where
+    T: MonomorphizeHelper + CopyTypes,
+{
+    TYPE_ENGINE.monomorphize(value, type_arguments, namespace)
+}
+
+pub(crate) trait MonomorphizeHelper {
+    fn name(&self) -> &str;
+    fn type_parameters(&self) -> &[TypeParameter];
 }

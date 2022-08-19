@@ -26,7 +26,6 @@ fn var_decl_test() {
     println!("{}", application);
     let resolved_application = compile(application);
     println!("{}", resolved_application);
-    //panic!();
 }
 
 #[test]
@@ -50,7 +49,6 @@ fn func_decl_test() {
     println!("{}", application);
     let resolved_application = compile(application);
     println!("{}", resolved_application);
-    //panic!();
 }
 
 #[test]
@@ -64,11 +62,15 @@ fn func_app_test() {
             func_decl(
                 "F",
                 &[],
-                &[],
-                &[var_decl("x", None, u8(5u8)), return_(var("x"))],
-                t_u8(),
+                &[func_param("param1", t_u32())],
+                &[
+                    var_decl("x", None, var("param1")),
+                    var_decl("y", None, u8(5u8)),
+                    return_(var("x")),
+                ],
+                t_u32(),
             ),
-            var_decl("foo", None, func_app("F", &[], &[])),
+            var_decl("foo", None, func_app("F", &[], &[u32(1u32)])),
         ],
     };
     let application = Application {
@@ -77,5 +79,66 @@ fn func_app_test() {
     println!("{}", application);
     let resolved_application = compile(application);
     println!("{}", resolved_application);
-    //panic!();
+}
+
+#[test]
+#[should_panic]
+fn func_app_error_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+    let program_1 = File {
+        name: "bob.sw".to_string(),
+        nodes: vec![
+            func_decl(
+                "F",
+                &[],
+                &[func_param("param1", t_u32())],
+                &[
+                    var_decl("x", None, var("param1")),
+                    var_decl("y", None, u8(5u8)),
+                    return_(var("x")),
+                ],
+                t_u64(),
+            ),
+            var_decl("foo", None, func_app("F", &[], &[u32(1u32)])),
+        ],
+    };
+    let application = Application {
+        files: vec![program_1],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
+}
+
+#[test]
+fn generic_func_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+    let program_1 = File {
+        name: "bob.sw".to_string(),
+        nodes: vec![
+            func_decl(
+                "F",
+                &[type_param("T")],
+                &[func_param("param1", t_("T"))],
+                &[
+                    var_decl("x", None, var("param1")),
+                    var_decl("y", None, u8(5u8)),
+                    return_(var("x")),
+                ],
+                t_("T"),
+            ),
+            var_decl("foo", None, func_app("F", &[], &[u32(1u32)])),
+            var_decl("bar", None, func_app("F", &[], &[u64(1u64)])),
+        ],
+    };
+    let application = Application {
+        files: vec![program_1],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
 }

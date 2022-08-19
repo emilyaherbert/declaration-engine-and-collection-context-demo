@@ -6,7 +6,7 @@ use crate::{
     },
     namespace::namespace::Namespace,
     type_system::{
-        type_engine::{insert_type, unify_types},
+        type_engine::{insert_type, monomorphize, unify_types},
         type_info::TypeInfo,
     },
 };
@@ -34,7 +34,7 @@ pub(super) fn analyze_expression(
         }
         Expression::FunctionApplication {
             name,
-            type_arguments,
+            mut type_arguments,
             arguments,
         } => {
             if !type_arguments.is_empty() {
@@ -45,9 +45,17 @@ pub(super) fn analyze_expression(
                 .unwrap()
                 .expect_function()
                 .unwrap();
-            let typed_function_declaration = declaration_engine.get_function(decl_id).unwrap();
+            let mut typed_function_declaration = declaration_engine.get_function(decl_id).unwrap();
+            monomorphize(
+                &mut typed_function_declaration,
+                &mut type_arguments,
+                namespace,
+            )
+            .unwrap();
+            declaration_engine
+                .add_monomorphized_function_copy(decl_id, typed_function_declaration.clone());
             if typed_function_declaration.parameters.len() != arguments.len() {
-                panic!("different arguments");
+                panic!("wrong number of arguments");
             }
             let new_arguments = arguments
                 .into_iter()

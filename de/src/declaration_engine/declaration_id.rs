@@ -2,7 +2,7 @@ use crate::types::pretty_print::PrettyPrint;
 
 use super::declaration_engine::DeclarationEngine;
 
-#[derive(Clone)]
+#[derive(Clone, Copy, Debug)]
 pub struct DeclarationId(usize);
 
 impl std::ops::Deref for DeclarationId {
@@ -21,7 +21,7 @@ impl From<usize> for DeclarationId {
 impl PrettyPrint for DeclarationId {
     fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         declaration_engine
-            .look_up_decl_id(self.clone())
+            .look_up_decl_id(*self)
             .pretty_print(declaration_engine)
     }
 }

@@ -4,18 +4,32 @@ use super::{typed_expression::*, TypedNode};
 
 use crate::{
     declaration_engine::{declaration_engine::DeclarationEngine, declaration_id::DeclarationId},
-    type_system::{type_id::TypeId, type_parameter::TypeParameter},
-    types::pretty_print::PrettyPrint,
+    type_system::{
+        type_engine::MonomorphizeHelper, type_id::TypeId, type_mapping::TypeMapping,
+        type_parameter::TypeParameter,
+    },
+    types::{copy_types::CopyTypes, pretty_print::PrettyPrint},
 };
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) enum TypedDeclaration {
     Variable(TypedVariableDeclaration),
     Function(DeclarationId),
+    GenericTypeForFunctionScope { type_id: TypeId },
     // Trait(String),
     // Struct(String),
     // Enum(String),
     // TraitImpl(TypedTraitImpl),
+}
+
+impl CopyTypes for TypedDeclaration {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        match self {
+            TypedDeclaration::Variable(decl) => decl.copy_types(type_mapping),
+            TypedDeclaration::Function(_)
+            | TypedDeclaration::GenericTypeForFunctionScope { .. } => {}
+        }
+    }
 }
 
 impl PrettyPrint for TypedDeclaration {
@@ -23,6 +37,7 @@ impl PrettyPrint for TypedDeclaration {
         match self {
             TypedDeclaration::Variable(decl) => decl.pretty_print(declaration_engine),
             TypedDeclaration::Function(id) => id.pretty_print(declaration_engine),
+            TypedDeclaration::GenericTypeForFunctionScope { .. } => todo!(),
         }
     }
 }
@@ -45,11 +60,18 @@ impl TypedDeclaration {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct TypedVariableDeclaration {
     pub(crate) name: String,
     pub(crate) type_ascription: TypeId,
     pub(crate) body: TypedExpression,
+}
+
+impl CopyTypes for TypedVariableDeclaration {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_ascription.copy_types(type_mapping);
+        self.body.copy_types(type_mapping);
+    }
 }
 
 impl PrettyPrint for TypedVariableDeclaration {
@@ -63,13 +85,38 @@ impl PrettyPrint for TypedVariableDeclaration {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct TypedFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) parameters: Vec<TypedFunctionParameter>,
     pub(crate) body: Vec<TypedNode>,
     pub(crate) return_type: TypeId,
+}
+
+impl CopyTypes for TypedFunctionDeclaration {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_parameters
+            .iter_mut()
+            .for_each(|x| x.copy_types(type_mapping));
+        self.parameters
+            .iter_mut()
+            .for_each(|x| x.copy_types(type_mapping));
+        self.return_type.copy_types(type_mapping);
+        self.body
+            .iter_mut()
+            .for_each(|node| node.copy_types(type_mapping));
+    }
+}
+
+impl MonomorphizeHelper for TypedFunctionDeclaration {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn type_parameters(&self) -> &[TypeParameter] {
+        &self.type_parameters
+    }
 }
 
 impl PrettyPrint for TypedFunctionDeclaration {
@@ -111,10 +158,16 @@ impl PrettyPrint for TypedFunctionDeclaration {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) struct TypedFunctionParameter {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
+}
+
+impl CopyTypes for TypedFunctionParameter {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_id.copy_types(type_mapping);
+    }
 }
 
 impl fmt::Display for TypedFunctionParameter {

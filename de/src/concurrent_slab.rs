@@ -1,4 +1,4 @@
-use std::sync::RwLock;
+use std::sync::{Arc, RwLock};
 
 use crate::{
     declaration_engine::declaration_engine::DeclarationEngine,
@@ -6,9 +6,9 @@ use crate::{
     types::pretty_print::PrettyPrint,
 };
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct ConcurrentSlab<T> {
-    inner: RwLock<Vec<T>>,
+    inner: Arc<RwLock<Vec<T>>>,
 }
 
 impl<T> PrettyPrint for ConcurrentSlab<T>

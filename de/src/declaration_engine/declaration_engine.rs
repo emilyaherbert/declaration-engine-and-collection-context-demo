@@ -1,3 +1,5 @@
+use linked_hash_map::LinkedHashMap;
+
 use crate::{
     concurrent_slab::ConcurrentSlab, language::typed::typed_declaration::TypedFunctionDeclaration,
     types::pretty_print::PrettyPrint,
@@ -6,12 +8,19 @@ use crate::{
 use super::{declaration_id::DeclarationId, declaration_wrapper::DeclarationWrapper};
 
 // TODO: will need to use concurrent structure like https://github.com/xacrimon/dashmaps
-#[derive(Default)]
 pub struct DeclarationEngine {
     slab: ConcurrentSlab<DeclarationWrapper>,
+    monomorphized_copies: LinkedHashMap<usize, Vec<DeclarationId>>,
 }
 
 impl DeclarationEngine {
+    pub(crate) fn new() -> DeclarationEngine {
+        DeclarationEngine {
+            slab: ConcurrentSlab::default(),
+            monomorphized_copies: LinkedHashMap::new(),
+        }
+    }
+
     pub(crate) fn look_up_decl_id(&self, index: DeclarationId) -> DeclarationWrapper {
         self.slab.get(index)
     }
@@ -25,6 +34,40 @@ impl DeclarationEngine {
         index: DeclarationId,
     ) -> Result<TypedFunctionDeclaration, String> {
         self.slab.get(index).expect_function()
+    }
+
+    pub(crate) fn add_monomorphized_function_copy(
+        &mut self,
+        original_function_id: DeclarationId,
+        new_copy: TypedFunctionDeclaration,
+    ) {
+        let new_id = self.slab.insert(DeclarationWrapper::Function(new_copy));
+        match self.monomorphized_copies.get_mut(&*original_function_id) {
+            Some(prev) => {
+                prev.push(new_id);
+            }
+            None => {
+                self.monomorphized_copies
+                    .insert(*original_function_id, vec![new_id]);
+            }
+        }
+    }
+
+    pub(crate) fn get_monomorphized_function_copies(
+        &self,
+        original_function_id: DeclarationId,
+    ) -> Result<Vec<TypedFunctionDeclaration>, String> {
+        match self
+            .monomorphized_copies
+            .get(&*original_function_id)
+            .cloned()
+        {
+            Some(copies) => Ok(copies
+                .into_iter()
+                .map(|copy| self.slab.get(&*copy).expect_function())
+                .collect::<Result<_, _>>()?),
+            None => Ok(vec![]),
+        }
     }
 
     pub fn debug_print(&self) {

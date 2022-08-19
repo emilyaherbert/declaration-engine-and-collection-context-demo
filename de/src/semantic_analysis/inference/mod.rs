@@ -33,26 +33,15 @@ fn analyze_file(
     declaration_engine: &mut DeclarationEngine,
     file: File,
 ) -> TypedFile {
-    let new_nodes = analyze_nodes(
-        &mut namespace.scoped(file.name.clone()),
-        declaration_engine,
-        file.nodes,
-    );
+    let new_nodes = file
+        .nodes
+        .into_iter()
+        .map(|node| analyze_node(namespace, declaration_engine, node))
+        .collect::<Vec<_>>();
     TypedFile {
         name: file.name,
         nodes: new_nodes,
     }
-}
-
-fn analyze_nodes(
-    namespace: &mut Namespace,
-    declaration_engine: &mut DeclarationEngine,
-    nodes: Vec<Node>,
-) -> Vec<TypedNode> {
-    nodes
-        .into_iter()
-        .map(|node| analyze_node(namespace, declaration_engine, node))
-        .collect()
 }
 
 fn analyze_node(

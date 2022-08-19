@@ -1,5 +1,7 @@
 use crate::{
-    declaration_engine::declaration_engine::DeclarationEngine, types::pretty_print::PrettyPrint,
+    declaration_engine::declaration_engine::DeclarationEngine,
+    type_system::type_mapping::TypeMapping,
+    types::{copy_types::CopyTypes, pretty_print::PrettyPrint},
 };
 
 use self::{typed_declaration::TypedDeclaration, typed_expression::TypedExpression};
@@ -16,12 +18,22 @@ pub(crate) struct TypedFile {
     pub(crate) nodes: Vec<TypedNode>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) enum TypedNode {
     // StarImport(String),
     Declaration(TypedDeclaration),
     Expression(TypedExpression),
     ReturnStatement(TypedExpression),
+}
+
+impl CopyTypes for TypedNode {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        match self {
+            TypedNode::Declaration(declaration) => declaration.copy_types(type_mapping),
+            TypedNode::Expression(expression) => expression.copy_types(type_mapping),
+            TypedNode::ReturnStatement(expression) => expression.copy_types(type_mapping),
+        }
+    }
 }
 
 impl PrettyPrint for TypedNode {
