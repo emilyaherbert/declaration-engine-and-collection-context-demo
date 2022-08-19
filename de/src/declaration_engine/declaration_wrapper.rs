@@ -1,5 +1,7 @@
 use crate::{
-    language::typed::typed_declaration::{TypedFunctionDeclaration, TypedTraitDeclaration},
+    language::typed::typed_declaration::{
+        TypedFunctionDeclaration, TypedTraitDeclaration, TypedTraitImpl,
+    },
     types::pretty_print::PrettyPrint,
 };
 
@@ -11,6 +13,7 @@ pub(crate) enum DeclarationWrapper {
     Default,
     Function(TypedFunctionDeclaration),
     Trait(TypedTraitDeclaration),
+    TraitImpl(TypedTraitImpl),
 }
 
 impl Default for DeclarationWrapper {
@@ -25,6 +28,7 @@ impl PrettyPrint for DeclarationWrapper {
             DeclarationWrapper::Default => "default case".to_string(),
             DeclarationWrapper::Function(decl) => decl.pretty_print(declaration_engine),
             DeclarationWrapper::Trait(decl) => decl.to_string(),
+            DeclarationWrapper::TraitImpl(decl) => decl.pretty_print(declaration_engine),
         }
     }
 }

@@ -3,6 +3,7 @@ use std::hash::Hash;
 
 use crate::types::copy_types::CopyTypes;
 
+use super::trait_constraint::TraitConstraint;
 use super::type_engine::{insert_type, look_up_type_id, look_up_type_id_raw};
 use super::type_id::TypeId;
 use super::type_info::TypeInfo;
@@ -12,6 +13,7 @@ use super::type_mapping::TypeMapping;
 pub struct TypeParameter {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
+    pub(crate) trait_constraint: Option<TraitConstraint>,
 }
 
 impl CopyTypes for TypeParameter {

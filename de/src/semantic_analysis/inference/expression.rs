@@ -40,23 +40,30 @@ pub(super) fn analyze_expression(
             if !type_arguments.is_empty() {
                 panic!()
             }
+
+            // get the original decl id for the function from the namespace
             let decl_id = namespace
                 .get_symbol(&name)
                 .unwrap()
                 .expect_function()
                 .unwrap();
+
+            // get the original function declaration
             let mut typed_function_declaration = declaration_engine.get_function(decl_id).unwrap();
+
+            // monomorphize the function declaration into a new copy
             monomorphize(
                 &mut typed_function_declaration,
                 &mut type_arguments,
                 namespace,
             )
             .unwrap();
+
+            // add the new copy to the declaration engine
             declaration_engine
                 .add_monomorphized_function_copy(decl_id, typed_function_declaration.clone());
-            if typed_function_declaration.parameters.len() != arguments.len() {
-                panic!("wrong number of arguments");
-            }
+
+            // type check the arguments
             let new_arguments = arguments
                 .into_iter()
                 .zip(typed_function_declaration.parameters.iter())
@@ -67,12 +74,27 @@ pub(super) fn analyze_expression(
                     typed_argument
                 })
                 .collect::<Vec<_>>();
+
+            // the type id is the functions return type id
             let type_id = insert_type(TypeInfo::Ref(typed_function_declaration.return_type));
+
             let variant = TypedExpressionVariant::FunctionApplication {
                 name,
                 arguments: new_arguments,
             };
             TypedExpression { variant, type_id }
+        }
+        Expression::MethodCall {
+            parent,
+            name,
+            type_arguments,
+            arguments,
+        } => {
+            if !type_arguments.is_empty() {
+                panic!()
+            }
+
+            unimplemented!()
         } // Expression::Struct { .. } => {
           //     let new_fields = fields
           //         .into_iter()

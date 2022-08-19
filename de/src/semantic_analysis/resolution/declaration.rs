@@ -37,6 +37,7 @@ pub(super) fn resolve_declaration(
             let trait_declaration = resolve_trait_declaration(declaration_engine, id);
             vec![ResolvedDeclaration::Trait(trait_declaration)]
         }
+        TypedDeclaration::TraitImpl(_) => todo!(),
         // TypedDeclaration::Trait(_) => todo!(),
         // TypedDeclaration::Struct(_) => todo!(),
         // TypedDeclaration::Enum(_) => todo!(),

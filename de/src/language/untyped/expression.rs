@@ -15,17 +15,22 @@ pub enum Expression {
         type_arguments: Vec<TypeArgument>,
         arguments: Vec<Expression>,
     },
-    // Struct {
-    //     struct_name: String,
-    //     type_arguments: Vec<TypeArgument>,
-    //     fields: Vec<StructExpressionField>,
-    // },
-    // Enum {
-    //     enum_name: String,
-    //     variant_name: String,
-    //     type_arguments: Vec<TypeArgument>,
-    //     value: Box<Expression>,
-    // },
+    MethodCall {
+        parent: String,
+        name: String,
+        type_arguments: Vec<TypeArgument>,
+        arguments: Vec<Expression>,
+    }, // Struct {
+       //     struct_name: String,
+       //     type_arguments: Vec<TypeArgument>,
+       //     fields: Vec<StructExpressionField>,
+       // },
+       // Enum {
+       //     enum_name: String,
+       //     variant_name: String,
+       //     type_arguments: Vec<TypeArgument>,
+       //     value: Box<Expression>,
+       // },
 }
 
 impl fmt::Display for Expression {
@@ -41,6 +46,36 @@ impl fmt::Display for Expression {
                 write!(
                     f,
                     "{}{}({})",
+                    name,
+                    if type_arguments.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "::<{}>",
+                            type_arguments
+                                .iter()
+                                .map(|type_argument| type_argument.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    },
+                    &arguments
+                        .iter()
+                        .map(|argument| argument.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            Expression::MethodCall {
+                parent,
+                name,
+                type_arguments,
+                arguments,
+            } => {
+                write!(
+                    f,
+                    "{}.{}{}({})",
+                    parent,
                     name,
                     if type_arguments.is_empty() {
                         "".to_string()

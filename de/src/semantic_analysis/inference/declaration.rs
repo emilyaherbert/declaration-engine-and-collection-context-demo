@@ -4,7 +4,7 @@ use crate::{
         typed::{
             typed_declaration::{
                 TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter,
-                TypedTraitDeclaration, TypedTraitFn, TypedVariableDeclaration,
+                TypedTraitDeclaration, TypedTraitFn, TypedTraitImpl, TypedVariableDeclaration,
             },
             typed_expression::{TypedExpression, TypedExpressionVariant},
             TypedNode,
@@ -12,7 +12,7 @@ use crate::{
         untyped::{
             declaration::{
                 Declaration, FunctionDeclaration, FunctionParameter, TraitDeclaration, TraitFn,
-                VariableDeclaration,
+                TraitImpl, VariableDeclaration,
             },
             Node,
         },
@@ -42,8 +42,11 @@ pub(super) fn analyze_declaration(
             decl
         }
         Declaration::Function(function_declaration) => {
-            let typed_function_declaration =
-                analyze_function(&mut namespace.scoped(), declaration_engine, function_declaration);
+            let typed_function_declaration = analyze_function(
+                &mut namespace.scoped(),
+                declaration_engine,
+                function_declaration,
+            );
             let name = typed_function_declaration.name.clone();
             let decl_id = declaration_engine.insert_function(typed_function_declaration);
             let decl = TypedDeclaration::Function(decl_id);
@@ -51,24 +54,23 @@ pub(super) fn analyze_declaration(
             decl
         }
         Declaration::Trait(trait_declaration) => {
-            let typed_trait_declaration =
-                analyze_trait(&mut namespace.scoped(), declaration_engine, trait_declaration);
+            let typed_trait_declaration = analyze_trait(
+                &mut namespace.scoped(),
+                declaration_engine,
+                trait_declaration,
+            );
             let name = typed_trait_declaration.name.clone();
             let decl_id = declaration_engine.insert_trait(typed_trait_declaration);
             let decl = TypedDeclaration::Trait(decl_id);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        // Declaration::Trait(_) => {
-        //     let typed_trait_declaration = analyze_trait(
-        //         namespace,
-        //         declaration_engine,
-        //         trait_declaration,
-        //     );
-        //     let name = typed_trait_declaration.name.clone();
-        //     declaration_engine.insert_trait(name.clone(), typed_trait_declaration);
-        //     TypedDeclaration::Trait(name)
-        // }
+        Declaration::TraitImpl(trait_impl) => {
+            let typed_trait_impl =
+                analyze_trait_impl(&mut namespace.scoped(), declaration_engine, trait_impl);
+            let decl_id = declaration_engine.insert_trait_impl(typed_trait_impl);
+            TypedDeclaration::TraitImpl(decl_id)
+        }
         // Declaration::Struct(_) => {
         //     let typed_struct_declaration = analyze_struct(
         //         namespace,
@@ -220,6 +222,59 @@ fn analyze_trait_fn(
         name: trait_fn.name,
         parameters: new_parameters,
         return_type: eval_type(insert_type(trait_fn.return_type), namespace).unwrap(),
+    }
+}
+
+fn analyze_trait_impl(
+    namespace: &mut Namespace,
+    declaration_engine: &mut DeclarationEngine,
+    trait_impl: TraitImpl,
+) -> TypedTraitImpl {
+    // insert type params into namespace
+    for type_parameter in trait_impl.type_parameters.iter() {
+        let type_parameter_decl = TypedDeclaration::GenericTypeForFunctionScope {
+            type_id: type_parameter.type_id,
+        };
+        namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);
+    }
+
+    // get the trait from the declaration engine
+    let trait_id = namespace
+        .get_symbol(&trait_impl.trait_name)
+        .unwrap()
+        .expect_trait()
+        .unwrap();
+    let _trait_decl = declaration_engine.get_trait(trait_id).unwrap();
+
+    // TODO: check to see if all of the methods are implementing, no new methods implementing,
+    // when generic traits are implementing add the monomorphized copies to the declaration
+    // engine
+
+    // type check the type we are implementing for
+    let type_implementing_for =
+        eval_type(insert_type(trait_impl.type_implementing_for), namespace).unwrap();
+
+    // type check the methods
+    let typed_method_ids = trait_impl
+        .methods
+        .into_iter()
+        .map(|method| {
+            let typed_method = analyze_function(namespace, declaration_engine, method);
+            declaration_engine.insert_function(typed_method)
+        })
+        .collect::<Vec<_>>();
+
+    namespace.insert_trait_impl(
+        type_implementing_for,
+        trait_impl.trait_name.clone(),
+        typed_method_ids.clone(),
+    );
+
+    TypedTraitImpl {
+        trait_name: trait_impl.trait_name,
+        type_implementing_for,
+        type_parameters: trait_impl.type_parameters,
+        methods: typed_method_ids,
     }
 }
 

@@ -16,11 +16,11 @@ pub(crate) enum TypedDeclaration {
     Variable(TypedVariableDeclaration),
     Function(DeclarationId),
     Trait(DeclarationId),
+    TraitImpl(DeclarationId),
     GenericTypeForFunctionScope { type_id: TypeId },
     // Trait(String),
     // Struct(String),
     // Enum(String),
-    // TraitImpl(TypedTraitImpl),
 }
 
 impl CopyTypes for TypedDeclaration {
@@ -29,6 +29,7 @@ impl CopyTypes for TypedDeclaration {
             TypedDeclaration::Variable(decl) => decl.copy_types(type_mapping),
             TypedDeclaration::Function(_)
             | TypedDeclaration::Trait(_)
+            | TypedDeclaration::TraitImpl(_)
             | TypedDeclaration::GenericTypeForFunctionScope { .. } => {}
         }
     }
@@ -40,6 +41,7 @@ impl PrettyPrint for TypedDeclaration {
             TypedDeclaration::Variable(decl) => decl.pretty_print(declaration_engine),
             TypedDeclaration::Function(id) => id.pretty_print(declaration_engine),
             TypedDeclaration::Trait(id) => id.pretty_print(declaration_engine),
+            TypedDeclaration::TraitImpl(id) => id.pretty_print(declaration_engine),
             TypedDeclaration::GenericTypeForFunctionScope { .. } => todo!(),
         }
     }
@@ -59,6 +61,14 @@ impl TypedDeclaration {
             Ok(decl_id)
         } else {
             Err("not a function declaration".to_string())
+        }
+    }
+
+    pub(crate) fn expect_trait(self) -> Result<DeclarationId, String> {
+        if let TypedDeclaration::Trait(decl_id) = self {
+            Ok(decl_id)
+        } else {
+            Err("not a trait declaration".to_string())
         }
     }
 }
@@ -223,6 +233,41 @@ impl fmt::Display for TypedTraitFn {
     }
 }
 
+#[derive(Clone, Debug)]
+pub(crate) struct TypedTraitImpl {
+    pub(crate) trait_name: String,
+    pub(crate) type_implementing_for: TypeId,
+    pub(crate) type_parameters: Vec<TypeParameter>,
+    pub(crate) methods: Vec<DeclarationId>,
+}
+
+impl PrettyPrint for TypedTraitImpl {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        format!(
+            "impl{} {} for {} {{\n{}\n}}",
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    "<{}>",
+                    self.type_parameters
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            },
+            self.trait_name,
+            self.type_implementing_for,
+            self.methods
+                .iter()
+                .map(|method| method.pretty_print(declaration_engine))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+}
+
 // #[derive(Clone)]
 // pub(crate) struct TypedStructDeclaration {
 //     pub(crate) name: String,
@@ -249,10 +294,3 @@ pub struct TypedEnumVariant {
     pub(crate) type_id: TypeId,
     pub(crate) tag: usize,
 }
-
-// #[derive(Clone)]
-// pub(crate) struct TypedTraitImpl {
-//     pub(crate) trait_name: String,
-//     pub(crate) type_implementing_for: TypeId,
-//     pub(crate) methods: Vec<TypedFunctionDeclaration>,
-// }

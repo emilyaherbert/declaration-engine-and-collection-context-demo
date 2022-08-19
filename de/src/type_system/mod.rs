@@ -1,6 +1,7 @@
 use std::fmt;
 
 pub(crate) mod resolved_types;
+pub(crate) mod trait_constraint;
 pub(crate) mod type_argument;
 pub(crate) mod type_engine;
 pub(crate) mod type_id;

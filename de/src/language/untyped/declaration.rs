@@ -9,6 +9,7 @@ pub enum Declaration {
     Variable(VariableDeclaration),
     Function(FunctionDeclaration),
     Trait(TraitDeclaration),
+    TraitImpl(TraitImpl),
     // Struct(StructDeclaration),
     // Enum(EnumDeclaration),
     // TraitImpl(TraitImpl),
@@ -21,6 +22,7 @@ impl fmt::Display for Declaration {
             Declaration::Variable(decl) => write!(f, "{}", decl),
             Declaration::Function(decl) => write!(f, "{}", decl),
             Declaration::Trait(decl) => write!(f, "{}", decl),
+            Declaration::TraitImpl(decl) => write!(f, "{}", decl),
         }
     }
 }
@@ -85,7 +87,7 @@ impl fmt::Display for FunctionDeclaration {
             builder.push_str(&line.to_string());
             builder.push(';');
         }
-        builder.push_str("\n{");
+        builder.push_str("\n}");
         write!(f, "{}", builder)
     }
 }
@@ -146,6 +148,42 @@ impl fmt::Display for TraitFn {
     }
 }
 
+#[derive(Clone)]
+pub struct TraitImpl {
+    pub(crate) trait_name: String,
+    pub(crate) type_implementing_for: TypeInfo,
+    pub(crate) type_parameters: Vec<TypeParameter>,
+    pub(crate) methods: Vec<FunctionDeclaration>,
+}
+
+impl fmt::Display for TraitImpl {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "impl{} {} for {} {{\n{}\n}}",
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    "<{}>",
+                    self.type_parameters
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            },
+            self.trait_name,
+            self.type_implementing_for,
+            self.methods
+                .iter()
+                .map(|method| method.to_string())
+                .collect::<Vec<_>>()
+                .join("\n")
+        )
+    }
+}
+
 // #[derive(Clone)]
 // pub struct StructDeclaration {
 //     pub(crate) name: String,
@@ -174,14 +212,6 @@ pub struct EnumVariant {
 }
 
 // #[derive(Clone)]
-// pub struct TraitImpl {
-//     pub(crate) trait_name: String,
-//     pub(crate) type_implementing_for: TypeInfo,
-//     pub(crate) type_parameters: Vec<TypeParameter>,
-//     pub(crate) functions: Vec<FunctionDeclaration>,
-// }
-
-// #[derive(Clone)]
 // pub struct SelfImpl {
 //     pub(crate) type_implementing_for: TypeInfo,
 //     pub(crate) type_parameters: Vec<TypeParameter>,
@@ -192,12 +222,13 @@ pub mod constructors {
     use crate::{
         language::untyped::{Expression, Node},
         type_system::{
-            type_engine::insert_type, type_info::TypeInfo, type_parameter::TypeParameter,
+            trait_constraint::TraitConstraint, type_engine::insert_type, type_info::TypeInfo,
+            type_parameter::TypeParameter,
         },
     };
 
     use super::{
-        Declaration, FunctionDeclaration, FunctionParameter, TraitDeclaration, TraitFn,
+        Declaration, FunctionDeclaration, FunctionParameter, TraitDeclaration, TraitFn, TraitImpl,
         VariableDeclaration,
     };
 
@@ -225,6 +256,22 @@ pub mod constructors {
         }))
     }
 
+    pub fn func_decl_raw(
+        name: &str,
+        type_parameters: &[TypeParameter],
+        parameters: &[FunctionParameter],
+        body: &[Node],
+        return_type: TypeInfo,
+    ) -> FunctionDeclaration {
+        FunctionDeclaration {
+            name: name.to_string(),
+            type_parameters: type_parameters.to_vec(),
+            parameters: parameters.to_vec(),
+            body: body.to_vec(),
+            return_type,
+        }
+    }
+
     pub fn func_param(name: &str, type_info: TypeInfo) -> FunctionParameter {
         FunctionParameter {
             name: name.to_string(),
@@ -232,11 +279,14 @@ pub mod constructors {
         }
     }
 
-    pub fn type_param(name: &str) -> TypeParameter {
+    pub fn type_param(name: &str, trait_constraint: Option<&str>) -> TypeParameter {
         TypeParameter {
             name: name.to_string(),
             type_id: insert_type(TypeInfo::UnknownGeneric {
                 name: name.to_string(),
+            }),
+            trait_constraint: trait_constraint.map(|x| TraitConstraint {
+                trait_name: x.to_string(),
             }),
         }
     }
@@ -258,5 +308,19 @@ pub mod constructors {
             parameters: parameters.to_vec(),
             return_type,
         }
+    }
+
+    pub fn trait_impl(
+        trait_name: &str,
+        type_implementing_for: TypeInfo,
+        type_parameters: &[TypeParameter],
+        methods: &[FunctionDeclaration],
+    ) -> Node {
+        Node::Declaration(Declaration::TraitImpl(TraitImpl {
+            trait_name: trait_name.to_string(),
+            type_implementing_for,
+            type_parameters: type_parameters.to_vec(),
+            methods: methods.to_vec(),
+        }))
     }
 }
