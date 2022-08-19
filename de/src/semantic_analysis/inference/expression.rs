@@ -1,11 +1,14 @@
 use crate::{
-    declaration_engine::{declaration_engine::DeclarationEngine, declaration_ref::DeclarationRef},
+    declaration_engine::declaration_engine::DeclarationEngine,
     language::{
         typed::typed_expression::{TypedExpression, TypedExpressionVariant},
         untyped::expression::Expression,
     },
     namespace::namespace::Namespace,
-    type_system::{type_engine::insert_type, type_info::TypeInfo},
+    type_system::{
+        type_engine::{insert_type, unify_types},
+        type_info::TypeInfo,
+    },
 };
 
 pub(super) fn analyze_expression(
@@ -20,8 +23,11 @@ pub(super) fn analyze_expression(
             TypedExpression { variant, type_id }
         }
         Expression::Variable { name } => {
-            let unknown_decl = namespace.get_symbol(&name).unwrap();
-            let variable_decl = unknown_decl.expect_variable().unwrap();
+            let variable_decl = namespace
+                .get_symbol(&name)
+                .unwrap()
+                .expect_variable()
+                .unwrap();
             let type_id = variable_decl.type_ascription;
             let variant = TypedExpressionVariant::Variable { name };
             TypedExpression { variant, type_id }
@@ -34,21 +40,26 @@ pub(super) fn analyze_expression(
             if !type_arguments.is_empty() {
                 panic!()
             }
+            let decl_id = namespace
+                .get_symbol(&name)
+                .unwrap()
+                .expect_function()
+                .unwrap();
+            let typed_function_declaration = declaration_engine.get_function(decl_id).unwrap();
+            if typed_function_declaration.parameters.len() != arguments.len() {
+                panic!("different arguments");
+            }
             let new_arguments = arguments
                 .into_iter()
-                .map(|argument| analyze_expression(namespace, declaration_engine, argument))
+                .zip(typed_function_declaration.parameters.iter())
+                .map(|(argument, parameter)| {
+                    let typed_argument =
+                        analyze_expression(namespace, declaration_engine, argument);
+                    unify_types(typed_argument.type_id, parameter.type_id).unwrap();
+                    typed_argument
+                })
                 .collect::<Vec<_>>();
-            // let _ = collection_context
-            //     .get_function(&namespace.current_path, &name)
-            //     .unwrap();
-            let type_id = insert_type(TypeInfo::DeclarationRef(DeclarationRef::Function(
-                name.clone(),
-                vec![],
-                new_arguments
-                    .iter()
-                    .map(|argument| argument.type_id)
-                    .collect::<Vec<_>>(),
-            )));
+            let type_id = insert_type(TypeInfo::Ref(typed_function_declaration.return_type));
             let variant = TypedExpressionVariant::FunctionApplication {
                 name,
                 arguments: new_arguments,

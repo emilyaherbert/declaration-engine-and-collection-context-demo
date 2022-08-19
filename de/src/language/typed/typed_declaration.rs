@@ -1,3 +1,5 @@
+use std::fmt;
+
 use super::{typed_expression::*, TypedNode};
 
 use crate::{
@@ -19,10 +21,8 @@ pub(crate) enum TypedDeclaration {
 impl PrettyPrint for TypedDeclaration {
     fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         match self {
-            TypedDeclaration::Variable(decl) => {
-                format!("{}", decl.pretty_print(declaration_engine))
-            }
-            TypedDeclaration::Function(id) => format!("{}", id.pretty_print(declaration_engine)),
+            TypedDeclaration::Variable(decl) => decl.pretty_print(declaration_engine),
+            TypedDeclaration::Function(id) => id.pretty_print(declaration_engine),
         }
     }
 }
@@ -33,6 +33,14 @@ impl TypedDeclaration {
             Ok(variable_declaration)
         } else {
             Err("not a variable declaration".to_string())
+        }
+    }
+
+    pub(crate) fn expect_function(self) -> Result<DeclarationId, String> {
+        if let TypedDeclaration::Function(decl_id) = self {
+            Ok(decl_id)
+        } else {
+            Err("not a function declaration".to_string())
         }
     }
 }
@@ -49,7 +57,7 @@ impl PrettyPrint for TypedVariableDeclaration {
         format!(
             "let {}: {} = {}",
             self.name,
-            self.type_ascription.pretty_print(declaration_engine),
+            self.type_ascription,
             self.body.pretty_print(declaration_engine)
         )
     }
@@ -75,7 +83,7 @@ impl PrettyPrint for TypedFunctionDeclaration {
                 &self
                     .type_parameters
                     .iter()
-                    .map(|type_parameter| type_parameter.pretty_print(declaration_engine))
+                    .map(|type_parameter| type_parameter.to_string())
                     .collect::<Vec<_>>()
                     .join(", "),
             );
@@ -86,12 +94,12 @@ impl PrettyPrint for TypedFunctionDeclaration {
             &self
                 .parameters
                 .iter()
-                .map(|parameter| parameter.pretty_print(declaration_engine))
+                .map(|parameter| parameter.to_string())
                 .collect::<Vec<_>>()
                 .join(", "),
         );
         builder.push_str(") -> ");
-        builder.push_str(&self.return_type.pretty_print(declaration_engine));
+        builder.push_str(&self.return_type.to_string());
         builder.push_str(" {");
         for line in self.body.iter() {
             builder.push_str("\n  ");
@@ -109,13 +117,9 @@ pub(crate) struct TypedFunctionParameter {
     pub(crate) type_id: TypeId,
 }
 
-impl PrettyPrint for TypedFunctionParameter {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
-        format!(
-            "{}: {}",
-            self.name,
-            self.type_id.pretty_print(declaration_engine)
-        )
+impl fmt::Display for TypedFunctionParameter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.type_id)
     }
 }
 

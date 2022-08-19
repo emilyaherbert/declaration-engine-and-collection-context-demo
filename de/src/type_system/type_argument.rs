@@ -1,6 +1,4 @@
-use crate::{
-    declaration_engine::declaration_engine::DeclarationEngine, types::pretty_print::PrettyPrint,
-};
+use std::fmt;
 
 use super::type_id::TypeId;
 
@@ -9,8 +7,8 @@ pub struct TypeArgument {
     pub(crate) type_id: TypeId,
 }
 
-impl PrettyPrint for TypeArgument {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
-        format!("{}", self.type_id.pretty_print(declaration_engine))
+impl fmt::Display for TypeArgument {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.type_id)
     }
 }

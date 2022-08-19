@@ -1,8 +1,6 @@
-use colored::Colorize;
+use std::fmt;
 
-use crate::{
-    declaration_engine::declaration_engine::DeclarationEngine, types::pretty_print::PrettyPrint,
-};
+use colored::Colorize;
 
 use self::{declaration::Declaration, expression::Expression};
 
@@ -13,14 +11,16 @@ pub struct Application {
     pub files: Vec<File>,
 }
 
-impl PrettyPrint for Application {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
-        format!(
+impl fmt::Display for Application {
+    #[allow(clippy::useless_format)]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
             "{}{}\n{}",
             format!("\n++++++++ UNTYPED").red(),
             self.files
                 .iter()
-                .map(|file| file.pretty_print(declaration_engine))
+                .map(|file| file.to_string())
                 .collect::<Vec<_>>()
                 .join("\n"),
             format!("++++++++").red(),
@@ -33,17 +33,19 @@ pub struct File {
     pub nodes: Vec<Node>,
 }
 
-impl PrettyPrint for File {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+impl fmt::Display for File {
+    #[allow(clippy::useless_format)]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut nodes_str = self
             .nodes
             .iter()
-            .map(|node| node.pretty_print(declaration_engine))
+            .map(|node| node.to_string())
             .collect::<Vec<_>>()
             .join(";\n");
         nodes_str.insert(0, '\n');
         nodes_str.push(';');
-        format!(
+        write!(
+            f,
             "{}{}{}",
             format!("\n>>> {}", self.name).green(),
             nodes_str,
@@ -60,19 +62,13 @@ pub enum Node {
     ReturnStatement(Expression),
 }
 
-impl PrettyPrint for Node {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+impl fmt::Display for Node {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Node::Declaration(declaration) => {
-                format!("{}", declaration.pretty_print(declaration_engine))
-            }
-            Node::Expression(expression) => {
-                format!("{}", expression.pretty_print(declaration_engine))
-            }
-            Node::ReturnStatement(expression) => {
-                format!("return {}", expression.pretty_print(declaration_engine))
-            }
-            Node::StarImport(name) => format!("use {}::*", name),
+            Node::Declaration(declaration) => write!(f, "{}", declaration),
+            Node::Expression(expression) => write!(f, "{}", expression),
+            Node::ReturnStatement(expression) => write!(f, "return {}", expression),
+            Node::StarImport(name) => write!(f, "use {}::*", name),
         }
     }
 }

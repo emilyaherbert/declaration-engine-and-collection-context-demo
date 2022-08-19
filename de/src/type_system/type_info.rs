@@ -1,9 +1,8 @@
+use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 
-use crate::declaration_engine::declaration_engine::DeclarationEngine;
 use crate::declaration_engine::declaration_ref::DeclarationRef;
-use crate::types::pretty_print::PrettyPrint;
 
 use super::type_engine::look_up_type_id;
 use super::{type_id::*, IntegerBits};
@@ -33,14 +32,14 @@ impl Default for TypeInfo {
     }
 }
 
-impl PrettyPrint for TypeInfo {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+impl fmt::Display for TypeInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TypeInfo::Unknown => format!("UNK"),
-            TypeInfo::UnknownGeneric { name } => format!("{}", name),
-            TypeInfo::UnsignedInteger(bits) => format!("{}", bits),
+            TypeInfo::Unknown => write!(f, "UNK"),
+            TypeInfo::UnknownGeneric { name } => write!(f, "{}", name),
+            TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
             TypeInfo::Ref(_) => todo!(),
-            TypeInfo::DeclarationRef(decl_ref) => format!("{}", decl_ref),
+            TypeInfo::DeclarationRef(_) => todo!(),
         }
     }
 }

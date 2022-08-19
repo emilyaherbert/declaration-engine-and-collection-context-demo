@@ -7,7 +7,7 @@ use super::{declaration_id::DeclarationId, declaration_wrapper::DeclarationWrapp
 
 // TODO: will need to use concurrent structure like https://github.com/xacrimon/dashmaps
 #[derive(Default)]
-pub(crate) struct DeclarationEngine {
+pub struct DeclarationEngine {
     slab: ConcurrentSlab<DeclarationWrapper>,
 }
 

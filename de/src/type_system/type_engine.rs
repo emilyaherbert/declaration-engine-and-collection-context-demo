@@ -155,10 +155,7 @@ impl TypeEngine {
                     Ok(())
                 }
             },
-            (received, expected) => Err(format!(
-                "type mismatch, recieved: {}, expected: {}",
-                received, expected
-            )),
+            _ => Err("type mismatch".to_string()),
         }
     }
 
@@ -172,12 +169,7 @@ impl TypeEngine {
             TypeInfo::UnknownGeneric { .. } => Err("type error".to_string()),
             TypeInfo::UnsignedInteger(bits) => Ok(ResolvedType::UnsignedInteger(bits)),
             TypeInfo::Ref(id) => self.resolve_type(declaration_engine, id),
-            TypeInfo::DeclarationRef(decl_ref) => match decl_ref {
-                DeclarationRef::Function(name, _, _) => {
-                    let func = declaration_engine.get_function(name).unwrap();
-                    self.resolve_type(declaration_engine, func.return_type)
-                }
-            },
+            TypeInfo::DeclarationRef(_) => todo!(),
             // TypeInfo::Enum {
             //     name,
             //     type_parameters,
@@ -223,8 +215,8 @@ pub(crate) fn look_up_type_id(id: TypeId) -> TypeInfo {
     TYPE_ENGINE.look_up_type_id(id)
 }
 
-pub(crate) fn unify_types(a: TypeId, b: TypeId) -> Result<(), String> {
-    TYPE_ENGINE.unify_types(a, b)
+pub(crate) fn unify_types(received: TypeId, expected: TypeId) -> Result<(), String> {
+    TYPE_ENGINE.unify_types(received, expected)
 }
 
 pub(crate) fn resolve_type(

@@ -17,14 +17,11 @@ where
 {
     fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         let inner = self.inner.write().unwrap();
-        format!(
-            "{}",
-            inner
-                .iter()
-                .map(|i| i.pretty_print(declaration_engine))
-                .collect::<Vec<_>>()
-                .join(", ")
-        )
+        inner
+            .iter()
+            .map(|i| i.pretty_print(declaration_engine))
+            .collect::<Vec<_>>()
+            .join(", ")
     }
 }
 

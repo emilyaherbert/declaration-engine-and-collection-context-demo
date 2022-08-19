@@ -27,12 +27,8 @@ pub(crate) enum TypedNode {
 impl PrettyPrint for TypedNode {
     fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         match self {
-            TypedNode::Declaration(declaration) => {
-                format!("{}", declaration.pretty_print(declaration_engine))
-            }
-            TypedNode::Expression(expression) => {
-                format!("{}", expression.pretty_print(declaration_engine))
-            }
+            TypedNode::Declaration(declaration) => declaration.pretty_print(declaration_engine),
+            TypedNode::Expression(expression) => expression.pretty_print(declaration_engine),
             TypedNode::ReturnStatement(expression) => {
                 format!("return {}", expression.pretty_print(declaration_engine))
             }

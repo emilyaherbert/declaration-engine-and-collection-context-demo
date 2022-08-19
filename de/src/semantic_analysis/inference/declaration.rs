@@ -32,11 +32,11 @@ pub(super) fn analyze_declaration(
         Declaration::Function(function_declaration) => {
             let typed_function_declaration =
                 analyze_function(namespace, declaration_engine, function_declaration);
+            let name = typed_function_declaration.name.clone();
             let decl_id = declaration_engine.insert_function(typed_function_declaration);
-            let decl = TypedDeclaration::Function(name);
-            declaration_engine.insert_declaration(decl);
-            declaration_engine.insert_function(name.clone(), typed_function_declaration);
-            TypedDeclaration::Function(name)
+            let decl = TypedDeclaration::Function(decl_id);
+            namespace.insert_symbol(name, decl.clone());
+            decl
         }
         // Declaration::Trait(_) => {
         //     let typed_trait_declaration = analyze_trait(

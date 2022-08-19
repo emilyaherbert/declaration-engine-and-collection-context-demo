@@ -11,7 +11,7 @@ pub(crate) struct TypedExpression {
 
 impl PrettyPrint for TypedExpression {
     fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
-        format!("{}", self.variant.pretty_print(declaration_engine))
+        self.variant.pretty_print(declaration_engine)
     }
 }
 
@@ -42,7 +42,7 @@ impl PrettyPrint for TypedExpressionVariant {
     fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         match self {
             TypedExpressionVariant::Literal { value } => format!("{}", value),
-            TypedExpressionVariant::Variable { name } => format!("{}", name),
+            TypedExpressionVariant::Variable { name } => name.to_string(),
             TypedExpressionVariant::FunctionApplication { name, arguments } => {
                 format!(
                     "{}({})",

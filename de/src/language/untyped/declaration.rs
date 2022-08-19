@@ -1,8 +1,6 @@
-use crate::{
-    declaration_engine::declaration_engine::DeclarationEngine,
-    type_system::{type_info::TypeInfo, type_parameter::TypeParameter},
-    types::pretty_print::PrettyPrint,
-};
+use std::fmt;
+
+use crate::type_system::{type_info::TypeInfo, type_parameter::TypeParameter};
 
 use super::{expression::*, Node};
 
@@ -17,11 +15,11 @@ pub enum Declaration {
     // SelfImpl(SelfImpl),
 }
 
-impl PrettyPrint for Declaration {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+impl fmt::Display for Declaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Declaration::Variable(decl) => format!("{}", decl.pretty_print(declaration_engine)),
-            Declaration::Function(decl) => format!("{}", decl.pretty_print(declaration_engine)),
+            Declaration::Variable(decl) => write!(f, "{}", decl),
+            Declaration::Function(decl) => write!(f, "{}", decl),
         }
     }
 }
@@ -33,13 +31,12 @@ pub struct VariableDeclaration {
     pub(crate) body: Expression,
 }
 
-impl PrettyPrint for VariableDeclaration {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
-        format!(
+impl fmt::Display for VariableDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
             "let {}: {} = {}",
-            self.name,
-            self.type_ascription.pretty_print(declaration_engine),
-            self.body.pretty_print(declaration_engine)
+            self.name, self.type_ascription, self.body
         )
     }
 }
@@ -53,8 +50,8 @@ pub struct FunctionDeclaration {
     pub(crate) return_type: TypeInfo,
 }
 
-impl PrettyPrint for FunctionDeclaration {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+impl fmt::Display for FunctionDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut builder = String::new();
         builder.push_str("fn ");
         builder.push_str(&self.name);
@@ -64,7 +61,7 @@ impl PrettyPrint for FunctionDeclaration {
                 &self
                     .type_parameters
                     .iter()
-                    .map(|type_parameter| type_parameter.pretty_print(declaration_engine))
+                    .map(|type_parameter| type_parameter.to_string())
                     .collect::<Vec<_>>()
                     .join(", "),
             );
@@ -75,20 +72,20 @@ impl PrettyPrint for FunctionDeclaration {
             &self
                 .parameters
                 .iter()
-                .map(|parameter| parameter.pretty_print(declaration_engine))
+                .map(|parameter| parameter.to_string())
                 .collect::<Vec<_>>()
                 .join(", "),
         );
         builder.push_str(") -> ");
-        builder.push_str(&self.return_type.pretty_print(declaration_engine));
+        builder.push_str(&self.return_type.to_string());
         builder.push_str(" {");
         for line in self.body.iter() {
             builder.push_str("\n  ");
-            builder.push_str(&line.pretty_print(declaration_engine));
+            builder.push_str(&line.to_string());
             builder.push(';');
         }
         builder.push_str("\n{");
-        builder
+        write!(f, "{}", builder)
     }
 }
 
@@ -98,13 +95,9 @@ pub struct FunctionParameter {
     pub(crate) type_info: TypeInfo,
 }
 
-impl PrettyPrint for FunctionParameter {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
-        format!(
-            "{}: {}",
-            self.name,
-            self.type_info.pretty_print(declaration_engine)
-        )
+impl fmt::Display for FunctionParameter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.type_info)
     }
 }
 

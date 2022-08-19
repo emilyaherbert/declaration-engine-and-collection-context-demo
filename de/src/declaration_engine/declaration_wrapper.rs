@@ -5,7 +5,7 @@ use crate::{
 use super::declaration_engine::DeclarationEngine;
 
 #[derive(Clone)]
-pub(super) enum DeclarationWrapper {
+pub(crate) enum DeclarationWrapper {
     // no-op variant to fufill the default trait
     Default,
     Function(TypedFunctionDeclaration),
@@ -20,10 +20,8 @@ impl Default for DeclarationWrapper {
 impl PrettyPrint for DeclarationWrapper {
     fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         match self {
-            DeclarationWrapper::Default => format!("default case"),
-            DeclarationWrapper::Function(decl) => {
-                format!("{}", decl.pretty_print(declaration_engine))
-            }
+            DeclarationWrapper::Default => "default case".to_string(),
+            DeclarationWrapper::Function(decl) => decl.pretty_print(declaration_engine),
         }
     }
 }

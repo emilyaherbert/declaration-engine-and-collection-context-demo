@@ -1,7 +1,6 @@
-use crate::{
-    declaration_engine::declaration_engine::DeclarationEngine, language::literal::Literal,
-    type_system::type_argument::TypeArgument, types::pretty_print::PrettyPrint,
-};
+use std::fmt;
+
+use crate::{language::literal::Literal, type_system::type_argument::TypeArgument};
 
 #[derive(Clone)]
 pub enum Expression {
@@ -29,17 +28,18 @@ pub enum Expression {
     // },
 }
 
-impl PrettyPrint for Expression {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+impl fmt::Display for Expression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Expression::Literal { value } => format!("{}", value),
-            Expression::Variable { name } => format!("{}", name),
+            Expression::Literal { value } => write!(f, "{}", value),
+            Expression::Variable { name } => write!(f, "{}", name),
             Expression::FunctionApplication {
                 name,
                 type_arguments,
                 arguments,
             } => {
-                format!(
+                write!(
+                    f,
                     "{}{}({})",
                     name,
                     if type_arguments.is_empty() {
@@ -49,14 +49,14 @@ impl PrettyPrint for Expression {
                             "::<{}>",
                             type_arguments
                                 .iter()
-                                .map(|type_argument| type_argument.pretty_print(declaration_engine))
+                                .map(|type_argument| type_argument.to_string())
                                 .collect::<Vec<_>>()
                                 .join(", ")
                         )
                     },
                     &arguments
                         .iter()
-                        .map(|argument| argument.pretty_print(declaration_engine))
+                        .map(|argument| argument.to_string())
                         .collect::<Vec<_>>()
                         .join(", ")
                 )

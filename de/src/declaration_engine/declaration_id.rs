@@ -21,7 +21,7 @@ impl From<usize> for DeclarationId {
 impl PrettyPrint for DeclarationId {
     fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         declaration_engine
-            .look_up_decl_id(*self)
+            .look_up_decl_id(self.clone())
             .pretty_print(declaration_engine)
     }
 }

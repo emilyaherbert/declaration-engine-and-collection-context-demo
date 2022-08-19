@@ -74,7 +74,7 @@ fn func_app_test() {
     let application = Application {
         files: vec![program_1],
     };
-    println!("{}", application.pretty_print());
+    println!("{}", application);
     let resolved_application = compile(application);
     println!("{}", resolved_application);
     //panic!();
