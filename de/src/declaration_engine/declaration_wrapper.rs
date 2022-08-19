@@ -1,5 +1,6 @@
 use crate::{
-    language::typed::typed_declaration::TypedFunctionDeclaration, types::pretty_print::PrettyPrint,
+    language::typed::typed_declaration::{TypedFunctionDeclaration, TypedTraitDeclaration},
+    types::pretty_print::PrettyPrint,
 };
 
 use super::declaration_engine::DeclarationEngine;
@@ -9,6 +10,7 @@ pub(crate) enum DeclarationWrapper {
     // no-op variant to fufill the default trait
     Default,
     Function(TypedFunctionDeclaration),
+    Trait(TypedTraitDeclaration),
 }
 
 impl Default for DeclarationWrapper {
@@ -22,6 +24,7 @@ impl PrettyPrint for DeclarationWrapper {
         match self {
             DeclarationWrapper::Default => "default case".to_string(),
             DeclarationWrapper::Function(decl) => decl.pretty_print(declaration_engine),
+            DeclarationWrapper::Trait(decl) => decl.to_string(),
         }
     }
 }
@@ -31,6 +34,13 @@ impl DeclarationWrapper {
         match self {
             DeclarationWrapper::Function(decl) => Ok(decl),
             _ => Err("expected to find function declaration".to_string()),
+        }
+    }
+
+    pub(super) fn expect_trait(self) -> Result<TypedTraitDeclaration, String> {
+        match self {
+            DeclarationWrapper::Trait(decl) => Ok(decl),
+            _ => Err("expected to find trait declaration".to_string()),
         }
     }
 }

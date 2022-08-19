@@ -15,6 +15,7 @@ use crate::{
 pub(crate) enum TypedDeclaration {
     Variable(TypedVariableDeclaration),
     Function(DeclarationId),
+    Trait(DeclarationId),
     GenericTypeForFunctionScope { type_id: TypeId },
     // Trait(String),
     // Struct(String),
@@ -27,6 +28,7 @@ impl CopyTypes for TypedDeclaration {
         match self {
             TypedDeclaration::Variable(decl) => decl.copy_types(type_mapping),
             TypedDeclaration::Function(_)
+            | TypedDeclaration::Trait(_)
             | TypedDeclaration::GenericTypeForFunctionScope { .. } => {}
         }
     }
@@ -37,6 +39,7 @@ impl PrettyPrint for TypedDeclaration {
         match self {
             TypedDeclaration::Variable(decl) => decl.pretty_print(declaration_engine),
             TypedDeclaration::Function(id) => id.pretty_print(declaration_engine),
+            TypedDeclaration::Trait(id) => id.pretty_print(declaration_engine),
             TypedDeclaration::GenericTypeForFunctionScope { .. } => todo!(),
         }
     }
@@ -176,19 +179,49 @@ impl fmt::Display for TypedFunctionParameter {
     }
 }
 
-// #[derive(Clone)]
-// pub(crate) struct TypedTraitDeclaration {
-//     pub(crate) name: String,
-//     pub(crate) interface_surface: Vec<TypedTraitFn>,
-//     pub(crate) methods: Vec<FunctionDeclaration>,
-// }
+#[derive(Clone)]
+pub(crate) struct TypedTraitDeclaration {
+    pub(crate) name: String,
+    pub(crate) interface_surface: Vec<TypedTraitFn>,
+}
 
-// #[derive(Clone)]
-// pub(crate) struct TypedTraitFn {
-//     pub(crate) name: String,
-//     pub(crate) parameters: Vec<TypedFunctionParameter>,
-//     pub(crate) return_type: TypeId,
-// }
+impl fmt::Display for TypedTraitDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "trait {} {{\n{}\n}}",
+            self.name,
+            self.interface_surface
+                .iter()
+                .map(|trait_fn| trait_fn.to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+        )
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct TypedTraitFn {
+    pub(crate) name: String,
+    pub(crate) parameters: Vec<TypedFunctionParameter>,
+    pub(crate) return_type: TypeId,
+}
+
+impl fmt::Display for TypedTraitFn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "fn {}({}) -> {}",
+            self.name,
+            self.parameters
+                .iter()
+                .map(|parameter| parameter.to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+            self.return_type
+        )
+    }
+}
 
 // #[derive(Clone)]
 // pub(crate) struct TypedStructDeclaration {

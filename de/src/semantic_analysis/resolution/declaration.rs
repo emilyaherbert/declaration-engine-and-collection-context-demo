@@ -3,10 +3,10 @@ use crate::{
     language::{
         resolved::resolved_declaration::{
             ResolvedDeclaration, ResolvedFunctionDeclaration, ResolvedFunctionParameter,
-            ResolvedVariableDeclaration,
+            ResolvedTraitDeclaration, ResolvedTraitFn, ResolvedVariableDeclaration,
         },
         typed::typed_declaration::{
-            TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter,
+            TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter, TypedTraitFn,
             TypedVariableDeclaration,
         },
     },
@@ -23,14 +23,20 @@ pub(super) fn resolve_declaration(
         TypedDeclaration::Variable(variable_declaration) => {
             let variable_declaration =
                 resolve_variable_declaration(declaration_engine, variable_declaration);
-            vec!(ResolvedDeclaration::Variable(variable_declaration))
+            vec![ResolvedDeclaration::Variable(variable_declaration)]
         }
         TypedDeclaration::Function(id) => {
-            let function_declarations =
-                resolve_function_declaration(declaration_engine, id);
-            function_declarations.into_iter().map(ResolvedDeclaration::Function).collect()
-        },
-        TypedDeclaration::GenericTypeForFunctionScope { .. } => panic!("should not see this here")
+            let function_declarations = resolve_function_declaration(declaration_engine, id);
+            function_declarations
+                .into_iter()
+                .map(ResolvedDeclaration::Function)
+                .collect()
+        }
+        TypedDeclaration::GenericTypeForFunctionScope { .. } => panic!("should not see this here"),
+        TypedDeclaration::Trait(id) => {
+            let trait_declaration = resolve_trait_declaration(declaration_engine, id);
+            vec![ResolvedDeclaration::Trait(trait_declaration)]
+        }
         // TypedDeclaration::Trait(_) => todo!(),
         // TypedDeclaration::Struct(_) => todo!(),
         // TypedDeclaration::Enum(_) => todo!(),
@@ -99,5 +105,38 @@ fn resolve_function_parameter(
     ResolvedFunctionParameter {
         name: function_parameter.name,
         type_info: resolve_type(declaration_engine, function_parameter.type_id).unwrap(),
+    }
+}
+
+fn resolve_trait_declaration(
+    declaration_engine: &DeclarationEngine,
+    trait_id: DeclarationId,
+) -> ResolvedTraitDeclaration {
+    let trait_decl = declaration_engine.get_trait(trait_id).unwrap();
+    let new_interface_surface = trait_decl
+        .interface_surface
+        .into_iter()
+        .map(|trait_fn| resolve_trait_fn(declaration_engine, trait_fn))
+        .collect::<Vec<_>>();
+    ResolvedTraitDeclaration {
+        name: trait_decl.name,
+        interface_surface: new_interface_surface,
+    }
+}
+
+fn resolve_trait_fn(
+    declaration_engine: &DeclarationEngine,
+    trait_fn: TypedTraitFn,
+) -> ResolvedTraitFn {
+    let resolved_parameters = trait_fn
+        .parameters
+        .into_iter()
+        .map(|parameter| resolve_function_parameter(declaration_engine, parameter))
+        .collect::<Vec<_>>();
+    let resolved_type = resolve_type(declaration_engine, trait_fn.return_type).unwrap();
+    ResolvedTraitFn {
+        name: trait_fn.name,
+        parameters: resolved_parameters,
+        return_type: resolved_type,
     }
 }

@@ -2,6 +2,7 @@ use std::fmt;
 
 use crate::type_system::IntegerBits;
 
+#[derive(Clone)]
 pub(crate) enum ResolvedType {
     UnsignedInteger(IntegerBits),
     Unit,

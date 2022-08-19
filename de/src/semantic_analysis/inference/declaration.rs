@@ -4,14 +4,15 @@ use crate::{
         typed::{
             typed_declaration::{
                 TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter,
-                TypedVariableDeclaration,
+                TypedTraitDeclaration, TypedTraitFn, TypedVariableDeclaration,
             },
             typed_expression::{TypedExpression, TypedExpressionVariant},
             TypedNode,
         },
         untyped::{
             declaration::{
-                Declaration, FunctionDeclaration, FunctionParameter, VariableDeclaration,
+                Declaration, FunctionDeclaration, FunctionParameter, TraitDeclaration, TraitFn,
+                VariableDeclaration,
             },
             Node,
         },
@@ -46,6 +47,15 @@ pub(super) fn analyze_declaration(
             let name = typed_function_declaration.name.clone();
             let decl_id = declaration_engine.insert_function(typed_function_declaration);
             let decl = TypedDeclaration::Function(decl_id);
+            namespace.insert_symbol(name, decl.clone());
+            decl
+        }
+        Declaration::Trait(trait_declaration) => {
+            let typed_trait_declaration =
+                analyze_trait(&mut namespace.scoped(), declaration_engine, trait_declaration);
+            let name = typed_trait_declaration.name.clone();
+            let decl_id = declaration_engine.insert_trait(typed_trait_declaration);
+            let decl = TypedDeclaration::Trait(decl_id);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
@@ -90,7 +100,8 @@ fn analyze_variable(
     variable_declaration: VariableDeclaration,
 ) -> TypedVariableDeclaration {
     let new_body = analyze_expression(namespace, declaration_engine, variable_declaration.body);
-    let new_type_ascription = insert_type(variable_declaration.type_ascription);
+    let new_type_ascription =
+        eval_type(insert_type(variable_declaration.type_ascription), namespace).unwrap();
     unify_types(new_body.type_id, new_type_ascription).unwrap();
     TypedVariableDeclaration {
         name: variable_declaration.name,
@@ -179,39 +190,38 @@ fn analyze_code_block(
     (typed_nodes, insert_type(TypeInfo::Unit))
 }
 
-// fn analyze_trait(
-//     namespace: &mut Namespace,
-//     declaration_engine: &mut DeclarationEngine,
-//     trait_declaration: TraitDeclaration,
-// ) -> TypedTraitDeclaration {
-//     let new_interface_surface = trait_declaration
-//         .interface_surface
-//         .into_iter()
-//         .map(|trait_fn| analyze_trait_fn(namespace, declaration_engine, trait_fn))
-//         .collect::<Vec<_>>();
-//     TypedTraitDeclaration {
-//         name: trait_declaration.name,
-//         interface_surface: new_interface_surface,
-//         methods: trait_declaration.methods,
-//     }
-// }
+fn analyze_trait(
+    namespace: &mut Namespace,
+    declaration_engine: &mut DeclarationEngine,
+    trait_declaration: TraitDeclaration,
+) -> TypedTraitDeclaration {
+    let new_interface_surface = trait_declaration
+        .interface_surface
+        .into_iter()
+        .map(|trait_fn| analyze_trait_fn(namespace, declaration_engine, trait_fn))
+        .collect::<Vec<_>>();
+    TypedTraitDeclaration {
+        name: trait_declaration.name,
+        interface_surface: new_interface_surface,
+    }
+}
 
-// fn analyze_trait_fn(
-//     namespace: &mut Namespace,
-//     declaration_engine: &mut DeclarationEngine,
-//     trait_fn: TraitFn,
-// ) -> TypedTraitFn {
-//     let new_parameters = trait_fn
-//         .parameters
-//         .into_iter()
-//         .map(|parameter| analyze_function_parameter(namespace, declaration_engine, parameter))
-//         .collect::<Vec<_>>();
-//     TypedTraitFn {
-//         name: trait_fn.name,
-//         parameters: new_parameters,
-//         return_type: insert_type(trait_fn.return_type),
-//     }
-// }
+fn analyze_trait_fn(
+    namespace: &mut Namespace,
+    declaration_engine: &mut DeclarationEngine,
+    trait_fn: TraitFn,
+) -> TypedTraitFn {
+    let new_parameters = trait_fn
+        .parameters
+        .into_iter()
+        .map(|parameter| analyze_function_parameter(namespace, declaration_engine, parameter))
+        .collect::<Vec<_>>();
+    TypedTraitFn {
+        name: trait_fn.name,
+        parameters: new_parameters,
+        return_type: eval_type(insert_type(trait_fn.return_type), namespace).unwrap(),
+    }
+}
 
 // fn analyze_struct(
 //     namespace: &mut Namespace,

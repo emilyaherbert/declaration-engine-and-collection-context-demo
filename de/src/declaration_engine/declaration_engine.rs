@@ -1,7 +1,8 @@
 use linked_hash_map::LinkedHashMap;
 
 use crate::{
-    concurrent_slab::ConcurrentSlab, language::typed::typed_declaration::TypedFunctionDeclaration,
+    concurrent_slab::ConcurrentSlab,
+    language::typed::typed_declaration::{TypedFunctionDeclaration, TypedTraitDeclaration},
     types::pretty_print::PrettyPrint,
 };
 
@@ -68,6 +69,14 @@ impl DeclarationEngine {
                 .collect::<Result<_, _>>()?),
             None => Ok(vec![]),
         }
+    }
+
+    pub(crate) fn insert_trait(&self, r#trait: TypedTraitDeclaration) -> DeclarationId {
+        self.slab.insert(DeclarationWrapper::Trait(r#trait))
+    }
+
+    pub(crate) fn get_trait(&self, index: DeclarationId) -> Result<TypedTraitDeclaration, String> {
+        self.slab.get(index).expect_trait()
     }
 
     pub fn debug_print(&self) {

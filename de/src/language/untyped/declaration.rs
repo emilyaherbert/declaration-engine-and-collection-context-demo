@@ -8,7 +8,7 @@ use super::{expression::*, Node};
 pub enum Declaration {
     Variable(VariableDeclaration),
     Function(FunctionDeclaration),
-    // Trait(TraitDeclaration),
+    Trait(TraitDeclaration),
     // Struct(StructDeclaration),
     // Enum(EnumDeclaration),
     // TraitImpl(TraitImpl),
@@ -20,6 +20,7 @@ impl fmt::Display for Declaration {
         match self {
             Declaration::Variable(decl) => write!(f, "{}", decl),
             Declaration::Function(decl) => write!(f, "{}", decl),
+            Declaration::Trait(decl) => write!(f, "{}", decl),
         }
     }
 }
@@ -101,19 +102,49 @@ impl fmt::Display for FunctionParameter {
     }
 }
 
-// #[derive(Clone)]
-// pub struct TraitDeclaration {
-//     pub(crate) name: String,
-//     pub(crate) interface_surface: Vec<TraitFn>,
-//     pub(crate) methods: Vec<FunctionDeclaration>,
-// }
+#[derive(Clone)]
+pub struct TraitDeclaration {
+    pub(crate) name: String,
+    pub(crate) interface_surface: Vec<TraitFn>,
+}
 
-// #[derive(Clone)]
-// pub struct TraitFn {
-//     pub(crate) name: String,
-//     pub(crate) parameters: Vec<FunctionParameter>,
-//     pub(crate) return_type: TypeInfo,
-// }
+impl fmt::Display for TraitDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "trait {} {{\n  {}\n}}",
+            self.name,
+            self.interface_surface
+                .iter()
+                .map(|trait_fn| trait_fn.to_string())
+                .collect::<Vec<_>>()
+                .join(";\n  "),
+        )
+    }
+}
+
+#[derive(Clone)]
+pub struct TraitFn {
+    pub(crate) name: String,
+    pub(crate) parameters: Vec<FunctionParameter>,
+    pub(crate) return_type: TypeInfo,
+}
+
+impl fmt::Display for TraitFn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "fn {}({}) -> {}",
+            self.name,
+            self.parameters
+                .iter()
+                .map(|parameter| parameter.to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+            self.return_type
+        )
+    }
+}
 
 // #[derive(Clone)]
 // pub struct StructDeclaration {
@@ -165,7 +196,10 @@ pub mod constructors {
         },
     };
 
-    use super::{Declaration, FunctionDeclaration, FunctionParameter, VariableDeclaration};
+    use super::{
+        Declaration, FunctionDeclaration, FunctionParameter, TraitDeclaration, TraitFn,
+        VariableDeclaration,
+    };
 
     pub fn var_decl(name: &str, type_ascription: Option<TypeInfo>, body: Expression) -> Node {
         Node::Declaration(Declaration::Variable(VariableDeclaration {
@@ -204,6 +238,25 @@ pub mod constructors {
             type_id: insert_type(TypeInfo::UnknownGeneric {
                 name: name.to_string(),
             }),
+        }
+    }
+
+    pub fn trait_(name: &str, interface_surface: &[TraitFn]) -> Node {
+        Node::Declaration(Declaration::Trait(TraitDeclaration {
+            name: name.to_string(),
+            interface_surface: interface_surface.to_vec(),
+        }))
+    }
+
+    pub fn trait_fn(
+        name: &str,
+        parameters: &[FunctionParameter],
+        return_type: TypeInfo,
+    ) -> TraitFn {
+        TraitFn {
+            name: name.to_string(),
+            parameters: parameters.to_vec(),
+            return_type,
         }
     }
 }

@@ -7,7 +7,7 @@ use super::{resolved_expression::ResolvedExpression, ResolvedNode};
 pub(crate) enum ResolvedDeclaration {
     Variable(ResolvedVariableDeclaration),
     Function(ResolvedFunctionDeclaration),
-    // Trait(TypedTraitDeclaration),
+    Trait(ResolvedTraitDeclaration),
     // Struct(TypedStructDeclaration),
     // Enum(TypedEnumDeclaration),
     // ImplTrait(TypedTraitImpl),
@@ -18,6 +18,7 @@ impl fmt::Display for ResolvedDeclaration {
         match self {
             ResolvedDeclaration::Variable(decl) => write!(f, "{}", decl),
             ResolvedDeclaration::Function(decl) => write!(f, "{}", decl),
+            ResolvedDeclaration::Trait(decl) => write!(f, "{}", decl),
         }
     }
 }
@@ -72,6 +73,7 @@ impl fmt::Display for ResolvedFunctionDeclaration {
     }
 }
 
+#[derive(Clone)]
 pub(crate) struct ResolvedFunctionParameter {
     pub(crate) name: String,
     pub(crate) type_info: ResolvedType,
@@ -80,5 +82,49 @@ pub(crate) struct ResolvedFunctionParameter {
 impl fmt::Display for ResolvedFunctionParameter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}: {}", self.name, self.type_info)
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct ResolvedTraitDeclaration {
+    pub(crate) name: String,
+    pub(crate) interface_surface: Vec<ResolvedTraitFn>,
+}
+
+impl fmt::Display for ResolvedTraitDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "trait {} {{\n  {};\n}}",
+            self.name,
+            self.interface_surface
+                .iter()
+                .map(|trait_fn| trait_fn.to_string())
+                .collect::<Vec<_>>()
+                .join(";\n  "),
+        )
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct ResolvedTraitFn {
+    pub(crate) name: String,
+    pub(crate) parameters: Vec<ResolvedFunctionParameter>,
+    pub(crate) return_type: ResolvedType,
+}
+
+impl fmt::Display for ResolvedTraitFn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "fn {}({}) -> {}",
+            self.name,
+            self.parameters
+                .iter()
+                .map(|parameter| parameter.to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+            self.return_type
+        )
     }
 }
