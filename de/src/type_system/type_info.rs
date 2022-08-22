@@ -17,6 +17,9 @@ pub enum TypeInfo {
     UnknownGeneric {
         name: String,
     },
+    Custom {
+        name: String,
+    },
     Unit,
     Ref(TypeId),
     UnsignedInteger(IntegerBits),
@@ -48,6 +51,7 @@ impl fmt::Display for TypeInfo {
             TypeInfo::ErrorRecovery => write!(f, "ERR"),
             TypeInfo::Unknown => write!(f, "UNK"),
             TypeInfo::UnknownGeneric { name } => write!(f, "{}", name),
+            TypeInfo::Custom { name } => write!(f, "{}", name),
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
             TypeInfo::Ref(_) => todo!(),
             TypeInfo::Unit => write!(f, "()"),
@@ -111,16 +115,21 @@ impl Hash for TypeInfo {
                 name.hash(state);
                 type_parameters.hash(state);
                 fields.hash(state);
-            } // TypeInfo::Enum {
-              //     name,
-              //     type_parameters,
-              //     variant_types,
-              // } => {
-              //     state.write_u8(4);
-              //     name.hash(state);
-              //     type_parameters.hash(state);
-              //     variant_types.hash(state);
-              // }
+            }
+            TypeInfo::Custom { name } => {
+                state.write_u8(7);
+                name.hash(state);
+            }
+            // TypeInfo::Enum {
+            //     name,
+            //     type_parameters,
+            //     variant_types,
+            // } => {
+            //     state.write_u8(4);
+            //     name.hash(state);
+            //     type_parameters.hash(state);
+            //     variant_types.hash(state);
+            // }
         }
     }
 }
@@ -144,6 +153,14 @@ impl TypeInfo {
     pub(crate) fn matches_type_parameter(&self, mapping: &TypeMapping) -> Option<TypeId> {
         match self {
             TypeInfo::UnknownGeneric { .. } => {
+                for (param, ty_id) in mapping.iter() {
+                    if look_up_type_id(*param) == *self {
+                        return Some(*ty_id);
+                    }
+                }
+                None
+            }
+            TypeInfo::Custom { .. } => {
                 for (param, ty_id) in mapping.iter() {
                     if look_up_type_id(*param) == *self {
                         return Some(*ty_id);
@@ -192,8 +209,14 @@ pub mod constructors {
 
     use super::TypeInfo;
 
-    pub fn t_(name: &str) -> TypeInfo {
+    pub fn t_gen_(name: &str) -> TypeInfo {
         TypeInfo::UnknownGeneric {
+            name: name.to_string(),
+        }
+    }
+
+    pub fn t_cus_(name: &str) -> TypeInfo {
+        TypeInfo::Custom {
             name: name.to_string(),
         }
     }

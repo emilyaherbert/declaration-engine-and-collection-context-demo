@@ -7,10 +7,13 @@ use super::{typed_expression::*, TypedNode};
 use crate::{
     declaration_engine::{declaration_engine::DeclarationEngine, declaration_id::DeclarationId},
     type_system::{
-        type_engine::MonomorphizeHelper, type_id::TypeId, type_mapping::TypeMapping,
+        type_engine::{insert_type, MonomorphizeHelper},
+        type_id::TypeId,
+        type_info::TypeInfo,
+        type_mapping::TypeMapping,
         type_parameter::TypeParameter,
     },
-    types::{copy_types::CopyTypes, pretty_print::PrettyPrint},
+    types::{copy_types::CopyTypes, create_type_id::CreateTypeId, pretty_print::PrettyPrint},
 };
 
 #[derive(Clone, Debug)]
@@ -286,6 +289,16 @@ pub(crate) struct TypedStructDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) fields: Vec<TypedStructField>,
+}
+
+impl CreateTypeId for TypedStructDeclaration {
+    fn create_type_id(&self) -> TypeId {
+        insert_type(TypeInfo::Struct {
+            name: self.name.clone(),
+            type_parameters: self.type_parameters.clone(),
+            fields: self.fields.clone(),
+        })
+    }
 }
 
 impl CopyTypes for TypedStructDeclaration {

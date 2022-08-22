@@ -57,6 +57,7 @@ pub(super) fn analyze_declaration(
         Declaration::Trait(trait_declaration) => {
             let typed_trait_declaration = analyze_trait(
                 &mut namespace.scoped(),
+                declaration_engine,
                 trait_declaration,
             );
             let name = typed_trait_declaration.name.clone();
@@ -72,7 +73,7 @@ pub(super) fn analyze_declaration(
             TypedDeclaration::TraitImpl(decl_id)
         }
         Declaration::Struct(struct_declaration) => {
-            let typed_struct_declaration = analyze_struct(&mut namespace.scoped(), struct_declaration);
+            let typed_struct_declaration = analyze_struct(&mut namespace.scoped(), declaration_engine, struct_declaration);
             let name = typed_struct_declaration.name.clone();
             let decl_id = declaration_engine.insert_struct(typed_struct_declaration);
             let decl = TypedDeclaration::Struct(decl_id);
@@ -100,8 +101,12 @@ fn analyze_variable(
     variable_declaration: VariableDeclaration,
 ) -> TypedVariableDeclaration {
     let new_body = analyze_expression(namespace, declaration_engine, variable_declaration.body);
-    let new_type_ascription =
-        eval_type(insert_type(variable_declaration.type_ascription), namespace).unwrap();
+    let new_type_ascription = eval_type(
+        insert_type(variable_declaration.type_ascription),
+        namespace,
+        declaration_engine,
+    )
+    .unwrap();
     unify_types(new_body.type_id, new_type_ascription).unwrap();
     TypedVariableDeclaration {
         name: variable_declaration.name,
@@ -127,11 +132,16 @@ fn analyze_function(
     let typed_parameters = function_declaration
         .parameters
         .into_iter()
-        .map(|parameter| analyze_function_parameter(namespace, parameter))
+        .map(|parameter| analyze_function_parameter(namespace, declaration_engine, parameter))
         .collect::<Vec<_>>();
 
     // type check the function return type
-    let return_type = eval_type(insert_type(function_declaration.return_type), namespace).unwrap();
+    let return_type = eval_type(
+        insert_type(function_declaration.return_type),
+        namespace,
+        declaration_engine,
+    )
+    .unwrap();
 
     // type check the function body
     let (typed_body, typed_body_return_type) =
@@ -151,9 +161,15 @@ fn analyze_function(
 
 fn analyze_function_parameter(
     namespace: &mut Namespace,
+    declaration_engine: &mut DeclarationEngine,
     function_parameter: FunctionParameter,
 ) -> TypedFunctionParameter {
-    let type_id = eval_type(insert_type(function_parameter.type_info), namespace).unwrap();
+    let type_id = eval_type(
+        insert_type(function_parameter.type_info),
+        namespace,
+        declaration_engine,
+    )
+    .unwrap();
     let typed_parameter_decl = TypedDeclaration::Variable(TypedVariableDeclaration {
         name: function_parameter.name.clone(),
         type_ascription: type_id,
@@ -191,12 +207,13 @@ fn analyze_code_block(
 
 fn analyze_trait(
     namespace: &mut Namespace,
+    declaration_engine: &mut DeclarationEngine,
     trait_declaration: TraitDeclaration,
 ) -> TypedTraitDeclaration {
     let new_interface_surface = trait_declaration
         .interface_surface
         .into_iter()
-        .map(|trait_fn| analyze_trait_fn(namespace, trait_fn))
+        .map(|trait_fn| analyze_trait_fn(namespace, declaration_engine, trait_fn))
         .collect::<Vec<_>>();
     TypedTraitDeclaration {
         name: trait_declaration.name,
@@ -204,16 +221,25 @@ fn analyze_trait(
     }
 }
 
-fn analyze_trait_fn(namespace: &mut Namespace, trait_fn: TraitFn) -> TypedTraitFn {
+fn analyze_trait_fn(
+    namespace: &mut Namespace,
+    declaration_engine: &mut DeclarationEngine,
+    trait_fn: TraitFn,
+) -> TypedTraitFn {
     let new_parameters = trait_fn
         .parameters
         .into_iter()
-        .map(|parameter| analyze_function_parameter(namespace, parameter))
+        .map(|parameter| analyze_function_parameter(namespace, declaration_engine, parameter))
         .collect::<Vec<_>>();
     TypedTraitFn {
         name: trait_fn.name,
         parameters: new_parameters,
-        return_type: eval_type(insert_type(trait_fn.return_type), namespace).unwrap(),
+        return_type: eval_type(
+            insert_type(trait_fn.return_type),
+            namespace,
+            declaration_engine,
+        )
+        .unwrap(),
     }
 }
 
@@ -243,8 +269,12 @@ fn analyze_trait_impl(
     // engine
 
     // type check the type we are implementing for
-    let type_implementing_for =
-        eval_type(insert_type(trait_impl.type_implementing_for), namespace).unwrap();
+    let type_implementing_for = eval_type(
+        insert_type(trait_impl.type_implementing_for),
+        namespace,
+        declaration_engine,
+    )
+    .unwrap();
 
     // type check the methods
     let typed_method_ids = trait_impl
@@ -272,6 +302,7 @@ fn analyze_trait_impl(
 
 fn analyze_struct(
     namespace: &mut Namespace,
+    declaration_engine: &mut DeclarationEngine,
     struct_declaration: StructDeclaration,
 ) -> TypedStructDeclaration {
     // insert type params into namespace
@@ -286,7 +317,7 @@ fn analyze_struct(
     let typed_fields = struct_declaration
         .fields
         .into_iter()
-        .map(|field| analyze_struct_field(namespace, field))
+        .map(|field| analyze_struct_field(namespace, declaration_engine, field))
         .collect::<Vec<_>>();
 
     TypedStructDeclaration {
@@ -296,10 +327,19 @@ fn analyze_struct(
     }
 }
 
-fn analyze_struct_field(namespace: &mut Namespace, struct_field: StructField) -> TypedStructField {
+fn analyze_struct_field(
+    namespace: &mut Namespace,
+    declaration_engine: &mut DeclarationEngine,
+    struct_field: StructField,
+) -> TypedStructField {
     TypedStructField {
         name: struct_field.name,
-        type_id: eval_type(insert_type(struct_field.type_info), namespace).unwrap(),
+        type_id: eval_type(
+            insert_type(struct_field.type_info),
+            namespace,
+            declaration_engine,
+        )
+        .unwrap(),
     }
 }
 

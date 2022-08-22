@@ -7,6 +7,10 @@ use de::{
     type_system::type_info::constructors::*,
 };
 
+use crate::helpers::{handle_u64_decl, handle_u64_impl, math_trait_decl, math_trait_impl};
+
+mod helpers;
+
 #[test]
 fn var_decl_test() {
     println!(
@@ -144,13 +148,13 @@ fn generic_func_test() {
     let f_fn = func_decl(
         "F",
         &[type_param("T", None)],
-        &[func_param("param1", t_("T"))],
+        &[func_param("param1", t_gen_("T"))],
         &[
-            var_decl("x", Some(t_("T")), var("param1")),
+            var_decl("x", Some(t_gen_("T")), var("param1")),
             var_decl("y", None, u8(5u8)),
             return_(var("x")),
         ],
-        t_("T"),
+        t_gen_("T"),
     );
     let main_fn = func_decl(
         "main",
@@ -180,46 +184,12 @@ fn trait_test() {
         "\n\n**********************************************************************************"
     );
 
-    let add_fn = trait_fn(
-        "add_fn",
-        &[func_param("a", t_u8()), func_param("b", t_u8())],
-        t_u8(),
-    );
-    let sub_fn = trait_fn(
-        "sub_fn",
-        &[func_param("a", t_u8()), func_param("b", t_u8())],
-        t_u8(),
-    );
-    let add_impl = func_decl_raw(
-        "add_fn",
-        &[],
-        &[func_param("a", t_u8()), func_param("b", t_u8())],
-        &[
-            var_decl("x", None, var("a")),
-            var_decl("y", None, var("b")),
-            return_(var("x")),
-        ],
-        t_u8(),
-    );
-    let sub_impl = func_decl_raw(
-        "sub_fn",
-        &[],
-        &[func_param("a", t_u8()), func_param("b", t_u8())],
-        &[
-            var_decl("x", None, var("a")),
-            var_decl("y", None, var("b")),
-            return_(var("y")),
-        ],
-        t_u8(),
-    );
+    let math_trait = math_trait_decl(t_u8());
+    let math_impl = math_trait_impl(t_u8());
     let main_fn = func_decl("main", &[], &[], &[], t_unit());
     let program_1 = File {
         name: "bob.sw".to_string(),
-        nodes: vec![
-            trait_("Math", &[add_fn, sub_fn]),
-            trait_impl("Math", t_u8(), &[], &[add_impl, sub_impl]),
-            main_fn,
-        ],
+        nodes: vec![math_trait, math_impl, main_fn],
     };
     let application = Application {
         files: vec![program_1],
@@ -235,7 +205,7 @@ fn struct_test() {
         "\n\n**********************************************************************************"
     );
 
-    let struct_data = struct_(
+    let data_decl = struct_(
         "Data",
         &[],
         &[
@@ -270,7 +240,7 @@ fn struct_test() {
     let main_fn = func_decl("main", &[], &[], &[foo_decl, bar_decl], t_unit());
     let program_1 = File {
         name: "bob.sw".to_string(),
-        nodes: vec![struct_data, main_fn],
+        nodes: vec![data_decl, main_fn],
     };
     let application = Application {
         files: vec![program_1],
@@ -286,13 +256,13 @@ fn generic_struct_test() {
         "\n\n**********************************************************************************"
     );
 
-    let struct_data = struct_(
+    let data_decl = struct_(
         "Data",
         &[type_param("T", None)],
         &[
             struct_field("field_one", t_u8()),
             struct_field("field_two", t_u32()),
-            struct_field("field_three", t_("T")),
+            struct_field("field_three", t_gen_("T")),
         ],
     );
     let foo_decl = var_decl(
@@ -324,7 +294,78 @@ fn generic_struct_test() {
     let main_fn = func_decl("main", &[], &[], &[foo_decl, bar_decl], t_unit());
     let program_1 = File {
         name: "bob.sw".to_string(),
-        nodes: vec![struct_data, main_fn],
+        nodes: vec![data_decl, main_fn],
+    };
+    let application = Application {
+        files: vec![program_1],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
+}
+
+#[test]
+fn generic_struct_with_trait_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+
+    let handle_u64_decl = handle_u64_decl();
+    let data_decl = struct_(
+        "Data",
+        &[],
+        &[
+            struct_field("field_one", t_u8()),
+            struct_field("field_two", t_u32()),
+        ],
+    );
+    let point_decl = struct_(
+        "Point",
+        &[],
+        &[
+            struct_field("x_cord", t_u64()),
+            struct_field("y_cord", t_u64()),
+        ],
+    );
+
+    let impl_handle_for_data = handle_u64_impl(t_cus_("Data"), 99);
+    let impl_handle_for_point = handle_u64_impl(t_cus_("Point"), 222);
+
+    let foo_decl = var_decl(
+        "foo",
+        None,
+        struct_exp(
+            "Data",
+            &[],
+            &[
+                struct_exp_field("field_one", u8(2u8)),
+                struct_exp_field("field_two", u32(3u32)),
+            ],
+        ),
+    );
+    let bar_decl = var_decl(
+        "bar",
+        None,
+        struct_exp(
+            "Data",
+            &[],
+            &[
+                struct_exp_field("field_one", u8(99u8)),
+                struct_exp_field("field_two", u32(24u32)),
+            ],
+        ),
+    );
+    let main_fn = func_decl("main", &[], &[], &[foo_decl, bar_decl], t_unit());
+    let program_1 = File {
+        name: "bob.sw".to_string(),
+        nodes: vec![
+            handle_u64_decl,
+            data_decl,
+            point_decl,
+            impl_handle_for_data,
+            impl_handle_for_point,
+            main_fn,
+        ],
     };
     let application = Application {
         files: vec![program_1],

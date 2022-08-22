@@ -13,6 +13,7 @@ use crate::{
         type_engine::{insert_type, monomorphize, unify_types},
         type_info::TypeInfo,
     },
+    types::create_type_id::CreateTypeId,
 };
 
 pub(super) fn analyze_expression(
@@ -65,6 +66,7 @@ pub(super) fn analyze_expression(
                 &mut typed_function_declaration,
                 &mut type_arguments,
                 namespace,
+                declaration_engine,
             )
             .unwrap();
 
@@ -117,6 +119,7 @@ pub(super) fn analyze_expression(
                 &mut typed_struct_declaration,
                 &mut type_arguments,
                 namespace,
+                declaration_engine,
             )
             .unwrap();
 
@@ -158,12 +161,10 @@ pub(super) fn analyze_expression(
                 struct_name,
                 fields: typed_fields,
             };
-            let type_id = insert_type(TypeInfo::Struct {
-                name: typed_struct_declaration.name,
-                type_parameters: typed_struct_declaration.type_parameters,
-                fields: typed_struct_declaration.fields,
-            });
-            TypedExpression { variant, type_id }
+            TypedExpression {
+                variant,
+                type_id: typed_struct_declaration.create_type_id(),
+            }
         }
         Expression::MethodCall {
             parent,

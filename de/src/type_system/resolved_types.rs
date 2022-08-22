@@ -53,7 +53,6 @@ impl fmt::Display for ResolvedType {
 
 #[derive(Clone)]
 pub(crate) struct ResolvedTypeParameter {
-    pub(crate) name_ident: String,
     pub(crate) type_info: ResolvedType,
 }
 

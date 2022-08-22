@@ -120,7 +120,6 @@ fn resolve_type_parameter(
     type_parameter: TypeParameter,
 ) -> ResolvedTypeParameter {
     ResolvedTypeParameter {
-        name_ident: type_parameter.name,
         type_info: resolve_type(declaration_engine, type_parameter.type_id).unwrap(),
     }
 }
