@@ -54,32 +54,31 @@ fn resolve_expression_variant(
                 struct_name,
                 fields: resolved_fields,
             }
-        }
-        // TypedExpressionVariant::Struct {
-        //     struct_name,
-        //     fields,
-        // } => {
-        //     let new_fields = fields
-        //         .into_iter()
-        //         .map(|field| resolve_struct_expression_field(declaration_engine, field))
-        //         .collect::<Vec<_>>();
-        //     ResolvedExpressionVariant::Struct {
-        //         struct_name,
-        //         fields: new_fields,
-        //     }
-        // }
-        // TypedExpressionVariant::Enum {
-        //     enum_name,
-        //     variant_name,
-        //     value,
-        // } => {
-        //     let new_value = resolve_expression(declaration_engine, *value);
-        //     ResolvedExpressionVariant::Enum {
-        //         enum_name,
-        //         variant_name,
-        //         value: Box::new(new_value),
-        //     }
-        // }
+        } // TypedExpressionVariant::Struct {
+          //     struct_name,
+          //     fields,
+          // } => {
+          //     let new_fields = fields
+          //         .into_iter()
+          //         .map(|field| resolve_struct_expression_field(declaration_engine, field))
+          //         .collect::<Vec<_>>();
+          //     ResolvedExpressionVariant::Struct {
+          //         struct_name,
+          //         fields: new_fields,
+          //     }
+          // }
+          // TypedExpressionVariant::Enum {
+          //     enum_name,
+          //     variant_name,
+          //     value,
+          // } => {
+          //     let new_value = resolve_expression(declaration_engine, *value);
+          //     ResolvedExpressionVariant::Enum {
+          //         enum_name,
+          //         variant_name,
+          //         value: Box::new(new_value),
+          //     }
+          // }
     }
 }
 

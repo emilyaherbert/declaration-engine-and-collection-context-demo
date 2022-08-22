@@ -146,7 +146,7 @@ fn generic_func_test() {
         &[type_param("T", None)],
         &[func_param("param1", t_("T"))],
         &[
-            var_decl("x", None, var("param1")),
+            var_decl("x", Some(t_("T")), var("param1")),
             var_decl("y", None, u8(5u8)),
             return_(var("x")),
         ],
@@ -264,6 +264,60 @@ fn struct_test() {
             &[
                 struct_exp_field("field_one", u8(99u8)),
                 struct_exp_field("field_two", u32(24u32)),
+            ],
+        ),
+    );
+    let main_fn = func_decl("main", &[], &[], &[foo_decl, bar_decl], t_unit());
+    let program_1 = File {
+        name: "bob.sw".to_string(),
+        nodes: vec![struct_data, main_fn],
+    };
+    let application = Application {
+        files: vec![program_1],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
+}
+
+#[test]
+fn generic_struct_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+
+    let struct_data = struct_(
+        "Data",
+        &[type_param("T", None)],
+        &[
+            struct_field("field_one", t_u8()),
+            struct_field("field_two", t_u32()),
+            struct_field("field_three", t_("T")),
+        ],
+    );
+    let foo_decl = var_decl(
+        "foo",
+        None,
+        struct_exp(
+            "Data",
+            &[],
+            &[
+                struct_exp_field("field_one", u8(2u8)),
+                struct_exp_field("field_two", u32(3u32)),
+                struct_exp_field("field_three", u64(100u64)),
+            ],
+        ),
+    );
+    let bar_decl = var_decl(
+        "bar",
+        None,
+        struct_exp(
+            "Data",
+            &[],
+            &[
+                struct_exp_field("field_one", u8(99u8)),
+                struct_exp_field("field_two", u32(24u32)),
+                struct_exp_field("field_three", u16(1u16)),
             ],
         ),
     );

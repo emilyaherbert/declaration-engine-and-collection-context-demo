@@ -11,7 +11,10 @@ use crate::{
             TypedStructDeclaration, TypedStructField, TypedTraitFn, TypedVariableDeclaration,
         },
     },
-    type_system::type_engine::resolve_type,
+    type_system::{
+        resolved_types::ResolvedTypeParameter, type_engine::resolve_type,
+        type_parameter::TypeParameter,
+    },
 };
 
 use super::{expression::resolve_expression, resolve_nodes};
@@ -88,6 +91,11 @@ fn resolve_function_declaration_inner(
     function_declarations
         .into_iter()
         .map(|function_declaration| {
+            let resolved_type_parameters = function_declaration
+                .type_parameters
+                .into_iter()
+                .map(|type_parameter| resolve_type_parameter(declaration_engine, type_parameter))
+                .collect::<Vec<_>>();
             let resolved_parameters = function_declaration
                 .parameters
                 .into_iter()
@@ -98,12 +106,23 @@ fn resolve_function_declaration_inner(
                 resolve_type(declaration_engine, function_declaration.return_type).unwrap();
             ResolvedFunctionDeclaration {
                 name: function_declaration.name,
+                type_parameters: resolved_type_parameters,
                 parameters: resolved_parameters,
                 body: resolved_body,
                 return_type: resolved_type,
             }
         })
         .collect()
+}
+
+fn resolve_type_parameter(
+    declaration_engine: &DeclarationEngine,
+    type_parameter: TypeParameter,
+) -> ResolvedTypeParameter {
+    ResolvedTypeParameter {
+        name_ident: type_parameter.name,
+        type_info: resolve_type(declaration_engine, type_parameter.type_id).unwrap(),
+    }
 }
 
 fn resolve_function_parameter(
@@ -190,6 +209,11 @@ fn resolve_struct_declaration_inner(
     struct_declarations
         .into_iter()
         .map(|struct_declaration| {
+            let resolved_type_parameters = struct_declaration
+                .type_parameters
+                .into_iter()
+                .map(|type_parameter| resolve_type_parameter(declaration_engine, type_parameter))
+                .collect::<Vec<_>>();
             let resolved_fields = struct_declaration
                 .fields
                 .into_iter()
@@ -197,6 +221,7 @@ fn resolve_struct_declaration_inner(
                 .collect::<Vec<_>>();
             ResolvedStructDeclaration {
                 name: struct_declaration.name,
+                type_parameters: resolved_type_parameters,
                 fields: resolved_fields,
             }
         })

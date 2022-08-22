@@ -2,7 +2,7 @@ use indent_write::fmt::IndentWriter;
 use std::fmt;
 use std::fmt::Write;
 
-use crate::type_system::resolved_types::ResolvedType;
+use crate::type_system::resolved_types::{ResolvedType, ResolvedTypeParameter};
 
 use super::{resolved_expression::ResolvedExpression, ResolvedNode};
 
@@ -46,6 +46,7 @@ impl fmt::Display for ResolvedVariableDeclaration {
 
 pub(crate) struct ResolvedFunctionDeclaration {
     pub(crate) name: String,
+    pub(crate) type_parameters: Vec<ResolvedTypeParameter>,
     pub(crate) parameters: Vec<ResolvedFunctionParameter>,
     pub(crate) body: Vec<ResolvedNode>,
     pub(crate) return_type: ResolvedType,
@@ -55,8 +56,20 @@ impl fmt::Display for ResolvedFunctionDeclaration {
     fn fmt(&self, mut f: &mut fmt::Formatter) -> fmt::Result {
         writeln!(
             f,
-            "fn {}({}) -> {} {{",
+            "fn {}{}({}) -> {} {{",
             self.name,
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    "<{}>",
+                    self.type_parameters
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            },
             self.parameters
                 .iter()
                 .map(|parameter| parameter.to_string())
@@ -155,12 +168,30 @@ impl fmt::Display for ResolvedTraitImpl {
 
 pub(crate) struct ResolvedStructDeclaration {
     pub(crate) name: String,
+    pub(crate) type_parameters: Vec<ResolvedTypeParameter>,
     pub(crate) fields: Vec<ResolvedStructField>,
 }
 
 impl fmt::Display for ResolvedStructDeclaration {
     fn fmt(&self, mut f: &mut fmt::Formatter) -> fmt::Result {
-        writeln!(f, "struct {} {{", self.name,).unwrap();
+        writeln!(
+            f,
+            "struct {}{} {{",
+            self.name,
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    "<{}>",
+                    self.type_parameters
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+        )
+        .unwrap();
         {
             let mut indent = IndentWriter::new("  ", &mut f);
             for field in self.fields.iter() {

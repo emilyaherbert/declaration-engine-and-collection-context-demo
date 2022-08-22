@@ -65,8 +65,7 @@ impl fmt::Display for ResolvedExpressionVariant {
                     }
                 }
                 write!(f, "}}")
-            }
-            // ResolvedExpressionVariant::Enum { .. } => todo!(),
+            } // ResolvedExpressionVariant::Enum { .. } => todo!(),
         }
     }
 }

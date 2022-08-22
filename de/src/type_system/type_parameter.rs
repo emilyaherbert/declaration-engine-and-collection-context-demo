@@ -22,6 +22,6 @@ impl CopyTypes for TypeParameter {
 
 impl fmt::Display for TypeParameter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.name)
+        write!(f, "{}", self.type_id)
     }
 }

@@ -93,7 +93,6 @@ pub(super) fn analyze_expression(
             };
             TypedExpression { variant, type_id }
         }
-        #[allow(unreachable_code)]
         Expression::Struct {
             struct_name,
             mut type_arguments,

@@ -27,7 +27,7 @@ impl fmt::Display for ResolvedType {
             ResolvedType::Struct {
                 name,
                 type_parameters,
-                fields,
+                ..
             } => {
                 write!(
                     f,
@@ -59,7 +59,7 @@ pub(crate) struct ResolvedTypeParameter {
 
 impl fmt::Display for ResolvedTypeParameter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.name_ident)
+        write!(f, "{}", self.type_info)
     }
 }
 
