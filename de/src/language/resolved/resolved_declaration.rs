@@ -1,4 +1,6 @@
+use indent_write::fmt::IndentWriter;
 use std::fmt;
+use std::fmt::Write;
 
 use crate::type_system::resolved_types::ResolvedType;
 
@@ -8,17 +10,18 @@ pub(crate) enum ResolvedDeclaration {
     Variable(ResolvedVariableDeclaration),
     Function(ResolvedFunctionDeclaration),
     Trait(ResolvedTraitDeclaration),
+    TraitImpl(ResolvedTraitImpl),
     // Struct(TypedStructDeclaration),
     // Enum(TypedEnumDeclaration),
-    // ImplTrait(TypedTraitImpl),
 }
 
 impl fmt::Display for ResolvedDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ResolvedDeclaration::Variable(decl) => write!(f, "{}", decl),
-            ResolvedDeclaration::Function(decl) => write!(f, "{}", decl),
-            ResolvedDeclaration::Trait(decl) => write!(f, "{}", decl),
+            ResolvedDeclaration::Function(decl) => write!(f, "\n{}", decl),
+            ResolvedDeclaration::Trait(decl) => write!(f, "\n{}", decl),
+            ResolvedDeclaration::TraitImpl(decl) => write!(f, "\n{}", decl),
         }
     }
 }
@@ -47,29 +50,26 @@ pub(crate) struct ResolvedFunctionDeclaration {
 }
 
 impl fmt::Display for ResolvedFunctionDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut builder = String::new();
-        builder.push_str("fn ");
-        builder.push_str(&self.name);
-        builder.push('(');
-        builder.push_str(
-            &self
-                .parameters
+    fn fmt(&self, mut f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(
+            f,
+            "fn {}({}) -> {} {{",
+            self.name,
+            self.parameters
                 .iter()
                 .map(|parameter| parameter.to_string())
                 .collect::<Vec<_>>()
                 .join(", "),
-        );
-        builder.push_str(") -> ");
-        builder.push_str(&self.return_type.to_string());
-        builder.push_str(" {");
-        for line in self.body.iter() {
-            builder.push_str("\n  ");
-            builder.push_str(&line.to_string());
-            builder.push(';');
+            self.return_type,
+        )
+        .unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for node in self.body.iter() {
+                writeln!(indent, "{};", node).unwrap();
+            }
         }
-        builder.push_str("\n{");
-        write!(f, "{}", builder)
+        write!(f, "}}")
     }
 }
 
@@ -92,17 +92,15 @@ pub(crate) struct ResolvedTraitDeclaration {
 }
 
 impl fmt::Display for ResolvedTraitDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "trait {} {{\n  {};\n}}",
-            self.name,
-            self.interface_surface
-                .iter()
-                .map(|trait_fn| trait_fn.to_string())
-                .collect::<Vec<_>>()
-                .join(";\n  "),
-        )
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "trait {} {{", self.name).unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for trait_fn in self.interface_surface.iter() {
+                writeln!(indent, "{};", trait_fn).unwrap();
+            }
+        }
+        write!(f, "}}")
     }
 }
 
@@ -126,5 +124,29 @@ impl fmt::Display for ResolvedTraitFn {
                 .join(", "),
             self.return_type
         )
+    }
+}
+
+pub(crate) struct ResolvedTraitImpl {
+    pub(crate) trait_name: String,
+    pub(crate) type_implementing_for: ResolvedType,
+    pub(crate) methods: Vec<ResolvedFunctionDeclaration>,
+}
+
+impl fmt::Display for ResolvedTraitImpl {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "impl {} for {} {{",
+            self.trait_name, self.type_implementing_for
+        )
+        .unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for method in self.methods.iter() {
+                writeln!(indent, "{}", method).unwrap();
+            }
+        }
+        write!(f, "}}")
     }
 }

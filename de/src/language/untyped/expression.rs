@@ -20,17 +20,18 @@ pub enum Expression {
         name: String,
         type_arguments: Vec<TypeArgument>,
         arguments: Vec<Expression>,
-    }, // Struct {
-       //     struct_name: String,
-       //     type_arguments: Vec<TypeArgument>,
-       //     fields: Vec<StructExpressionField>,
-       // },
-       // Enum {
-       //     enum_name: String,
-       //     variant_name: String,
-       //     type_arguments: Vec<TypeArgument>,
-       //     value: Box<Expression>,
-       // },
+    },
+    Struct {
+        struct_name: String,
+        type_arguments: Vec<TypeArgument>,
+        fields: Vec<StructExpressionField>,
+    },
+    // Enum {
+    //     enum_name: String,
+    //     variant_name: String,
+    //     type_arguments: Vec<TypeArgument>,
+    //     value: Box<Expression>,
+    // },
 }
 
 impl fmt::Display for Expression {
@@ -96,22 +97,56 @@ impl fmt::Display for Expression {
                         .join(", ")
                 )
             }
+            Expression::Struct {
+                struct_name,
+                type_arguments,
+                fields,
+            } => {
+                write!(
+                    f,
+                    "{}{} {{\n  {}\n}}",
+                    struct_name,
+                    if type_arguments.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "::<{}>",
+                            type_arguments
+                                .iter()
+                                .map(|type_argument| type_argument.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    },
+                    &fields
+                        .iter()
+                        .map(|field| field.to_string())
+                        .collect::<Vec<_>>()
+                        .join(",\n  ")
+                )
+            }
         }
     }
 }
 
-// #[derive(Clone)]
-// pub struct StructExpressionField {
-//     pub(crate) name: String,
-//     pub(crate) value: Expression,
-// }
+#[derive(Clone)]
+pub struct StructExpressionField {
+    pub(crate) name: String,
+    pub(crate) value: Expression,
+}
+
+impl fmt::Display for StructExpressionField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.value)
+    }
+}
 
 pub mod constructors {
     use std::u8;
 
     use crate::{language::literal::Literal, type_system::type_argument::TypeArgument};
 
-    use super::Expression;
+    use super::{Expression, StructExpressionField};
 
     pub fn u8(value: u8) -> Expression {
         Expression::Literal {
@@ -152,6 +187,25 @@ pub mod constructors {
             name: name.to_string(),
             type_arguments: type_arguments.to_vec(),
             arguments: arguments.to_vec(),
+        }
+    }
+
+    pub fn struct_exp(
+        struct_name: &str,
+        type_arguments: &[TypeArgument],
+        fields: &[StructExpressionField],
+    ) -> Expression {
+        Expression::Struct {
+            struct_name: struct_name.to_string(),
+            type_arguments: type_arguments.to_vec(),
+            fields: fields.to_vec(),
+        }
+    }
+
+    pub fn struct_exp_field(name: &str, value: Expression) -> StructExpressionField {
+        StructExpressionField {
+            name: name.to_string(),
+            value,
         }
     }
 }

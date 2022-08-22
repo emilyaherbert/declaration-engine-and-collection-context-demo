@@ -1,4 +1,6 @@
+use indent_write::fmt::IndentWriter;
 use std::fmt;
+use std::fmt::Write;
 
 use crate::type_system::{type_info::TypeInfo, type_parameter::TypeParameter};
 
@@ -10,9 +12,8 @@ pub enum Declaration {
     Function(FunctionDeclaration),
     Trait(TraitDeclaration),
     TraitImpl(TraitImpl),
-    // Struct(StructDeclaration),
+    Struct(StructDeclaration),
     // Enum(EnumDeclaration),
-    // TraitImpl(TraitImpl),
     // SelfImpl(SelfImpl),
 }
 
@@ -20,9 +21,10 @@ impl fmt::Display for Declaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Declaration::Variable(decl) => write!(f, "{}", decl),
-            Declaration::Function(decl) => write!(f, "{}", decl),
-            Declaration::Trait(decl) => write!(f, "{}", decl),
-            Declaration::TraitImpl(decl) => write!(f, "{}", decl),
+            Declaration::Function(decl) => write!(f, "\n{}", decl),
+            Declaration::Trait(decl) => write!(f, "\n{}", decl),
+            Declaration::TraitImpl(decl) => write!(f, "\n{}", decl),
+            Declaration::Struct(decl) => write!(f, "\n{}", decl),
         }
     }
 }
@@ -54,41 +56,38 @@ pub struct FunctionDeclaration {
 }
 
 impl fmt::Display for FunctionDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        let mut builder = String::new();
-        builder.push_str("fn ");
-        builder.push_str(&self.name);
-        if !self.type_parameters.is_empty() {
-            builder.push('<');
-            builder.push_str(
-                &self
-                    .type_parameters
-                    .iter()
-                    .map(|type_parameter| type_parameter.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-            );
-            builder.push('>');
-        }
-        builder.push('(');
-        builder.push_str(
-            &self
-                .parameters
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "fn {}{}({}) -> {} {{",
+            self.name,
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    "<{}>",
+                    self.type_parameters
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            },
+            self.parameters
                 .iter()
                 .map(|parameter| parameter.to_string())
                 .collect::<Vec<_>>()
                 .join(", "),
-        );
-        builder.push_str(") -> ");
-        builder.push_str(&self.return_type.to_string());
-        builder.push_str(" {");
-        for line in self.body.iter() {
-            builder.push_str("\n  ");
-            builder.push_str(&line.to_string());
-            builder.push(';');
+            self.return_type,
+        )
+        .unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for node in self.body.iter() {
+                writeln!(indent, "{};", node).unwrap();
+            }
         }
-        builder.push_str("\n}");
-        write!(f, "{}", builder)
+        write!(f, "}}")
     }
 }
 
@@ -111,17 +110,15 @@ pub struct TraitDeclaration {
 }
 
 impl fmt::Display for TraitDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "trait {} {{\n  {}\n}}",
-            self.name,
-            self.interface_surface
-                .iter()
-                .map(|trait_fn| trait_fn.to_string())
-                .collect::<Vec<_>>()
-                .join(";\n  "),
-        )
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "trait {} {{", self.name).unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for trait_fn in self.interface_surface.iter() {
+                writeln!(indent, "{};", trait_fn).unwrap();
+            }
+        }
+        write!(f, "}}")
     }
 }
 
@@ -157,10 +154,10 @@ pub struct TraitImpl {
 }
 
 impl fmt::Display for TraitImpl {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
             f,
-            "impl{} {} for {} {{\n{}\n}}",
+            "impl{} {} for {} {{",
             if self.type_parameters.is_empty() {
                 "".to_string()
             } else {
@@ -174,27 +171,63 @@ impl fmt::Display for TraitImpl {
                 )
             },
             self.trait_name,
-            self.type_implementing_for,
-            self.methods
-                .iter()
-                .map(|method| method.to_string())
-                .collect::<Vec<_>>()
-                .join("\n")
+            self.type_implementing_for
         )
+        .unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for method in self.methods.iter() {
+                writeln!(indent, "{}", method).unwrap();
+            }
+        }
+        write!(f, "}}")
     }
 }
 
-// #[derive(Clone)]
-// pub struct StructDeclaration {
-//     pub(crate) name: String,
-//     pub(crate) type_parameters: Vec<TypeParameter>,
-//     pub(crate) fields: Vec<StructField>,
-// }
+#[derive(Clone)]
+pub struct StructDeclaration {
+    pub(crate) name: String,
+    pub(crate) type_parameters: Vec<TypeParameter>,
+    pub(crate) fields: Vec<StructField>,
+}
+
+impl fmt::Display for StructDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "struct {}{} {{\n  {}\n}}",
+            self.name,
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    "<{}>",
+                    self.type_parameters
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            },
+            self.fields
+                .iter()
+                .map(|field| field.to_string())
+                .collect::<Vec<_>>()
+                .join(",\n  ")
+        )
+    }
+}
 
 #[derive(Clone, Hash)]
 pub struct StructField {
     pub(crate) name: String,
     pub(crate) type_info: TypeInfo,
+}
+
+impl fmt::Display for StructField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}({})", self.name, self.type_info,)
+    }
 }
 
 // #[derive(Clone)]
@@ -228,8 +261,8 @@ pub mod constructors {
     };
 
     use super::{
-        Declaration, FunctionDeclaration, FunctionParameter, TraitDeclaration, TraitFn, TraitImpl,
-        VariableDeclaration,
+        Declaration, FunctionDeclaration, FunctionParameter, StructDeclaration, StructField,
+        TraitDeclaration, TraitFn, TraitImpl, VariableDeclaration,
     };
 
     pub fn var_decl(name: &str, type_ascription: Option<TypeInfo>, body: Expression) -> Node {
@@ -322,5 +355,20 @@ pub mod constructors {
             type_parameters: type_parameters.to_vec(),
             methods: methods.to_vec(),
         }))
+    }
+
+    pub fn struct_(name: &str, type_parameters: &[TypeParameter], fields: &[StructField]) -> Node {
+        Node::Declaration(Declaration::Struct(StructDeclaration {
+            name: name.to_string(),
+            type_parameters: type_parameters.to_vec(),
+            fields: fields.to_vec(),
+        }))
+    }
+
+    pub fn struct_field(name: &str, type_info: TypeInfo) -> StructField {
+        StructField {
+            name: name.to_string(),
+            type_info,
+        }
     }
 }

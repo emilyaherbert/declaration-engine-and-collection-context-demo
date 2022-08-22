@@ -47,4 +47,11 @@ impl DeclarationWrapper {
             _ => Err("expected to find trait declaration".to_string()),
         }
     }
+
+    pub(super) fn expect_trait_impl(self) -> Result<TypedTraitImpl, String> {
+        match self {
+            DeclarationWrapper::TraitImpl(decl) => Ok(decl),
+            _ => Err("expected to find trait impl".to_string()),
+        }
+    }
 }

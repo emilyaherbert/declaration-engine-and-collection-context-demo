@@ -39,6 +39,7 @@ impl TypeEngine {
     fn unify_types(&self, received: TypeId, expected: TypeId) -> Result<(), String> {
         match (self.slab.get(received), self.slab.get(expected)) {
             // if the two types are the same literal then we are done
+            (TypeInfo::Unit, TypeInfo::Unit) => Ok(()),
             (TypeInfo::UnsignedInteger(a), TypeInfo::UnsignedInteger(b)) if a == b => Ok(()),
 
             // if either of the types are unknown

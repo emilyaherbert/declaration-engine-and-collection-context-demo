@@ -3,7 +3,8 @@ use crate::{
     language::{
         resolved::resolved_declaration::{
             ResolvedDeclaration, ResolvedFunctionDeclaration, ResolvedFunctionParameter,
-            ResolvedTraitDeclaration, ResolvedTraitFn, ResolvedVariableDeclaration,
+            ResolvedTraitDeclaration, ResolvedTraitFn, ResolvedTraitImpl,
+            ResolvedVariableDeclaration,
         },
         typed::typed_declaration::{
             TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter, TypedTraitFn,
@@ -37,7 +38,10 @@ pub(super) fn resolve_declaration(
             let trait_declaration = resolve_trait_declaration(declaration_engine, id);
             vec![ResolvedDeclaration::Trait(trait_declaration)]
         }
-        TypedDeclaration::TraitImpl(_) => todo!(),
+        TypedDeclaration::TraitImpl(id) => {
+            let trait_impl = resolve_trait_impl(declaration_engine, id);
+            vec![ResolvedDeclaration::TraitImpl(trait_impl)]
+        }
         // TypedDeclaration::Trait(_) => todo!(),
         // TypedDeclaration::Struct(_) => todo!(),
         // TypedDeclaration::Enum(_) => todo!(),
@@ -139,5 +143,24 @@ fn resolve_trait_fn(
         name: trait_fn.name,
         parameters: resolved_parameters,
         return_type: resolved_type,
+    }
+}
+
+fn resolve_trait_impl(
+    declaration_engine: &DeclarationEngine,
+    impl_id: DeclarationId,
+) -> ResolvedTraitImpl {
+    let trait_impl = declaration_engine.get_trait_impl(impl_id).unwrap();
+    let type_implementing_for =
+        resolve_type(declaration_engine, trait_impl.type_implementing_for).unwrap();
+    let methods = trait_impl
+        .methods
+        .into_iter()
+        .flat_map(|method_id| resolve_function_declaration(declaration_engine, method_id))
+        .collect::<Vec<_>>();
+    ResolvedTraitImpl {
+        trait_name: trait_impl.trait_name,
+        type_implementing_for,
+        methods,
     }
 }

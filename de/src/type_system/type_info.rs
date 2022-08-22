@@ -153,4 +153,8 @@ pub mod constructors {
     pub fn t_u64() -> TypeInfo {
         TypeInfo::UnsignedInteger(IntegerBits::SixtyFour)
     }
+
+    pub fn t_unit() -> TypeInfo {
+        TypeInfo::Unit
+    }
 }

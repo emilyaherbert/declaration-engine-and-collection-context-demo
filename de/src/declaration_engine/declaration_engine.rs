@@ -85,6 +85,10 @@ impl DeclarationEngine {
         self.slab.insert(DeclarationWrapper::TraitImpl(trait_impl))
     }
 
+    pub(crate) fn get_trait_impl(&self, index: DeclarationId) -> Result<TypedTraitImpl, String> {
+        self.slab.get(index).expect_trait_impl()
+    }
+
     pub fn debug_print(&self) {
         println!(
             "\n\n~~~~~~~~~~\n\nDeclaration Engine:\n{}\n\n~~~~~~~~~~",

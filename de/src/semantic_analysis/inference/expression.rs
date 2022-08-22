@@ -95,36 +95,42 @@ pub(super) fn analyze_expression(
             }
 
             unimplemented!()
-        } // Expression::Struct { .. } => {
-          //     let new_fields = fields
-          //         .into_iter()
-          //         .map(|field| {
-          //             analyze_struct_expression_field(
-          //                 namespace,
+        }
+        Expression::Struct {
+            struct_name,
+            type_arguments,
+            fields,
+        } => todo!(),
+        // Expression::Struct { .. } => {
+        //     let new_fields = fields
+        //         .into_iter()
+        //         .map(|field| {
+        //             analyze_struct_expression_field(
+        //                 namespace,
 
-          //                 declaration_engine,
-          //                 field,
-          //             )
-          //         })
-          //         .collect();
-          //     let type_id = todo!();
-          //     let variant = TypedExpressionVariant::Struct {
-          //         struct_name,
-          //         fields: new_fields,
-          //     };
-          //     TypedExpression { variant, type_id }
-          // }
-          // Expression::Enum { .. } => {
-          //     let new_value =
-          //         analyze_expression(namespace,  declaration_engine, *value);
-          //     let type_id = todo!();
-          //     let variant = TypedExpressionVariant::Enum {
-          //         enum_name,
-          //         variant_name,
-          //         value: Box::new(new_value),
-          //     };
-          //     TypedExpression { variant, type_id }
-          // }
+        //                 declaration_engine,
+        //                 field,
+        //             )
+        //         })
+        //         .collect();
+        //     let type_id = todo!();
+        //     let variant = TypedExpressionVariant::Struct {
+        //         struct_name,
+        //         fields: new_fields,
+        //     };
+        //     TypedExpression { variant, type_id }
+        // }
+        // Expression::Enum { .. } => {
+        //     let new_value =
+        //         analyze_expression(namespace,  declaration_engine, *value);
+        //     let type_id = todo!();
+        //     let variant = TypedExpressionVariant::Enum {
+        //         enum_name,
+        //         variant_name,
+        //         value: Box::new(new_value),
+        //     };
+        //     TypedExpression { variant, type_id }
+        // }
     }
 }
 

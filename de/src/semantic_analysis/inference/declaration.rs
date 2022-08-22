@@ -71,6 +71,7 @@ pub(super) fn analyze_declaration(
             let decl_id = declaration_engine.insert_trait_impl(typed_trait_impl);
             TypedDeclaration::TraitImpl(decl_id)
         }
+        Declaration::Struct(_) => todo!(),
         // Declaration::Struct(_) => {
         //     let typed_struct_declaration = analyze_struct(
         //         namespace,
