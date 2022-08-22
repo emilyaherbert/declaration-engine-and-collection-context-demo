@@ -1,3 +1,6 @@
+use indent_write::fmt::IndentWriter;
+use std::fmt::Write;
+
 use crate::{
     declaration_engine::declaration_engine::DeclarationEngine,
     language::literal::Literal,
@@ -39,15 +42,14 @@ pub(crate) enum TypedExpressionVariant {
     // a no-op variant used to indicate that a variable is in scope
     // as a result of a function parameter
     FunctionParameter,
-    // Struct {
-    //     struct_name: String,
-    //     fields: Vec<TypedStructExpressionField>,
-    // },
-    // Enum {
-    //     enum_name: String,
-    //     variant_name: String,
-    //     value: Box<TypedExpression>,
-    // },
+    Struct {
+        struct_name: String,
+        fields: Vec<TypedStructExpressionField>,
+    }, // Enum {
+       //     enum_name: String,
+       //     variant_name: String,
+       //     value: Box<TypedExpression>,
+       // },
 }
 
 impl CopyTypes for TypedExpressionVariant {
@@ -58,6 +60,9 @@ impl CopyTypes for TypedExpressionVariant {
                     .iter_mut()
                     .for_each(|argument| argument.copy_types(type_mapping));
             }
+            TypedExpressionVariant::Struct { fields, .. } => fields
+                .iter_mut()
+                .for_each(|field| field.copy_types(type_mapping)),
             TypedExpressionVariant::Literal { .. }
             | TypedExpressionVariant::Variable { .. }
             | TypedExpressionVariant::FunctionParameter => {}
@@ -82,12 +87,43 @@ impl PrettyPrint for TypedExpressionVariant {
                 )
             }
             TypedExpressionVariant::FunctionParameter => "function param".to_string(),
+            TypedExpressionVariant::Struct {
+                struct_name,
+                fields,
+            } => {
+                let mut builder = String::new();
+                writeln!(builder, "{} {{", struct_name).unwrap();
+                {
+                    let mut indent = IndentWriter::new("  ", &mut builder);
+                    for field in fields.iter() {
+                        writeln!(indent, "{},", field.pretty_print(declaration_engine)).unwrap();
+                    }
+                }
+                write!(builder, "}}").unwrap();
+                builder
+            }
         }
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) struct TypedStructExpressionField {
     pub(crate) name: String,
     pub(crate) value: TypedExpression,
+}
+
+impl CopyTypes for TypedStructExpressionField {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.value.copy_types(type_mapping)
+    }
+}
+
+impl PrettyPrint for TypedStructExpressionField {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        format!(
+            "{}: {}",
+            self.name,
+            self.value.pretty_print(declaration_engine)
+        )
+    }
 }

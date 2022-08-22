@@ -192,10 +192,10 @@ pub struct StructDeclaration {
 }
 
 impl fmt::Display for StructDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
             f,
-            "struct {}{} {{\n  {}\n}}",
+            "struct {}{} {{",
             self.name,
             if self.type_parameters.is_empty() {
                 "".to_string()
@@ -208,13 +208,16 @@ impl fmt::Display for StructDeclaration {
                         .collect::<Vec<_>>()
                         .join(", ")
                 )
-            },
-            self.fields
-                .iter()
-                .map(|field| field.to_string())
-                .collect::<Vec<_>>()
-                .join(",\n  ")
+            }
         )
+        .unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for field in self.fields.iter() {
+                writeln!(indent, "{},", field).unwrap();
+            }
+        }
+        write!(f, "}}")
     }
 }
 
@@ -226,7 +229,7 @@ pub struct StructField {
 
 impl fmt::Display for StructField {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}({})", self.name, self.type_info,)
+        write!(f, "{}({})", self.name, self.type_info)
     }
 }
 

@@ -2,28 +2,38 @@ use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 
+use crate::language::typed::typed_declaration::TypedStructField;
+
+use super::type_engine::insert_type;
 use super::type_engine::look_up_type_id;
 use super::type_mapping::TypeMapping;
+use super::type_parameter::TypeParameter;
 use super::{type_id::*, IntegerBits};
 
 #[derive(Clone, Eq)]
 pub enum TypeInfo {
     ErrorRecovery,
     Unknown,
-    UnknownGeneric { name: String },
+    UnknownGeneric {
+        name: String,
+    },
     Unit,
     Ref(TypeId),
     UnsignedInteger(IntegerBits),
-    // Enum {
-    //     name: String,
-    //     type_parameters: Vec<TypeParameter>,
-    //     variant_types: Vec<TypedEnumVariant>,
-    // },
-    // Struct {
-    //     name: String,
-    //     type_parameters: Vec<TypeParameter>,
-    //     fields: Vec<TypedStructField>,
-    // },
+    Struct {
+        name: String,
+        type_parameters: Vec<TypeParameter>,
+        fields: Vec<TypedStructField>,
+    }, // Enum {
+       //     name: String,
+       //     type_parameters: Vec<TypeParameter>,
+       //     variant_types: Vec<TypedEnumVariant>,
+       // },
+       // Struct {
+       //     name: String,
+       //     type_parameters: Vec<TypeParameter>,
+       //     fields: Vec<TypedStructField>,
+       // },
 }
 
 impl Default for TypeInfo {
@@ -41,6 +51,29 @@ impl fmt::Display for TypeInfo {
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
             TypeInfo::Ref(_) => todo!(),
             TypeInfo::Unit => write!(f, "()"),
+            TypeInfo::Struct {
+                name,
+                type_parameters,
+                ..
+            } => {
+                write!(
+                    f,
+                    "{}{}",
+                    name,
+                    if type_parameters.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "<{}>",
+                            type_parameters
+                                .iter()
+                                .map(|x| x.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    },
+                )
+            }
         }
     }
 }
@@ -68,6 +101,16 @@ impl Hash for TypeInfo {
             }
             TypeInfo::Unit => {
                 state.write_u8(5);
+            }
+            TypeInfo::Struct {
+                name,
+                type_parameters,
+                fields,
+            } => {
+                state.write_u8(6);
+                name.hash(state);
+                type_parameters.hash(state);
+                fields.hash(state);
             } // TypeInfo::Enum {
               //     name,
               //     type_parameters,
@@ -77,16 +120,6 @@ impl Hash for TypeInfo {
               //     name.hash(state);
               //     type_parameters.hash(state);
               //     variant_types.hash(state);
-              // }
-              // TypeInfo::Struct {
-              //     name,
-              //     type_parameters,
-              //     fields,
-              // } => {
-              //     state.write_u8(5);
-              //     name.hash(state);
-              //     type_parameters.hash(state);
-              //     fields.hash(state);
               // }
         }
     }
@@ -117,6 +150,33 @@ impl TypeInfo {
                     }
                 }
                 None
+            }
+            TypeInfo::Struct {
+                fields,
+                name,
+                type_parameters,
+            } => {
+                let mut new_type_parameters = type_parameters.clone();
+                for new_param in new_type_parameters.iter_mut() {
+                    if let Some(matching_id) =
+                        look_up_type_id(new_param.type_id).matches_type_parameter(mapping)
+                    {
+                        new_param.type_id = insert_type(TypeInfo::Ref(matching_id));
+                    }
+                }
+                let mut new_fields = fields.clone();
+                for new_field in new_fields.iter_mut() {
+                    if let Some(matching_id) =
+                        look_up_type_id(new_field.type_id).matches_type_parameter(mapping)
+                    {
+                        new_field.type_id = insert_type(TypeInfo::Ref(matching_id));
+                    }
+                }
+                Some(insert_type(TypeInfo::Struct {
+                    fields: new_fields,
+                    name: name.clone(),
+                    type_parameters: new_type_parameters,
+                }))
             }
             TypeInfo::ErrorRecovery
             | TypeInfo::Unknown

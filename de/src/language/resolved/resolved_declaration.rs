@@ -11,7 +11,8 @@ pub(crate) enum ResolvedDeclaration {
     Function(ResolvedFunctionDeclaration),
     Trait(ResolvedTraitDeclaration),
     TraitImpl(ResolvedTraitImpl),
-    // Struct(TypedStructDeclaration),
+    Struct(ResolvedStructDeclaration),
+    // Struct(ResolvedStructDeclaration),
     // Enum(TypedEnumDeclaration),
 }
 
@@ -22,6 +23,7 @@ impl fmt::Display for ResolvedDeclaration {
             ResolvedDeclaration::Function(decl) => write!(f, "\n{}", decl),
             ResolvedDeclaration::Trait(decl) => write!(f, "\n{}", decl),
             ResolvedDeclaration::TraitImpl(decl) => write!(f, "\n{}", decl),
+            ResolvedDeclaration::Struct(decl) => write!(f, "\n{}", decl),
         }
     }
 }
@@ -148,5 +150,35 @@ impl fmt::Display for ResolvedTraitImpl {
             }
         }
         write!(f, "}}")
+    }
+}
+
+pub(crate) struct ResolvedStructDeclaration {
+    pub(crate) name: String,
+    pub(crate) fields: Vec<ResolvedStructField>,
+}
+
+impl fmt::Display for ResolvedStructDeclaration {
+    fn fmt(&self, mut f: &mut fmt::Formatter) -> fmt::Result {
+        writeln!(f, "struct {} {{", self.name,).unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for field in self.fields.iter() {
+                writeln!(indent, "{},", field).unwrap();
+            }
+        }
+        write!(f, "}}")
+    }
+}
+
+#[derive(Clone)]
+pub(crate) struct ResolvedStructField {
+    pub(crate) name: String,
+    pub(crate) type_info: ResolvedType,
+}
+
+impl fmt::Display for ResolvedStructField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}({})", self.name, self.type_info)
     }
 }

@@ -3,7 +3,7 @@ use linked_hash_map::LinkedHashMap;
 use crate::{
     concurrent_slab::ConcurrentSlab,
     language::typed::typed_declaration::{
-        TypedFunctionDeclaration, TypedTraitDeclaration, TypedTraitImpl,
+        TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitImpl,
     },
     types::pretty_print::PrettyPrint,
 };
@@ -28,6 +28,43 @@ impl DeclarationEngine {
         self.slab.get(index)
     }
 
+    pub(crate) fn add_monomorphized_copy(
+        &mut self,
+        original_id: DeclarationId,
+        new_id: DeclarationId,
+    ) {
+        match self.monomorphized_copies.get_mut(&*original_id) {
+            Some(prev) => {
+                prev.push(new_id);
+            }
+            None => {
+                self.monomorphized_copies.insert(*original_id, vec![new_id]);
+            }
+        }
+    }
+
+    pub(crate) fn get_monomorphized_copies(
+        &self,
+        original_id: DeclarationId,
+    ) -> Vec<DeclarationWrapper> {
+        match self.monomorphized_copies.get(&*original_id).cloned() {
+            Some(copies) => copies
+                .into_iter()
+                .map(|copy| self.slab.get(&*copy))
+                .collect(),
+            None => vec![],
+        }
+    }
+
+    pub fn debug_print(&self) {
+        println!(
+            "\n\n~~~~~~~~~~\n\nDeclaration Engine:\n{}\n\n~~~~~~~~~~",
+            self.slab.pretty_print(self)
+        );
+    }
+}
+
+impl DeclarationEngine {
     pub(crate) fn insert_function(&self, function: TypedFunctionDeclaration) -> DeclarationId {
         self.slab.insert(DeclarationWrapper::Function(function))
     }
@@ -41,38 +78,25 @@ impl DeclarationEngine {
 
     pub(crate) fn add_monomorphized_function_copy(
         &mut self,
-        original_function_id: DeclarationId,
+        original_id: DeclarationId,
         new_copy: TypedFunctionDeclaration,
     ) {
         let new_id = self.slab.insert(DeclarationWrapper::Function(new_copy));
-        match self.monomorphized_copies.get_mut(&*original_function_id) {
-            Some(prev) => {
-                prev.push(new_id);
-            }
-            None => {
-                self.monomorphized_copies
-                    .insert(*original_function_id, vec![new_id]);
-            }
-        }
+        self.add_monomorphized_copy(original_id, new_id)
     }
 
     pub(crate) fn get_monomorphized_function_copies(
         &self,
-        original_function_id: DeclarationId,
+        original_id: DeclarationId,
     ) -> Result<Vec<TypedFunctionDeclaration>, String> {
-        match self
-            .monomorphized_copies
-            .get(&*original_function_id)
-            .cloned()
-        {
-            Some(copies) => Ok(copies
-                .into_iter()
-                .map(|copy| self.slab.get(&*copy).expect_function())
-                .collect::<Result<_, _>>()?),
-            None => Ok(vec![]),
-        }
+        self.get_monomorphized_copies(original_id)
+            .into_iter()
+            .map(|x| x.expect_function())
+            .collect::<Result<_, _>>()
     }
+}
 
+impl DeclarationEngine {
     pub(crate) fn insert_trait(&self, r#trait: TypedTraitDeclaration) -> DeclarationId {
         self.slab.insert(DeclarationWrapper::Trait(r#trait))
     }
@@ -88,11 +112,36 @@ impl DeclarationEngine {
     pub(crate) fn get_trait_impl(&self, index: DeclarationId) -> Result<TypedTraitImpl, String> {
         self.slab.get(index).expect_trait_impl()
     }
+}
 
-    pub fn debug_print(&self) {
-        println!(
-            "\n\n~~~~~~~~~~\n\nDeclaration Engine:\n{}\n\n~~~~~~~~~~",
-            self.slab.pretty_print(self)
-        );
+impl DeclarationEngine {
+    pub(crate) fn insert_struct(&self, r#struct: TypedStructDeclaration) -> DeclarationId {
+        self.slab.insert(DeclarationWrapper::Struct(r#struct))
+    }
+
+    pub(crate) fn get_struct(
+        &self,
+        index: DeclarationId,
+    ) -> Result<TypedStructDeclaration, String> {
+        self.slab.get(index).expect_struct()
+    }
+
+    pub(crate) fn add_monomorphized_struct_copy(
+        &mut self,
+        original_id: DeclarationId,
+        new_copy: TypedStructDeclaration,
+    ) {
+        let new_id = self.slab.insert(DeclarationWrapper::Struct(new_copy));
+        self.add_monomorphized_copy(original_id, new_id)
+    }
+
+    pub(crate) fn get_monomorphized_struct_copies(
+        &self,
+        original_id: DeclarationId,
+    ) -> Result<Vec<TypedStructDeclaration>, String> {
+        self.get_monomorphized_copies(original_id)
+            .into_iter()
+            .map(|x| x.expect_struct())
+            .collect::<Result<_, _>>()
     }
 }

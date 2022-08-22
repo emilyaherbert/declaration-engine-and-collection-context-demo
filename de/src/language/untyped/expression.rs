@@ -1,4 +1,6 @@
+use indent_write::fmt::IndentWriter;
 use std::fmt;
+use std::fmt::Write;
 
 use crate::{language::literal::Literal, type_system::type_argument::TypeArgument};
 
@@ -35,7 +37,7 @@ pub enum Expression {
 }
 
 impl fmt::Display for Expression {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Expression::Literal { value } => write!(f, "{}", value),
             Expression::Variable { name } => write!(f, "{}", name),
@@ -102,9 +104,9 @@ impl fmt::Display for Expression {
                 type_arguments,
                 fields,
             } => {
-                write!(
+                writeln!(
                     f,
-                    "{}{} {{\n  {}\n}}",
+                    "{}{} {{",
                     struct_name,
                     if type_arguments.is_empty() {
                         "".to_string()
@@ -117,13 +119,16 @@ impl fmt::Display for Expression {
                                 .collect::<Vec<_>>()
                                 .join(", ")
                         )
-                    },
-                    &fields
-                        .iter()
-                        .map(|field| field.to_string())
-                        .collect::<Vec<_>>()
-                        .join(",\n  ")
+                    }
                 )
+                .unwrap();
+                {
+                    let mut indent = IndentWriter::new("  ", &mut f);
+                    for field in fields.iter() {
+                        writeln!(indent, "{},", field).unwrap();
+                    }
+                }
+                write!(f, "}}")
             }
         }
     }

@@ -1,4 +1,6 @@
+use indent_write::fmt::IndentWriter;
 use std::fmt;
+use std::fmt::Write;
 
 use crate::{language::literal::Literal, type_system::resolved_types::ResolvedType};
 
@@ -24,19 +26,18 @@ pub(crate) enum ResolvedExpressionVariant {
         name: String,
         arguments: Vec<ResolvedExpression>,
     },
-    // Struct {
-    //     struct_name: String,
-    //     fields: Vec<ResolvedStructExpressionField>,
-    // },
-    // Enum {
-    //     enum_name: String,
-    //     variant_name: String,
-    //     value: Box<ResolvedExpression>,
-    // },
+    Struct {
+        struct_name: String,
+        fields: Vec<ResolvedStructExpressionField>,
+    }, // Enum {
+       //     enum_name: String,
+       //     variant_name: String,
+       //     value: Box<ResolvedExpression>,
+       // },
 }
 
 impl fmt::Display for ResolvedExpressionVariant {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, mut f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             ResolvedExpressionVariant::Literal { value } => write!(f, "{}", value),
             ResolvedExpressionVariant::Variable { name } => write!(f, "{}", name),
@@ -52,13 +53,31 @@ impl fmt::Display for ResolvedExpressionVariant {
                         .join(", ")
                 )
             }
-            // ResolvedExpressionVariant::Struct { .. } => todo!(),
+            ResolvedExpressionVariant::Struct {
+                struct_name,
+                fields,
+            } => {
+                writeln!(f, "{} {{", struct_name,).unwrap();
+                {
+                    let mut indent = IndentWriter::new("  ", &mut f);
+                    for field in fields.iter() {
+                        writeln!(indent, "{},", field).unwrap();
+                    }
+                }
+                write!(f, "}}")
+            }
             // ResolvedExpressionVariant::Enum { .. } => todo!(),
         }
     }
 }
 
-// pub(crate) struct ResolvedStructExpressionField {
-//     pub(crate) name: String,
-//     pub(crate) value: ResolvedExpression,
-// }
+pub(crate) struct ResolvedStructExpressionField {
+    pub(crate) name: String,
+    pub(crate) value: ResolvedExpression,
+}
+
+impl fmt::Display for ResolvedStructExpressionField {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.value)
+    }
+}

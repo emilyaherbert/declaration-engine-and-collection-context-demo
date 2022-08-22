@@ -3,12 +3,12 @@ use crate::{
     language::{
         resolved::resolved_declaration::{
             ResolvedDeclaration, ResolvedFunctionDeclaration, ResolvedFunctionParameter,
-            ResolvedTraitDeclaration, ResolvedTraitFn, ResolvedTraitImpl,
-            ResolvedVariableDeclaration,
+            ResolvedStructDeclaration, ResolvedStructField, ResolvedTraitDeclaration,
+            ResolvedTraitFn, ResolvedTraitImpl, ResolvedVariableDeclaration,
         },
         typed::typed_declaration::{
-            TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter, TypedTraitFn,
-            TypedVariableDeclaration,
+            TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter,
+            TypedStructDeclaration, TypedStructField, TypedTraitFn, TypedVariableDeclaration,
         },
     },
     type_system::type_engine::resolve_type,
@@ -42,10 +42,13 @@ pub(super) fn resolve_declaration(
             let trait_impl = resolve_trait_impl(declaration_engine, id);
             vec![ResolvedDeclaration::TraitImpl(trait_impl)]
         }
-        // TypedDeclaration::Trait(_) => todo!(),
-        // TypedDeclaration::Struct(_) => todo!(),
-        // TypedDeclaration::Enum(_) => todo!(),
-        // TypedDeclaration::TraitImpl(_) => todo!(),
+        TypedDeclaration::Struct(id) => {
+            let struct_declarations = resolve_struct_declaration(declaration_engine, id);
+            struct_declarations
+                .into_iter()
+                .map(ResolvedDeclaration::Struct)
+                .collect()
+        } // TypedDeclaration::Enum(_) => todo!(),
     }
 }
 
@@ -162,5 +165,50 @@ fn resolve_trait_impl(
         trait_name: trait_impl.trait_name,
         type_implementing_for,
         methods,
+    }
+}
+
+fn resolve_struct_declaration(
+    declaration_engine: &DeclarationEngine,
+    struct_id: DeclarationId,
+) -> Vec<ResolvedStructDeclaration> {
+    let original_copy = declaration_engine.get_struct(struct_id).unwrap();
+    if original_copy.type_parameters.is_empty() {
+        resolve_struct_declaration_inner(declaration_engine, vec![original_copy])
+    } else {
+        let monomorphized_copies = declaration_engine
+            .get_monomorphized_struct_copies(struct_id)
+            .unwrap();
+        resolve_struct_declaration_inner(declaration_engine, monomorphized_copies)
+    }
+}
+
+fn resolve_struct_declaration_inner(
+    declaration_engine: &DeclarationEngine,
+    struct_declarations: Vec<TypedStructDeclaration>,
+) -> Vec<ResolvedStructDeclaration> {
+    struct_declarations
+        .into_iter()
+        .map(|struct_declaration| {
+            let resolved_fields = struct_declaration
+                .fields
+                .into_iter()
+                .map(|field| resolve_struct_field(declaration_engine, field))
+                .collect::<Vec<_>>();
+            ResolvedStructDeclaration {
+                name: struct_declaration.name,
+                fields: resolved_fields,
+            }
+        })
+        .collect()
+}
+
+fn resolve_struct_field(
+    declaration_engine: &DeclarationEngine,
+    field: TypedStructField,
+) -> ResolvedStructField {
+    ResolvedStructField {
+        name: field.name,
+        type_info: resolve_type(declaration_engine, field.type_id).unwrap(),
     }
 }

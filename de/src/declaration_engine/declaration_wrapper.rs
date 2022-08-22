@@ -1,6 +1,6 @@
 use crate::{
     language::typed::typed_declaration::{
-        TypedFunctionDeclaration, TypedTraitDeclaration, TypedTraitImpl,
+        TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitImpl,
     },
     types::pretty_print::PrettyPrint,
 };
@@ -14,6 +14,7 @@ pub(crate) enum DeclarationWrapper {
     Function(TypedFunctionDeclaration),
     Trait(TypedTraitDeclaration),
     TraitImpl(TypedTraitImpl),
+    Struct(TypedStructDeclaration),
 }
 
 impl Default for DeclarationWrapper {
@@ -29,6 +30,7 @@ impl PrettyPrint for DeclarationWrapper {
             DeclarationWrapper::Function(decl) => decl.pretty_print(declaration_engine),
             DeclarationWrapper::Trait(decl) => decl.to_string(),
             DeclarationWrapper::TraitImpl(decl) => decl.pretty_print(declaration_engine),
+            DeclarationWrapper::Struct(decl) => decl.to_string(),
         }
     }
 }
@@ -52,6 +54,13 @@ impl DeclarationWrapper {
         match self {
             DeclarationWrapper::TraitImpl(decl) => Ok(decl),
             _ => Err("expected to find trait impl".to_string()),
+        }
+    }
+
+    pub(super) fn expect_struct(self) -> Result<TypedStructDeclaration, String> {
+        match self {
+            DeclarationWrapper::Struct(decl) => Ok(decl),
+            _ => Err("expected to find struct declaration".to_string()),
         }
     }
 }

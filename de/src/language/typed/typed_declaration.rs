@@ -1,4 +1,6 @@
+use indent_write::fmt::IndentWriter;
 use std::fmt;
+use std::fmt::Write;
 
 use super::{typed_expression::*, TypedNode};
 
@@ -18,6 +20,7 @@ pub(crate) enum TypedDeclaration {
     Trait(DeclarationId),
     TraitImpl(DeclarationId),
     GenericTypeForFunctionScope { type_id: TypeId },
+    Struct(DeclarationId),
     // Trait(String),
     // Struct(String),
     // Enum(String),
@@ -30,6 +33,7 @@ impl CopyTypes for TypedDeclaration {
             TypedDeclaration::Function(_)
             | TypedDeclaration::Trait(_)
             | TypedDeclaration::TraitImpl(_)
+            | TypedDeclaration::Struct(_)
             | TypedDeclaration::GenericTypeForFunctionScope { .. } => {}
         }
     }
@@ -43,6 +47,7 @@ impl PrettyPrint for TypedDeclaration {
             TypedDeclaration::Trait(id) => id.pretty_print(declaration_engine),
             TypedDeclaration::TraitImpl(id) => id.pretty_print(declaration_engine),
             TypedDeclaration::GenericTypeForFunctionScope { .. } => todo!(),
+            TypedDeclaration::Struct(id) => id.pretty_print(declaration_engine),
         }
     }
 }
@@ -69,6 +74,14 @@ impl TypedDeclaration {
             Ok(decl_id)
         } else {
             Err("not a trait declaration".to_string())
+        }
+    }
+
+    pub(crate) fn expect_struct(self) -> Result<DeclarationId, String> {
+        if let TypedDeclaration::Struct(decl_id) = self {
+            Ok(decl_id)
+        } else {
+            Err("not a struct declaration".to_string())
         }
     }
 }
@@ -268,17 +281,80 @@ impl PrettyPrint for TypedTraitImpl {
     }
 }
 
-// #[derive(Clone)]
-// pub(crate) struct TypedStructDeclaration {
-//     pub(crate) name: String,
-//     pub(crate) type_parameters: Vec<TypeParameter>,
-//     pub(crate) fields: Vec<TypedStructField>,
-// }
+#[derive(Clone)]
+pub(crate) struct TypedStructDeclaration {
+    pub(crate) name: String,
+    pub(crate) type_parameters: Vec<TypeParameter>,
+    pub(crate) fields: Vec<TypedStructField>,
+}
+
+impl CopyTypes for TypedStructDeclaration {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_parameters
+            .iter_mut()
+            .for_each(|x| x.copy_types(type_mapping));
+        self.fields
+            .iter_mut()
+            .for_each(|x| x.copy_types(type_mapping));
+    }
+}
+
+impl MonomorphizeHelper for TypedStructDeclaration {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn type_parameters(&self) -> &[TypeParameter] {
+        &self.type_parameters
+    }
+}
+
+impl fmt::Display for TypedStructDeclaration {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "struct {}{} {{",
+            self.name,
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    "<{}>",
+                    self.type_parameters
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+        )
+        .unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for field in self.fields.iter() {
+                writeln!(indent, "{},", field).unwrap();
+            }
+        }
+        write!(f, "}}")
+    }
+}
 
 #[derive(Clone, Hash, PartialEq, Eq)]
 pub struct TypedStructField {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
+}
+
+impl CopyTypes for TypedStructField {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_id.copy_types(type_mapping);
+    }
+}
+
+impl fmt::Display for TypedStructField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}({})", self.name, self.type_id)
+    }
 }
 
 // #[derive(Clone)]

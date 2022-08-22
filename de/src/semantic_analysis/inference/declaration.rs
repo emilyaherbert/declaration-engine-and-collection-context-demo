@@ -4,15 +4,16 @@ use crate::{
         typed::{
             typed_declaration::{
                 TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter,
-                TypedTraitDeclaration, TypedTraitFn, TypedTraitImpl, TypedVariableDeclaration,
+                TypedStructDeclaration, TypedStructField, TypedTraitDeclaration, TypedTraitFn,
+                TypedTraitImpl, TypedVariableDeclaration,
             },
             typed_expression::{TypedExpression, TypedExpressionVariant},
             TypedNode,
         },
         untyped::{
             declaration::{
-                Declaration, FunctionDeclaration, FunctionParameter, TraitDeclaration, TraitFn,
-                TraitImpl, VariableDeclaration,
+                Declaration, FunctionDeclaration, FunctionParameter, StructDeclaration,
+                StructField, TraitDeclaration, TraitFn, TraitImpl, VariableDeclaration,
             },
             Node,
         },
@@ -56,7 +57,6 @@ pub(super) fn analyze_declaration(
         Declaration::Trait(trait_declaration) => {
             let typed_trait_declaration = analyze_trait(
                 &mut namespace.scoped(),
-                declaration_engine,
                 trait_declaration,
             );
             let name = typed_trait_declaration.name.clone();
@@ -71,17 +71,14 @@ pub(super) fn analyze_declaration(
             let decl_id = declaration_engine.insert_trait_impl(typed_trait_impl);
             TypedDeclaration::TraitImpl(decl_id)
         }
-        Declaration::Struct(_) => todo!(),
-        // Declaration::Struct(_) => {
-        //     let typed_struct_declaration = analyze_struct(
-        //         namespace,
-        //         declaration_engine,
-        //         struct_declaration,
-        //     );
-        //     let name = typed_struct_declaration.name.clone();
-        //     declaration_engine.insert_struct(name.clone(), typed_struct_declaration);
-        //     TypedDeclaration::Struct(name)
-        // }
+        Declaration::Struct(struct_declaration) => {
+            let typed_struct_declaration = analyze_struct(&mut namespace.scoped(), struct_declaration);
+            let name = typed_struct_declaration.name.clone();
+            let decl_id = declaration_engine.insert_struct(typed_struct_declaration);
+            let decl = TypedDeclaration::Struct(decl_id);
+            namespace.insert_symbol(name, decl.clone());
+            decl
+        }
         // Declaration::Enum(_) => {
         //     let typed_enum_declaration = analyze_enum(
         //         namespace,
@@ -130,7 +127,7 @@ fn analyze_function(
     let typed_parameters = function_declaration
         .parameters
         .into_iter()
-        .map(|parameter| analyze_function_parameter(namespace, declaration_engine, parameter))
+        .map(|parameter| analyze_function_parameter(namespace, parameter))
         .collect::<Vec<_>>();
 
     // type check the function return type
@@ -154,7 +151,6 @@ fn analyze_function(
 
 fn analyze_function_parameter(
     namespace: &mut Namespace,
-    _declaration_engine: &mut DeclarationEngine,
     function_parameter: FunctionParameter,
 ) -> TypedFunctionParameter {
     let type_id = eval_type(insert_type(function_parameter.type_info), namespace).unwrap();
@@ -195,13 +191,12 @@ fn analyze_code_block(
 
 fn analyze_trait(
     namespace: &mut Namespace,
-    declaration_engine: &mut DeclarationEngine,
     trait_declaration: TraitDeclaration,
 ) -> TypedTraitDeclaration {
     let new_interface_surface = trait_declaration
         .interface_surface
         .into_iter()
-        .map(|trait_fn| analyze_trait_fn(namespace, declaration_engine, trait_fn))
+        .map(|trait_fn| analyze_trait_fn(namespace, trait_fn))
         .collect::<Vec<_>>();
     TypedTraitDeclaration {
         name: trait_declaration.name,
@@ -209,15 +204,11 @@ fn analyze_trait(
     }
 }
 
-fn analyze_trait_fn(
-    namespace: &mut Namespace,
-    declaration_engine: &mut DeclarationEngine,
-    trait_fn: TraitFn,
-) -> TypedTraitFn {
+fn analyze_trait_fn(namespace: &mut Namespace, trait_fn: TraitFn) -> TypedTraitFn {
     let new_parameters = trait_fn
         .parameters
         .into_iter()
-        .map(|parameter| analyze_function_parameter(namespace, declaration_engine, parameter))
+        .map(|parameter| analyze_function_parameter(namespace, parameter))
         .collect::<Vec<_>>();
     TypedTraitFn {
         name: trait_fn.name,
@@ -279,36 +270,38 @@ fn analyze_trait_impl(
     }
 }
 
-// fn analyze_struct(
-//     namespace: &mut Namespace,
-//     declaration_engine: &mut DeclarationEngine,
-//     struct_declaration: StructDeclaration,
-// ) -> TypedStructDeclaration {
-//     if !struct_declaration.type_parameters.is_empty() {
-//         panic!()
-//     }
-//     let new_fields = struct_declaration
-//         .fields
-//         .into_iter()
-//         .map(|field| analyze_struct_field(namespace, declaration_engine, field))
-//         .collect::<Vec<_>>();
-//     TypedStructDeclaration {
-//         name: struct_declaration.name,
-//         type_parameters: vec![],
-//         fields: new_fields,
-//     }
-// }
+fn analyze_struct(
+    namespace: &mut Namespace,
+    struct_declaration: StructDeclaration,
+) -> TypedStructDeclaration {
+    // insert type params into namespace
+    for type_parameter in struct_declaration.type_parameters.iter() {
+        let type_parameter_decl = TypedDeclaration::GenericTypeForFunctionScope {
+            type_id: type_parameter.type_id,
+        };
+        namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);
+    }
 
-// fn analyze_struct_field(
-//     _namespace: &mut Namespace,
-//     _declaration_engine: &mut DeclarationEngine,
-//     struct_field: StructField,
-// ) -> TypedStructField {
-//     TypedStructField {
-//         name: struct_field.name,
-//         type_id: insert_type(struct_field.type_info),
-//     }
-// }
+    // type check the fields
+    let typed_fields = struct_declaration
+        .fields
+        .into_iter()
+        .map(|field| analyze_struct_field(namespace, field))
+        .collect::<Vec<_>>();
+
+    TypedStructDeclaration {
+        name: struct_declaration.name,
+        type_parameters: struct_declaration.type_parameters,
+        fields: typed_fields,
+    }
+}
+
+fn analyze_struct_field(namespace: &mut Namespace, struct_field: StructField) -> TypedStructField {
+    TypedStructField {
+        name: struct_field.name,
+        type_id: eval_type(insert_type(struct_field.type_info), namespace).unwrap(),
+    }
+}
 
 // fn analyze_enum(
 //     namespace: &mut Namespace,

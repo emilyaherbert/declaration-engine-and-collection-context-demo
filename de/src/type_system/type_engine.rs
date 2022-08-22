@@ -1,12 +1,21 @@
 use crate::{
-    concurrent_slab::ConcurrentSlab, declaration_engine::declaration_engine::DeclarationEngine,
-    language::typed::typed_declaration::TypedDeclaration, namespace::namespace::Namespace,
+    concurrent_slab::ConcurrentSlab,
+    declaration_engine::declaration_engine::DeclarationEngine,
+    language::{
+        resolved::resolved_declaration::ResolvedStructField,
+        typed::typed_declaration::TypedDeclaration,
+    },
+    namespace::namespace::Namespace,
     types::copy_types::CopyTypes,
 };
 
 use super::{
-    resolved_types::ResolvedType, type_argument::TypeArgument, type_id::TypeId,
-    type_info::TypeInfo, type_mapping::insert_type_parameters, type_parameter::TypeParameter,
+    resolved_types::{ResolvedType, ResolvedTypeParameter},
+    type_argument::TypeArgument,
+    type_id::TypeId,
+    type_info::TypeInfo,
+    type_mapping::insert_type_parameters,
+    type_parameter::TypeParameter,
 };
 
 use lazy_static::lazy_static;
@@ -152,6 +161,36 @@ impl TypeEngine {
             TypeInfo::UnsignedInteger(bits) => Ok(ResolvedType::UnsignedInteger(bits)),
             TypeInfo::Ref(id) => self.resolve_type(declaration_engine, id),
             TypeInfo::Unit => Ok(ResolvedType::Unit),
+            TypeInfo::Struct {
+                name,
+                type_parameters,
+                fields,
+            } => {
+                let type_parameters = type_parameters
+                    .into_iter()
+                    .map(|type_parameter| {
+                        Ok(ResolvedTypeParameter {
+                            name_ident: type_parameter.name,
+                            type_info: self
+                                .resolve_type(declaration_engine, type_parameter.type_id)?,
+                        })
+                    })
+                    .collect::<Result<_, String>>()?;
+                let fields = fields
+                    .into_iter()
+                    .map(|field| {
+                        Ok(ResolvedStructField {
+                            name: field.name,
+                            type_info: self.resolve_type(declaration_engine, field.type_id)?,
+                        })
+                    })
+                    .collect::<Result<_, String>>()?;
+                Ok(ResolvedType::Struct {
+                    name,
+                    type_parameters,
+                    fields,
+                })
+            }
             found => Err(format!("type error, found: {}", found)),
             // TypeInfo::Enum {
             //     name,
@@ -185,7 +224,6 @@ impl TypeEngine {
             //         variant_types,
             //     })
             // }
-            // TypeInfo::Struct { .. } => todo!(),
         }
     }
 
