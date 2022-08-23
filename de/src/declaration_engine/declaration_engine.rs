@@ -133,6 +133,7 @@ impl DeclarationEngine {
         self.slab.get(index).expect_struct()
     }
 
+    // TODO(joao): consider only adding unique copies, if you get a non unique copy, throw it away
     pub(crate) fn add_monomorphized_struct_copy(
         &mut self,
         original_id: DeclarationId,

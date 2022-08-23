@@ -192,6 +192,7 @@ impl TypeEngine {
                         let mut struct_decl = declaration_engine.get_struct(decl_id).unwrap();
 
                         // monomorphize the struct declaration into a new copy
+                        // TODO(joao): optimize this to cache repeated monomorphize copies
                         monomorphize(&mut struct_decl, &mut [], namespace, declaration_engine)
                             .unwrap();
 

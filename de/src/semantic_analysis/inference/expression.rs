@@ -117,6 +117,7 @@ pub(super) fn analyze_expression(
             let mut typed_struct_declaration = declaration_engine.get_struct(decl_id).unwrap();
 
             // monomorphize the struct declaration into a new copy
+            // TODO(joao): optimize this to cache repeated monomorphize copies
             monomorphize(
                 &mut typed_struct_declaration,
                 &mut type_arguments,
