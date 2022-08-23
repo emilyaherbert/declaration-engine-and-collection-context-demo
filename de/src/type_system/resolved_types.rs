@@ -11,6 +11,7 @@ pub(crate) enum ResolvedType {
     Struct {
         name: String,
         type_parameters: Vec<ResolvedTypeParameter>,
+        #[allow(dead_code)]
         fields: Vec<ResolvedStructField>,
     },
 }

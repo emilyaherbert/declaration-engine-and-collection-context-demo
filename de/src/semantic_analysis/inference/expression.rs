@@ -62,6 +62,7 @@ pub(super) fn analyze_expression(
             }
 
             // monomorphize the function declaration into a new copy
+            // TODO(joao): optimize this to cache repeated monomorphize copies
             monomorphize(
                 &mut typed_function_declaration,
                 &mut type_arguments,

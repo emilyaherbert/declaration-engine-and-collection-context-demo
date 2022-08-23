@@ -14,6 +14,8 @@ use super::{declaration_id::DeclarationId, declaration_wrapper::DeclarationWrapp
 // TODO: will need to use concurrent structure like https://github.com/xacrimon/dashmaps
 pub struct DeclarationEngine {
     slab: ConcurrentSlab<DeclarationWrapper>,
+    // *declaration_id -> vec of monomorphized copies
+    // where the declaration_id is the original declartion
     monomorphized_copies: LinkedHashMap<usize, Vec<DeclarationId>>,
 }
 
@@ -57,6 +59,7 @@ impl DeclarationEngine {
         }
     }
 
+    #[allow(dead_code)]
     pub fn debug_print(&self) {
         println!(
             "\n\n~~~~~~~~~~\n\nDeclaration Engine:\n{}\n\n~~~~~~~~~~",
@@ -75,6 +78,7 @@ impl DeclarationEngine {
         self.slab.get(index).expect_function()
     }
 
+    // TODO(joao): consider only adding unique copies, if you get a non unique copy, throw it away
     pub(crate) fn add_monomorphized_function_copy(
         &mut self,
         original_id: DeclarationId,

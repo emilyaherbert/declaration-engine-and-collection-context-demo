@@ -6,7 +6,9 @@ use crate::{
 };
 
 pub(crate) struct TypedFunctionSignature {
+    #[allow(dead_code)]
     pub(crate) name: String,
+    #[allow(dead_code)]
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) parameters: Vec<TypedFunctionParameter>,
     pub(crate) return_type: TypeId,

@@ -8,7 +8,7 @@ use crate::{
         },
         typed::typed_declaration::{
             TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter,
-            TypedStructDeclaration, TypedStructField, TypedTraitFn, TypedVariableDeclaration,
+            TypedStructDeclaration, TypedStructField, TypedVariableDeclaration,
         },
     },
     type_system::{

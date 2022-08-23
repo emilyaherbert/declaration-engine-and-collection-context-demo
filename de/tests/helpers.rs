@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use de::{
     language::untyped::{
         constructors::*, declaration::constructors::*, expression::constructors::*, Node,

@@ -6,6 +6,7 @@ use crate::{language::literal::Literal, type_system::resolved_types::ResolvedTyp
 
 pub(crate) struct ResolvedExpression {
     pub(crate) variant: ResolvedExpressionVariant,
+    #[allow(dead_code)]
     pub(crate) type_info: ResolvedType,
 }
 

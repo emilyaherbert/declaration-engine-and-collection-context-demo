@@ -1,4 +1,3 @@
-use either::Either;
 use indent_write::fmt::IndentWriter;
 use std::fmt;
 use std::fmt::Write;
@@ -8,9 +7,7 @@ use crate::{
         declaration_engine::DeclarationEngine, declaration_id::DeclarationId,
         declaration_wrapper::DeclarationWrapper,
     },
-    language::typed::typed_declaration::{
-        TypedDeclaration, TypedFunctionDeclaration, TypedTraitFn,
-    },
+    language::typed::typed_declaration::TypedDeclaration,
     type_system::{type_engine::look_up_type_id, type_id::TypeId},
 };
 use linked_hash_map::LinkedHashMap;
@@ -52,6 +49,7 @@ impl Namespace {
         }
     }
 
+    #[allow(dead_code)]
     pub fn debug_print(&self) {
         println!("\n\n~~~~~~~~~~\n\nNamespace:\n{}\n\n~~~~~~~~~~", self);
     }
