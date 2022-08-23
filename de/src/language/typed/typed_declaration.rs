@@ -24,9 +24,6 @@ pub(crate) enum TypedDeclaration {
     TraitImpl(DeclarationId),
     GenericTypeForFunctionScope { type_id: TypeId },
     Struct(DeclarationId),
-    // Trait(String),
-    // Struct(String),
-    // Enum(String),
 }
 
 impl CopyTypes for TypedDeclaration {
@@ -208,18 +205,17 @@ impl fmt::Display for TypedFunctionParameter {
 #[derive(Clone)]
 pub(crate) struct TypedTraitDeclaration {
     pub(crate) name: String,
-    pub(crate) interface_surface: Vec<TypedTraitFn>,
+    pub(crate) interface_surface: Vec<DeclarationId>,
 }
 
-impl fmt::Display for TypedTraitDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
+impl PrettyPrint for TypedTraitDeclaration {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        format!(
             "trait {} {{\n{}\n}}",
             self.name,
             self.interface_surface
                 .iter()
-                .map(|trait_fn| trait_fn.to_string())
+                .map(|trait_fn| trait_fn.pretty_print(declaration_engine))
                 .collect::<Vec<_>>()
                 .join(", "),
         )
@@ -368,18 +364,4 @@ impl fmt::Display for TypedStructField {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}({})", self.name, self.type_id)
     }
-}
-
-// #[derive(Clone)]
-// pub(crate) struct TypedEnumDeclaration {
-//     pub(crate) name: String,
-//     pub(crate) type_parameters: Vec<TypeParameter>,
-//     pub(crate) variants: Vec<TypedEnumVariant>,
-// }
-
-#[derive(Clone, Hash, PartialEq, Eq)]
-pub struct TypedEnumVariant {
-    pub(crate) name: String,
-    pub(crate) type_id: TypeId,
-    pub(crate) tag: usize,
 }

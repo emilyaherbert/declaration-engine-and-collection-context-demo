@@ -12,8 +12,6 @@ pub(crate) enum ResolvedDeclaration {
     Trait(ResolvedTraitDeclaration),
     TraitImpl(ResolvedTraitImpl),
     Struct(ResolvedStructDeclaration),
-    // Struct(ResolvedStructDeclaration),
-    // Enum(TypedEnumDeclaration),
 }
 
 impl fmt::Display for ResolvedDeclaration {

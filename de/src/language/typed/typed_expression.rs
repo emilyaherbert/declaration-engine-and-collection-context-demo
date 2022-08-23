@@ -45,11 +45,12 @@ pub(crate) enum TypedExpressionVariant {
     Struct {
         struct_name: String,
         fields: Vec<TypedStructExpressionField>,
-    }, // Enum {
-       //     enum_name: String,
-       //     variant_name: String,
-       //     value: Box<TypedExpression>,
-       // },
+    },
+    MethodCall {
+        parent_name: String,
+        func_name: String,
+        arguments: Vec<TypedExpression>,
+    },
 }
 
 impl CopyTypes for TypedExpressionVariant {
@@ -63,6 +64,11 @@ impl CopyTypes for TypedExpressionVariant {
             TypedExpressionVariant::Struct { fields, .. } => fields
                 .iter_mut()
                 .for_each(|field| field.copy_types(type_mapping)),
+            TypedExpressionVariant::MethodCall { arguments, .. } => {
+                arguments
+                    .iter_mut()
+                    .for_each(|argument| argument.copy_types(type_mapping));
+            }
             TypedExpressionVariant::Literal { .. }
             | TypedExpressionVariant::Variable { .. }
             | TypedExpressionVariant::FunctionParameter => {}
@@ -101,6 +107,22 @@ impl PrettyPrint for TypedExpressionVariant {
                 }
                 write!(builder, "}}").unwrap();
                 builder
+            }
+            TypedExpressionVariant::MethodCall {
+                parent_name: parent,
+                func_name,
+                arguments,
+            } => {
+                format!(
+                    "{}.{}({})",
+                    parent,
+                    func_name,
+                    &arguments
+                        .iter()
+                        .map(|argument| argument.pretty_print(declaration_engine))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
             }
         }
     }

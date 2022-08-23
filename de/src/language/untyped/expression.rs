@@ -18,8 +18,8 @@ pub enum Expression {
         arguments: Vec<Expression>,
     },
     MethodCall {
-        parent: String,
-        name: String,
+        parent_name: String,
+        func_name: String,
         type_arguments: Vec<TypeArgument>,
         arguments: Vec<Expression>,
     },
@@ -28,12 +28,6 @@ pub enum Expression {
         type_arguments: Vec<TypeArgument>,
         fields: Vec<StructExpressionField>,
     },
-    // Enum {
-    //     enum_name: String,
-    //     variant_name: String,
-    //     type_arguments: Vec<TypeArgument>,
-    //     value: Box<Expression>,
-    // },
 }
 
 impl fmt::Display for Expression {
@@ -70,8 +64,8 @@ impl fmt::Display for Expression {
                 )
             }
             Expression::MethodCall {
-                parent,
-                name,
+                parent_name: parent,
+                func_name: name,
                 type_arguments,
                 arguments,
             } => {
@@ -211,6 +205,20 @@ pub mod constructors {
         StructExpressionField {
             name: name.to_string(),
             value,
+        }
+    }
+
+    pub fn method_app(
+        parent_name: &str,
+        func_name: &str,
+        type_arguments: &[TypeArgument],
+        arguments: &[Expression],
+    ) -> Expression {
+        Expression::MethodCall {
+            parent_name: parent_name.to_string(),
+            func_name: func_name.to_string(),
+            type_arguments: type_arguments.to_vec(),
+            arguments: arguments.to_vec(),
         }
     }
 }

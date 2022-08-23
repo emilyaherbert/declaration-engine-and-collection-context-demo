@@ -81,6 +81,7 @@ pub(super) fn analyze_expression(
                 .map(|(argument, parameter)| {
                     let typed_argument =
                         analyze_expression(namespace, declaration_engine, argument);
+                    println!("{}", typed_function_declaration.name);
                     unify_types(typed_argument.type_id, parameter.type_id).unwrap();
                     typed_argument
                 })
@@ -167,8 +168,8 @@ pub(super) fn analyze_expression(
             }
         }
         Expression::MethodCall {
-            parent,
-            name,
+            parent_name,
+            func_name,
             type_arguments,
             arguments,
         } => {
@@ -176,49 +177,39 @@ pub(super) fn analyze_expression(
                 panic!()
             }
 
-            unimplemented!()
-        } // Expression::Struct { .. } => {
-          //     let new_fields = fields
-          //         .into_iter()
-          //         .map(|field| {
-          //             analyze_struct_expression_field(
-          //                 namespace,
+            // get the variable decl for this method call
+            let parent = namespace
+                .get_symbol(&parent_name)
+                .unwrap()
+                .expect_variable()
+                .unwrap();
 
-          //                 declaration_engine,
-          //                 field,
-          //             )
-          //         })
-          //         .collect();
-          //     let type_id = todo!();
-          //     let variant = TypedExpressionVariant::Struct {
-          //         struct_name,
-          //         fields: new_fields,
-          //     };
-          //     TypedExpression { variant, type_id }
-          // }
-          // Expression::Enum { .. } => {
-          //     let new_value =
-          //         analyze_expression(namespace,  declaration_engine, *value);
-          //     let type_id = todo!();
-          //     let variant = TypedExpressionVariant::Enum {
-          //         enum_name,
-          //         variant_name,
-          //         value: Box::new(new_value),
-          //     };
-          //     TypedExpression { variant, type_id }
-          // }
+            // get the function call
+            let typed_function_declaration = namespace
+                .get_method(parent.type_ascription, &func_name, declaration_engine)
+                .unwrap();
+
+            // type check the arguments
+            let new_arguments = arguments
+                .into_iter()
+                .zip(typed_function_declaration.parameters.iter())
+                .map(|(argument, parameter)| {
+                    let typed_argument =
+                        analyze_expression(namespace, declaration_engine, argument);
+                    unify_types(typed_argument.type_id, parameter.type_id).unwrap();
+                    typed_argument
+                })
+                .collect::<Vec<_>>();
+
+            // the type id is the functions return type id
+            let type_id = insert_type(TypeInfo::Ref(typed_function_declaration.return_type));
+
+            let variant = TypedExpressionVariant::MethodCall {
+                parent_name,
+                func_name,
+                arguments: new_arguments,
+            };
+            TypedExpression { variant, type_id }
+        }
     }
 }
-
-// fn analyze_struct_expression_field(
-//     namespace: &mut Namespace,
-//     declaration_engine: &mut DeclarationEngine,
-//     struct_expression_field: StructExpressionField,
-// ) -> TypedStructExpressionField {
-//     let new_value =
-//         analyze_expression(namespace, declaration_engine, struct_expression_field.value);
-//     TypedStructExpressionField {
-//         name: struct_expression_field.name,
-//         value: new_value,
-//     }
-// }

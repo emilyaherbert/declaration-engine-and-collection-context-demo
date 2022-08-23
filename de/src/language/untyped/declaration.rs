@@ -13,7 +13,6 @@ pub enum Declaration {
     Trait(TraitDeclaration),
     TraitImpl(TraitImpl),
     Struct(StructDeclaration),
-    // Enum(EnumDeclaration),
     // SelfImpl(SelfImpl),
 }
 
@@ -59,7 +58,7 @@ impl fmt::Display for FunctionDeclaration {
     fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
-            "fn {}{}({}) -> {} {{",
+            "fn {}{}({}) -> {}{} {{",
             self.name,
             if self.type_parameters.is_empty() {
                 "".to_string()
@@ -79,6 +78,23 @@ impl fmt::Display for FunctionDeclaration {
                 .collect::<Vec<_>>()
                 .join(", "),
             self.return_type,
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    " where {}",
+                    self.type_parameters
+                        .iter()
+                        .filter(|x| x.trait_constraint.is_some())
+                        .map(|x| format!(
+                            "{}: {}",
+                            x.type_id,
+                            x.trait_constraint.clone().unwrap().trait_name
+                        ))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            },
         )
         .unwrap();
         {
@@ -232,13 +248,6 @@ impl fmt::Display for StructField {
         write!(f, "{}({})", self.name, self.type_info)
     }
 }
-
-// #[derive(Clone)]
-// pub struct EnumDeclaration {
-//     pub(crate) name: String,
-//     pub(crate) type_parameters: Vec<TypeParameter>,
-//     pub(crate) variants: Vec<EnumVariant>,
-// }
 
 #[derive(Clone, Hash)]
 pub struct EnumVariant {

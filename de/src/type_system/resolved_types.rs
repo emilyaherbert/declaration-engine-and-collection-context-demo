@@ -12,11 +12,7 @@ pub(crate) enum ResolvedType {
         name: String,
         type_parameters: Vec<ResolvedTypeParameter>,
         fields: Vec<ResolvedStructField>,
-    }, // Enum {
-       //     name: String,
-       //     type_parameters: Vec<ResolvedTypeParameter>,
-       //     variant_types: Vec<ResolvedEnumVariant>,
-       // },
+    },
 }
 
 impl fmt::Display for ResolvedType {

@@ -27,16 +27,7 @@ pub enum TypeInfo {
         name: String,
         type_parameters: Vec<TypeParameter>,
         fields: Vec<TypedStructField>,
-    }, // Enum {
-       //     name: String,
-       //     type_parameters: Vec<TypeParameter>,
-       //     variant_types: Vec<TypedEnumVariant>,
-       // },
-       // Struct {
-       //     name: String,
-       //     type_parameters: Vec<TypeParameter>,
-       //     fields: Vec<TypedStructField>,
-       // },
+    },
 }
 
 impl Default for TypeInfo {
@@ -120,16 +111,6 @@ impl Hash for TypeInfo {
                 state.write_u8(7);
                 name.hash(state);
             }
-            // TypeInfo::Enum {
-            //     name,
-            //     type_parameters,
-            //     variant_types,
-            // } => {
-            //     state.write_u8(4);
-            //     name.hash(state);
-            //     type_parameters.hash(state);
-            //     variant_types.hash(state);
-            // }
         }
     }
 }
@@ -144,6 +125,21 @@ impl PartialEq for TypeInfo {
             ) => l_name == r_name,
             (TypeInfo::UnsignedInteger(l), TypeInfo::UnsignedInteger(r)) => l == r,
             (TypeInfo::Ref(l), TypeInfo::Ref(r)) => look_up_type_id(*l) == look_up_type_id(*r),
+            (TypeInfo::ErrorRecovery, TypeInfo::ErrorRecovery) => todo!(),
+            (TypeInfo::Custom { name: l }, TypeInfo::Custom { name: r }) if l == r => true,
+            (TypeInfo::Unit, TypeInfo::Unit) => true,
+            (
+                TypeInfo::Struct {
+                    name: l_name,
+                    fields: l_fields,
+                    type_parameters: l_type_parameters,
+                },
+                TypeInfo::Struct {
+                    name: r_name,
+                    fields: r_fields,
+                    type_parameters: r_type_parameters,
+                },
+            ) => l_name == r_name && l_fields == r_fields && l_type_parameters == r_type_parameters,
             _ => false,
         }
     }

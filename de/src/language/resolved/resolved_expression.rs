@@ -29,11 +29,12 @@ pub(crate) enum ResolvedExpressionVariant {
     Struct {
         struct_name: String,
         fields: Vec<ResolvedStructExpressionField>,
-    }, // Enum {
-       //     enum_name: String,
-       //     variant_name: String,
-       //     value: Box<ResolvedExpression>,
-       // },
+    },
+    MethodCall {
+        parent_name: String,
+        func_name: String,
+        arguments: Vec<ResolvedExpression>,
+    },
 }
 
 impl fmt::Display for ResolvedExpressionVariant {
@@ -65,7 +66,24 @@ impl fmt::Display for ResolvedExpressionVariant {
                     }
                 }
                 write!(f, "}}")
-            } // ResolvedExpressionVariant::Enum { .. } => todo!(),
+            }
+            ResolvedExpressionVariant::MethodCall {
+                parent_name,
+                func_name,
+                arguments,
+            } => {
+                write!(
+                    f,
+                    "{}.{}({})",
+                    parent_name,
+                    func_name,
+                    &arguments
+                        .iter()
+                        .map(|argument| argument.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
         }
     }
 }

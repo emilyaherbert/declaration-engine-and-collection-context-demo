@@ -1,6 +1,7 @@
 use crate::{
     language::typed::typed_declaration::{
-        TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitImpl,
+        TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
+        TypedTraitImpl,
     },
     types::pretty_print::PrettyPrint,
 };
@@ -13,6 +14,7 @@ pub(crate) enum DeclarationWrapper {
     Default,
     Function(TypedFunctionDeclaration),
     Trait(TypedTraitDeclaration),
+    TraitFn(TypedTraitFn),
     TraitImpl(TypedTraitImpl),
     Struct(TypedStructDeclaration),
 }
@@ -28,9 +30,10 @@ impl PrettyPrint for DeclarationWrapper {
         match self {
             DeclarationWrapper::Default => "default case".to_string(),
             DeclarationWrapper::Function(decl) => decl.pretty_print(declaration_engine),
-            DeclarationWrapper::Trait(decl) => decl.to_string(),
+            DeclarationWrapper::Trait(decl) => decl.pretty_print(declaration_engine),
             DeclarationWrapper::TraitImpl(decl) => decl.pretty_print(declaration_engine),
             DeclarationWrapper::Struct(decl) => decl.to_string(),
+            DeclarationWrapper::TraitFn(decl) => decl.to_string(),
         }
     }
 }
@@ -47,6 +50,13 @@ impl DeclarationWrapper {
         match self {
             DeclarationWrapper::Trait(decl) => Ok(decl),
             _ => Err("expected to find trait declaration".to_string()),
+        }
+    }
+
+    pub(super) fn expect_trait_fn(self) -> Result<TypedTraitFn, String> {
+        match self {
+            DeclarationWrapper::TraitFn(decl) => Ok(decl),
+            _ => Err("expected to find trait fn".to_string()),
         }
     }
 

@@ -3,7 +3,8 @@ use linked_hash_map::LinkedHashMap;
 use crate::{
     concurrent_slab::ConcurrentSlab,
     language::typed::typed_declaration::{
-        TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitImpl,
+        TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
+        TypedTraitImpl,
     },
     types::pretty_print::PrettyPrint,
 };
@@ -62,9 +63,7 @@ impl DeclarationEngine {
             self.slab.pretty_print(self)
         );
     }
-}
 
-impl DeclarationEngine {
     pub(crate) fn insert_function(&self, function: TypedFunctionDeclaration) -> DeclarationId {
         self.slab.insert(DeclarationWrapper::Function(function))
     }
@@ -94,15 +93,21 @@ impl DeclarationEngine {
             .map(|x| x.expect_function())
             .collect::<Result<_, _>>()
     }
-}
 
-impl DeclarationEngine {
     pub(crate) fn insert_trait(&self, r#trait: TypedTraitDeclaration) -> DeclarationId {
         self.slab.insert(DeclarationWrapper::Trait(r#trait))
     }
 
     pub(crate) fn get_trait(&self, index: DeclarationId) -> Result<TypedTraitDeclaration, String> {
         self.slab.get(index).expect_trait()
+    }
+
+    pub(crate) fn insert_trait_fn(&self, trait_fn: TypedTraitFn) -> DeclarationId {
+        self.slab.insert(DeclarationWrapper::TraitFn(trait_fn))
+    }
+
+    pub(crate) fn get_trait_fn(&self, index: DeclarationId) -> Result<TypedTraitFn, String> {
+        self.slab.get(index).expect_trait_fn()
     }
 
     pub(crate) fn insert_trait_impl(&self, trait_impl: TypedTraitImpl) -> DeclarationId {
@@ -112,9 +117,7 @@ impl DeclarationEngine {
     pub(crate) fn get_trait_impl(&self, index: DeclarationId) -> Result<TypedTraitImpl, String> {
         self.slab.get(index).expect_trait_impl()
     }
-}
 
-impl DeclarationEngine {
     pub(crate) fn insert_struct(&self, r#struct: TypedStructDeclaration) -> DeclarationId {
         self.slab.insert(DeclarationWrapper::Struct(r#struct))
     }

@@ -374,3 +374,183 @@ fn generic_struct_with_trait_test() {
     let resolved_application = compile(application);
     println!("{}", resolved_application);
 }
+
+#[test]
+fn method_call_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+
+    let handle_u64_decl = handle_u64_decl();
+    let data_decl = struct_(
+        "Data",
+        &[],
+        &[
+            struct_field("field_one", t_u8()),
+            struct_field("field_two", t_u32()),
+        ],
+    );
+    let point_decl = struct_(
+        "Point",
+        &[],
+        &[
+            struct_field("x_cord", t_u64()),
+            struct_field("y_cord", t_u64()),
+        ],
+    );
+
+    let impl_handle_for_data = handle_u64_impl(t_cus_("Data"), 99);
+    let impl_handle_for_point = handle_u64_impl(t_cus_("Point"), 222);
+
+    let foo_decl = var_decl(
+        "foo",
+        None,
+        struct_exp(
+            "Data",
+            &[],
+            &[
+                struct_exp_field("field_one", u8(2u8)),
+                struct_exp_field("field_two", u32(3u32)),
+            ],
+        ),
+    );
+    let bar_decl = var_decl(
+        "bar",
+        None,
+        struct_exp(
+            "Data",
+            &[],
+            &[
+                struct_exp_field("field_one", u8(99u8)),
+                struct_exp_field("field_two", u32(24u32)),
+            ],
+        ),
+    );
+    let apple_decl = var_decl(
+        "apple",
+        None,
+        method_app("foo", "handle_u64_fn", &[], &[u64(8u64)]),
+    );
+    let orange_decl = var_decl(
+        "orange",
+        None,
+        method_app("bar", "handle_u64_fn", &[], &[u64(8u64)]),
+    );
+    let main_fn = func_decl(
+        "main",
+        &[],
+        &[],
+        &[foo_decl, bar_decl, apple_decl, orange_decl],
+        t_unit(),
+    );
+    let program_1 = File {
+        name: "bob.sw".to_string(),
+        nodes: vec![
+            handle_u64_decl,
+            data_decl,
+            point_decl,
+            impl_handle_for_data,
+            impl_handle_for_point,
+            main_fn,
+        ],
+    };
+    let application = Application {
+        files: vec![program_1],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
+}
+
+#[test]
+fn trait_constraint_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+
+    let handle_u64_decl = handle_u64_decl();
+    let data_decl = struct_(
+        "Data",
+        &[],
+        &[
+            struct_field("field_one", t_u8()),
+            struct_field("field_two", t_u32()),
+        ],
+    );
+    let point_decl = struct_(
+        "Point",
+        &[],
+        &[
+            struct_field("x_cord", t_u64()),
+            struct_field("y_cord", t_u64()),
+        ],
+    );
+
+    let impl_handle_for_data = handle_u64_impl(t_cus_("Data"), 99);
+    let impl_handle_for_point = handle_u64_impl(t_cus_("Point"), 222);
+
+    let call_it_fn = func_decl(
+        "call_it",
+        &[type_param("T", Some("HandleU64"))],
+        &[func_param("value", t_gen_("T"))],
+        &[return_(method_app(
+            "value",
+            "handle_u64_fn",
+            &[],
+            &[u64(75u64)],
+        ))],
+        t_gen_("T"),
+    );
+
+    let foo_decl = var_decl(
+        "foo",
+        None,
+        struct_exp(
+            "Data",
+            &[],
+            &[
+                struct_exp_field("field_one", u8(2u8)),
+                struct_exp_field("field_two", u32(3u32)),
+            ],
+        ),
+    );
+    let bar_decl = var_decl(
+        "bar",
+        None,
+        struct_exp(
+            "Data",
+            &[],
+            &[
+                struct_exp_field("field_one", u8(99u8)),
+                struct_exp_field("field_two", u32(24u32)),
+            ],
+        ),
+    );
+    let apple_decl = var_decl("apple", None, func_app("call_it", &[], &[var("foo")]));
+    let orange_decl = var_decl("orange", None, func_app("call_it", &[], &[var("bar")]));
+    let main_fn = func_decl(
+        "main",
+        &[],
+        &[],
+        &[foo_decl, bar_decl, apple_decl, orange_decl],
+        t_unit(),
+    );
+    let program_1 = File {
+        name: "bob.sw".to_string(),
+        nodes: vec![
+            handle_u64_decl,
+            data_decl,
+            point_decl,
+            impl_handle_for_data,
+            impl_handle_for_point,
+            call_it_fn,
+            main_fn,
+        ],
+    };
+    let application = Application {
+        files: vec![program_1],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
+}

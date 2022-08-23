@@ -1,9 +1,17 @@
+use std::fmt;
+
 use crate::types::pretty_print::PrettyPrint;
 
 use super::declaration_engine::DeclarationEngine;
 
 #[derive(Clone, Copy, Debug)]
 pub struct DeclarationId(usize);
+
+impl fmt::Display for DeclarationId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
 
 impl std::ops::Deref for DeclarationId {
     type Target = usize;

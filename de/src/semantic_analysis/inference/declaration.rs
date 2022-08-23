@@ -69,29 +69,26 @@ pub(super) fn analyze_declaration(
         Declaration::TraitImpl(trait_impl) => {
             let typed_trait_impl =
                 analyze_trait_impl(&mut namespace.scoped(), declaration_engine, trait_impl);
+            namespace.insert_methods(
+                typed_trait_impl.type_implementing_for,
+                typed_trait_impl.trait_name.clone(),
+                typed_trait_impl.methods.clone(),
+            );
             let decl_id = declaration_engine.insert_trait_impl(typed_trait_impl);
             TypedDeclaration::TraitImpl(decl_id)
         }
         Declaration::Struct(struct_declaration) => {
-            let typed_struct_declaration = analyze_struct(&mut namespace.scoped(), declaration_engine, struct_declaration);
+            let typed_struct_declaration = analyze_struct(
+                &mut namespace.scoped(),
+                declaration_engine,
+                struct_declaration,
+            );
             let name = typed_struct_declaration.name.clone();
             let decl_id = declaration_engine.insert_struct(typed_struct_declaration);
             let decl = TypedDeclaration::Struct(decl_id);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        // Declaration::Enum(_) => {
-        //     let typed_enum_declaration = analyze_enum(
-        //         namespace,
-        //         declaration_engine,
-        //         enum_declaration,
-        //     );
-        //     let name = typed_enum_declaration.name.clone();
-        //     declaration_engine.insert_enum(name.clone(), typed_enum_declaration);
-        //     TypedDeclaration::Enum(name)
-        // }
-        // Declaration::TraitImpl(_) => unimplemented!(),
-        // Declaration::SelfImpl(_) => unimplemented!(),
     }
 }
 
@@ -126,6 +123,19 @@ fn analyze_function(
             type_id: type_parameter.type_id,
         };
         namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);
+        if let Some(constraint) = &type_parameter.trait_constraint {
+            let decl_id = namespace
+                .get_symbol(&constraint.trait_name)
+                .unwrap()
+                .expect_trait()
+                .unwrap();
+            let trait_decl = declaration_engine.get_trait(decl_id).unwrap();
+            namespace.insert_methods(
+                type_parameter.type_id,
+                constraint.trait_name.clone(),
+                trait_decl.interface_surface,
+            );
+        }
     }
 
     // type check the function params
@@ -213,7 +223,10 @@ fn analyze_trait(
     let new_interface_surface = trait_declaration
         .interface_surface
         .into_iter()
-        .map(|trait_fn| analyze_trait_fn(namespace, declaration_engine, trait_fn))
+        .map(|trait_fn| {
+            let trait_fn = analyze_trait_fn(namespace, declaration_engine, trait_fn);
+            declaration_engine.insert_trait_fn(trait_fn)
+        })
         .collect::<Vec<_>>();
     TypedTraitDeclaration {
         name: trait_declaration.name,
@@ -286,12 +299,6 @@ fn analyze_trait_impl(
         })
         .collect::<Vec<_>>();
 
-    namespace.insert_trait_impl(
-        type_implementing_for,
-        trait_impl.trait_name.clone(),
-        typed_method_ids.clone(),
-    );
-
     TypedTraitImpl {
         trait_name: trait_impl.trait_name,
         type_implementing_for,
@@ -342,35 +349,3 @@ fn analyze_struct_field(
         .unwrap(),
     }
 }
-
-// fn analyze_enum(
-//     namespace: &mut Namespace,
-//     declaration_engine: &mut DeclarationEngine,
-//     enum_declaration: EnumDeclaration,
-// ) -> TypedEnumDeclaration {
-//     if !enum_declaration.type_parameters.is_empty() {
-//         panic!()
-//     }
-//     let new_variants = enum_declaration
-//         .variants
-//         .into_iter()
-//         .map(|variant| analyze_enum_variant(namespace, declaration_engine, variant))
-//         .collect::<Vec<_>>();
-//     TypedEnumDeclaration {
-//         name: enum_declaration.name,
-//         type_parameters: vec![],
-//         variants: new_variants,
-//     }
-// }
-
-// fn analyze_enum_variant(
-//     _namespace: &mut Namespace,
-//     _declaration_engine: &mut DeclarationEngine,
-//     enum_variant: EnumVariant,
-// ) -> TypedEnumVariant {
-//     TypedEnumVariant {
-//         name: enum_variant.name,
-//         tag: enum_variant.tag,
-//         type_id: insert_type(enum_variant.type_info),
-//     }
-// }

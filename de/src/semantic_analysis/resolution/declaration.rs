@@ -152,8 +152,9 @@ fn resolve_trait_declaration(
 
 fn resolve_trait_fn(
     declaration_engine: &DeclarationEngine,
-    trait_fn: TypedTraitFn,
+    trait_fn_id: DeclarationId,
 ) -> ResolvedTraitFn {
+    let trait_fn = declaration_engine.get_trait_fn(trait_fn_id).unwrap();
     let resolved_parameters = trait_fn
         .parameters
         .into_iter()
