@@ -347,11 +347,11 @@ fn generic_struct_with_trait_test() {
         "bar",
         None,
         struct_exp(
-            "Data",
+            "Point",
             &[],
             &[
-                struct_exp_field("field_one", u8(99u8)),
-                struct_exp_field("field_two", u32(24u32)),
+                struct_exp_field("x_cord", u64(99u64)),
+                struct_exp_field("y_cord", u64(24u64)),
             ],
         ),
     );
@@ -418,11 +418,11 @@ fn method_call_test() {
         "bar",
         None,
         struct_exp(
-            "Data",
+            "Point",
             &[],
             &[
-                struct_exp_field("field_one", u8(99u8)),
-                struct_exp_field("field_two", u32(24u32)),
+                struct_exp_field("x_cord", u64(99u64)),
+                struct_exp_field("y_cord", u64(24u64)),
             ],
         ),
     );
@@ -499,7 +499,7 @@ fn trait_constraint_test() {
             &[],
             &[u64(75u64)],
         ))],
-        t_gen_("T"),
+        t_u64(),
     );
 
     let foo_decl = var_decl(
@@ -518,11 +518,11 @@ fn trait_constraint_test() {
         "bar",
         None,
         struct_exp(
-            "Data",
+            "Point",
             &[],
             &[
-                struct_exp_field("field_one", u8(99u8)),
-                struct_exp_field("field_two", u32(24u32)),
+                struct_exp_field("x_cord", u64(99u64)),
+                struct_exp_field("y_cord", u64(24u64)),
             ],
         ),
     );
