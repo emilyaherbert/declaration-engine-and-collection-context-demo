@@ -12,7 +12,7 @@ use crate::{
 use super::{declaration_id::DeclarationId, declaration_wrapper::DeclarationWrapper};
 
 // TODO: will need to use concurrent structure like https://github.com/xacrimon/dashmaps
-pub struct DeclarationEngine {
+pub(crate) struct DeclarationEngine {
     slab: ConcurrentSlab<DeclarationWrapper>,
     // *declaration_id -> vec of monomorphized copies
     // where the declaration_id is the original declartion

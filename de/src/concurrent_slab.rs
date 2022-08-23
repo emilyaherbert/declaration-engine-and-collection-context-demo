@@ -7,7 +7,7 @@ use crate::{
 };
 
 #[derive(Debug, Default, Clone)]
-pub struct ConcurrentSlab<T> {
+pub(crate) struct ConcurrentSlab<T> {
     inner: Arc<RwLock<Vec<T>>>,
 }
 

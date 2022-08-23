@@ -23,9 +23,6 @@ pub fn compile(application: Application) -> ResolvedApplication {
     // resolve all types
     let resolved_application = resolve(&declaration_engine, typed_application);
 
-    // namespace.debug_print();
-    // declaration_engine.debug_print();
-
     // ir generation happens
 
     resolved_application

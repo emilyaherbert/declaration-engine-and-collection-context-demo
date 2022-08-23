@@ -8,6 +8,8 @@ use crate::{
 
 use super::declaration_engine::DeclarationEngine;
 
+/// The [DeclarationWrapper] type is used in the [DeclarationEngine]
+/// as a means of placing all declaration types into the same type.
 #[derive(Clone)]
 pub(crate) enum DeclarationWrapper {
     // no-op variant to fufill the default trait
