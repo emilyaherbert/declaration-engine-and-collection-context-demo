@@ -7,7 +7,7 @@ use super::type_engine::{insert_type, look_up_type_id, look_up_type_id_raw};
 use super::type_info::TypeInfo;
 use super::type_mapping::TypeMapping;
 
-#[derive(Eq, Clone, Copy, Debug)]
+#[derive(Eq, Clone, Copy, Debug, Default)]
 pub struct TypeId(usize);
 
 impl std::ops::Deref for TypeId {

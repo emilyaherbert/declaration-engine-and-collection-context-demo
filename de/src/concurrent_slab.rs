@@ -1,4 +1,7 @@
-use std::sync::{Arc, RwLock};
+use std::{
+    marker::PhantomData,
+    sync::{Arc, RwLock},
+};
 
 use crate::{
     declaration_engine::declaration_engine::DeclarationEngine,
@@ -7,11 +10,12 @@ use crate::{
 };
 
 #[derive(Debug, Default, Clone)]
-pub(crate) struct ConcurrentSlab<T> {
+pub(crate) struct ConcurrentSlab<I, T> {
+    indexer: PhantomData<I>,
     inner: Arc<RwLock<Vec<T>>>,
 }
 
-impl<T> PrettyPrint for ConcurrentSlab<T>
+impl<I, T> PrettyPrint for ConcurrentSlab<I, T>
 where
     T: PrettyPrint,
 {
@@ -25,30 +29,25 @@ where
     }
 }
 
-impl<T> ConcurrentSlab<T>
+impl<I, T> ConcurrentSlab<I, T>
 where
     T: Clone,
+    I: From<usize> + std::ops::Deref<Target = usize>,
 {
-    pub fn insert<U>(&self, value: T) -> U
-    where
-        U: From<usize>,
-    {
+    pub fn insert(&self, value: T) -> I {
         let mut inner = self.inner.write().unwrap();
         let ret = inner.len();
         inner.push(value);
         ret.into()
     }
 
-    pub fn get<U>(&self, index: U) -> T
-    where
-        U: std::ops::Deref<Target = usize>,
-    {
+    pub fn get(&self, index: I) -> T {
         let inner = self.inner.read().unwrap();
         inner[*index].clone()
     }
 }
 
-impl ConcurrentSlab<TypeInfo> {
+impl ConcurrentSlab<TypeId, TypeInfo> {
     pub fn replace(
         &self,
         index: TypeId,

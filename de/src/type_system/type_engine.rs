@@ -26,7 +26,7 @@ lazy_static! {
 
 #[derive(Default)]
 struct TypeEngine {
-    slab: ConcurrentSlab<TypeInfo>,
+    slab: ConcurrentSlab<TypeId, TypeInfo>,
 }
 
 impl TypeEngine {

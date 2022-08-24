@@ -15,7 +15,7 @@ use super::{declaration_id::DeclarationId, declaration_wrapper::DeclarationWrapp
 
 /// Used inside of type inference to store declarations.
 pub(crate) struct DeclarationEngine {
-    slab: ConcurrentSlab<DeclarationWrapper>,
+    slab: ConcurrentSlab<DeclarationId, DeclarationWrapper>,
     // *declaration_id -> vec of monomorphized copies
     // where the declaration_id is the original declartion
     monomorphized_copies: LinkedHashMap<usize, Vec<DeclarationId>>,
@@ -53,10 +53,7 @@ impl DeclarationEngine {
         original_id: DeclarationId,
     ) -> Vec<DeclarationWrapper> {
         match self.monomorphized_copies.get(&*original_id).cloned() {
-            Some(copies) => copies
-                .into_iter()
-                .map(|copy| self.slab.get(&*copy))
-                .collect(),
+            Some(copies) => copies.into_iter().map(|copy| self.slab.get(copy)).collect(),
             None => vec![],
         }
     }
