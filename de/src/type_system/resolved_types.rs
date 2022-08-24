@@ -4,6 +4,7 @@ use crate::{
     language::resolved::resolved_declaration::ResolvedStructField, type_system::IntegerBits,
 };
 
+/// Subset of [TypeInfo](crate::type_system::type_info::TypeInfo) that gaurentees a well-formed AST.
 #[derive(Clone)]
 pub(crate) enum ResolvedType {
     UnsignedInteger(IntegerBits),

@@ -52,6 +52,19 @@ impl PrettyPrint for TypedDeclaration {
     }
 }
 
+impl From<&TypedFunctionParameter> for TypedDeclaration {
+    fn from(param: &TypedFunctionParameter) -> Self {
+        TypedDeclaration::Variable(TypedVariableDeclaration {
+            name: param.name.clone(),
+            type_ascription: param.type_id,
+            body: TypedExpression {
+                variant: TypedExpressionVariant::FunctionParameter,
+                type_id: param.type_id,
+            },
+        })
+    }
+}
+
 impl TypedDeclaration {
     pub(crate) fn expect_variable(self) -> Result<TypedVariableDeclaration, String> {
         if let TypedDeclaration::Variable(variable_declaration) = self {

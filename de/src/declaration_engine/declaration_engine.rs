@@ -11,7 +11,9 @@ use crate::{
 
 use super::{declaration_id::DeclarationId, declaration_wrapper::DeclarationWrapper};
 
-// TODO: will need to use concurrent structure like https://github.com/xacrimon/dashmaps
+// TODO: will need to use concurrent structure like https://github.com/xacrimon/dashmaps or im::HashMap
+
+/// Used inside of type inference to store declarations.
 pub(crate) struct DeclarationEngine {
     slab: ConcurrentSlab<DeclarationWrapper>,
     // *declaration_id -> vec of monomorphized copies

@@ -7,7 +7,6 @@ use crate::{
                 TypedStructDeclaration, TypedStructField, TypedTraitDeclaration, TypedTraitFn,
                 TypedTraitImpl, TypedVariableDeclaration,
             },
-            typed_expression::{TypedExpression, TypedExpressionVariant},
             TypedNode,
         },
         untyped::{
@@ -117,12 +116,16 @@ fn analyze_function(
     declaration_engine: &mut DeclarationEngine,
     function_declaration: FunctionDeclaration,
 ) -> TypedFunctionDeclaration {
-    // insert type params into namespace
+    // insert type params into namespace and handle trait constraints
     for type_parameter in function_declaration.type_parameters.iter() {
         let type_parameter_decl = TypedDeclaration::GenericTypeForFunctionScope {
             type_id: type_parameter.type_id,
         };
         namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);
+
+        // if the type param has a trait constraint, take the TypedTraitFn's from
+        // the trait it is constrained upon and insert them into the namespace
+        // under the type param
         if let Some(constraint) = &type_parameter.trait_constraint {
             let decl_id = namespace
                 .get_symbol(&constraint.trait_name)
@@ -142,7 +145,12 @@ fn analyze_function(
     let typed_parameters = function_declaration
         .parameters
         .into_iter()
-        .map(|parameter| analyze_function_parameter(namespace, declaration_engine, parameter))
+        .map(|parameter| {
+            let typed_parameter =
+                analyze_function_parameter(namespace, declaration_engine, parameter);
+            namespace.insert_symbol(typed_parameter.name.clone(), (&typed_parameter).into());
+            typed_parameter
+        })
         .collect::<Vec<_>>();
 
     // type check the function return type
@@ -180,15 +188,6 @@ fn analyze_function_parameter(
         declaration_engine,
     )
     .unwrap();
-    let typed_parameter_decl = TypedDeclaration::Variable(TypedVariableDeclaration {
-        name: function_parameter.name.clone(),
-        type_ascription: type_id,
-        body: TypedExpression {
-            variant: TypedExpressionVariant::FunctionParameter,
-            type_id,
-        },
-    });
-    namespace.insert_symbol(function_parameter.name.clone(), typed_parameter_decl);
     TypedFunctionParameter {
         name: function_parameter.name,
         type_id,
@@ -242,17 +241,23 @@ fn analyze_trait_fn(
     let new_parameters = trait_fn
         .parameters
         .into_iter()
-        .map(|parameter| analyze_function_parameter(namespace, declaration_engine, parameter))
+        .map(|parameter| {
+            let typed_parameter =
+                analyze_function_parameter(namespace, declaration_engine, parameter);
+            namespace.insert_symbol(typed_parameter.name.clone(), (&typed_parameter).into());
+            typed_parameter
+        })
         .collect::<Vec<_>>();
+    let return_type = eval_type(
+        insert_type(trait_fn.return_type),
+        namespace,
+        declaration_engine,
+    )
+    .unwrap();
     TypedTraitFn {
         name: trait_fn.name,
         parameters: new_parameters,
-        return_type: eval_type(
-            insert_type(trait_fn.return_type),
-            namespace,
-            declaration_engine,
-        )
-        .unwrap(),
+        return_type,
     }
 }
 
@@ -278,7 +283,7 @@ fn analyze_trait_impl(
     let _trait_decl = declaration_engine.get_trait(trait_id).unwrap();
 
     // TODO: check to see if all of the methods are implementing, no new methods implementing,
-    // when generic traits are implementing add the monomorphized copies to the declaration
+    // when generic traits are implemented add the monomorphized copies to the declaration
     // engine
 
     // type check the type we are implementing for

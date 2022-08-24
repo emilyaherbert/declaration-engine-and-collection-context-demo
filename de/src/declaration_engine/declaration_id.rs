@@ -4,6 +4,7 @@ use crate::types::pretty_print::PrettyPrint;
 
 use super::declaration_engine::DeclarationEngine;
 
+/// An I.D. used to refer to an item in the [DeclarationEngine]
 #[derive(Clone, Copy, Debug)]
 pub struct DeclarationId(usize);
 
