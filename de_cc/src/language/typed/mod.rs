@@ -1,4 +1,8 @@
-use std::fmt;
+use crate::{
+    declaration_engine::declaration_engine::DeclarationEngine,
+    type_system::type_mapping::TypeMapping,
+    types::{copy_types::CopyTypes, pretty_print::PrettyPrint},
+};
 
 use self::{typed_declaration::TypedDeclaration, typed_expression::TypedExpression};
 
@@ -14,21 +18,32 @@ pub(crate) struct TypedFile {
     pub(crate) nodes: Vec<TypedNode>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug)]
 pub(crate) enum TypedNode {
-    StarImport(String),
+    // StarImport(String),
     Declaration(TypedDeclaration),
     Expression(TypedExpression),
     ReturnStatement(TypedExpression),
 }
 
-impl fmt::Display for TypedNode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl CopyTypes for TypedNode {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
         match self {
-            TypedNode::Declaration(declaration) => write!(f, "{}", declaration),
-            TypedNode::Expression(expression) => write!(f, "{}", expression),
-            TypedNode::ReturnStatement(expression) => write!(f, "return {}", expression),
-            TypedNode::StarImport(name) => write!(f, "use {}::*", name),
+            TypedNode::Declaration(declaration) => declaration.copy_types(type_mapping),
+            TypedNode::Expression(expression) => expression.copy_types(type_mapping),
+            TypedNode::ReturnStatement(expression) => expression.copy_types(type_mapping),
+        }
+    }
+}
+
+impl PrettyPrint for TypedNode {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        match self {
+            TypedNode::Declaration(declaration) => declaration.pretty_print(declaration_engine),
+            TypedNode::Expression(expression) => expression.pretty_print(declaration_engine),
+            TypedNode::ReturnStatement(expression) => {
+                format!("return {}", expression.pretty_print(declaration_engine))
+            }
         }
     }
 }

@@ -1,33 +1,33 @@
+use std::fmt;
 use std::hash::Hash;
-use std::{fmt, hash::Hasher};
+use std::hash::Hasher;
 
-use crate::{
-    declaration_engine::declaration_ref::DeclarationRef,
-    language::typed::typed_declaration::{TypedEnumVariant, TypedStructField},
-};
+use crate::language::typed::typed_declaration::TypedStructField;
 
+use super::type_engine::insert_type;
 use super::type_engine::look_up_type_id;
-use super::{type_id::*, type_parameter::*, IntegerBits};
+use super::type_mapping::TypeMapping;
+use super::type_parameter::TypeParameter;
+use super::{type_id::*, IntegerBits};
 
 #[derive(Clone, Eq)]
 pub enum TypeInfo {
+    ErrorRecovery,
     Unknown,
     UnknownGeneric {
         name: String,
     },
-    UnsignedInteger(IntegerBits),
-    Enum {
+    Custom {
         name: String,
-        type_parameters: Vec<TypeParameter>,
-        variant_types: Vec<TypedEnumVariant>,
     },
+    Unit,
+    Ref(TypeId),
+    UnsignedInteger(IntegerBits),
     Struct {
         name: String,
         type_parameters: Vec<TypeParameter>,
         fields: Vec<TypedStructField>,
     },
-    Ref(TypeId),
-    DeclarationRef(DeclarationRef),
 }
 
 impl Default for TypeInfo {
@@ -37,15 +37,38 @@ impl Default for TypeInfo {
 }
 
 impl fmt::Display for TypeInfo {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            TypeInfo::ErrorRecovery => write!(f, "ERR"),
             TypeInfo::Unknown => write!(f, "UNK"),
             TypeInfo::UnknownGeneric { name } => write!(f, "{}", name),
+            TypeInfo::Custom { name } => write!(f, "{}", name),
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
-            TypeInfo::Enum { .. } => todo!(),
-            TypeInfo::Struct { .. } => todo!(),
             TypeInfo::Ref(_) => todo!(),
-            TypeInfo::DeclarationRef(decl_ref) => write!(f, "{}", decl_ref),
+            TypeInfo::Unit => write!(f, "()"),
+            TypeInfo::Struct {
+                name,
+                type_parameters,
+                ..
+            } => {
+                write!(
+                    f,
+                    "{}{}",
+                    name,
+                    if type_parameters.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "<{}>",
+                            type_parameters
+                                .iter()
+                                .map(|x| x.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    },
+                )
+            }
         }
     }
 }
@@ -53,6 +76,9 @@ impl fmt::Display for TypeInfo {
 impl Hash for TypeInfo {
     fn hash<H: Hasher>(&self, state: &mut H) {
         match self {
+            TypeInfo::ErrorRecovery => {
+                state.write_u8(0);
+            }
             TypeInfo::Unknown => {
                 state.write_u8(1);
             }
@@ -64,31 +90,27 @@ impl Hash for TypeInfo {
                 state.write_u8(3);
                 bits.hash(state);
             }
-            TypeInfo::Enum {
-                name,
-                type_parameters,
-                variant_types,
-            } => {
+            TypeInfo::Ref(id) => {
                 state.write_u8(4);
-                name.hash(state);
-                type_parameters.hash(state);
-                variant_types.hash(state);
+                look_up_type_id(*id).hash(state);
+            }
+            TypeInfo::Unit => {
+                state.write_u8(5);
             }
             TypeInfo::Struct {
                 name,
                 type_parameters,
                 fields,
             } => {
-                state.write_u8(5);
+                state.write_u8(6);
                 name.hash(state);
                 type_parameters.hash(state);
                 fields.hash(state);
             }
-            TypeInfo::Ref(id) => {
-                state.write_u8(6);
-                look_up_type_id(*id).hash(state);
+            TypeInfo::Custom { name } => {
+                state.write_u8(7);
+                name.hash(state);
             }
-            TypeInfo::DeclarationRef(_) => todo!(),
         }
     }
 }
@@ -102,22 +124,10 @@ impl PartialEq for TypeInfo {
                 TypeInfo::UnknownGeneric { name: r_name },
             ) => l_name == r_name,
             (TypeInfo::UnsignedInteger(l), TypeInfo::UnsignedInteger(r)) => l == r,
-            (
-                TypeInfo::Enum {
-                    name: l_name,
-                    variant_types: l_variant_types,
-                    type_parameters: l_type_parameters,
-                },
-                TypeInfo::Enum {
-                    name: r_name,
-                    variant_types: r_variant_types,
-                    type_parameters: r_type_parameters,
-                },
-            ) => {
-                l_name == r_name
-                    && l_variant_types == r_variant_types
-                    && l_type_parameters == r_type_parameters
-            }
+            (TypeInfo::Ref(l), TypeInfo::Ref(r)) => look_up_type_id(*l) == look_up_type_id(*r),
+            (TypeInfo::ErrorRecovery, TypeInfo::ErrorRecovery) => todo!(),
+            (TypeInfo::Custom { name: l }, TypeInfo::Custom { name: r }) if l == r => true,
+            (TypeInfo::Unit, TypeInfo::Unit) => true,
             (
                 TypeInfo::Struct {
                     name: l_name,
@@ -130,9 +140,62 @@ impl PartialEq for TypeInfo {
                     type_parameters: r_type_parameters,
                 },
             ) => l_name == r_name && l_fields == r_fields && l_type_parameters == r_type_parameters,
-            (TypeInfo::Ref(l), TypeInfo::Ref(r)) => look_up_type_id(*l) == look_up_type_id(*r),
-            (TypeInfo::DeclarationRef(_), _) => todo!(),
             _ => false,
+        }
+    }
+}
+
+impl TypeInfo {
+    pub(crate) fn matches_type_parameter(&self, mapping: &TypeMapping) -> Option<TypeId> {
+        match self {
+            TypeInfo::UnknownGeneric { .. } => {
+                for (param, ty_id) in mapping.iter() {
+                    if look_up_type_id(*param) == *self {
+                        return Some(*ty_id);
+                    }
+                }
+                None
+            }
+            TypeInfo::Custom { .. } => {
+                for (param, ty_id) in mapping.iter() {
+                    if look_up_type_id(*param) == *self {
+                        return Some(*ty_id);
+                    }
+                }
+                None
+            }
+            TypeInfo::Struct {
+                fields,
+                name,
+                type_parameters,
+            } => {
+                let mut new_type_parameters = type_parameters.clone();
+                for new_param in new_type_parameters.iter_mut() {
+                    if let Some(matching_id) =
+                        look_up_type_id(new_param.type_id).matches_type_parameter(mapping)
+                    {
+                        new_param.type_id = insert_type(TypeInfo::Ref(matching_id));
+                    }
+                }
+                let mut new_fields = fields.clone();
+                for new_field in new_fields.iter_mut() {
+                    if let Some(matching_id) =
+                        look_up_type_id(new_field.type_id).matches_type_parameter(mapping)
+                    {
+                        new_field.type_id = insert_type(TypeInfo::Ref(matching_id));
+                    }
+                }
+                Some(insert_type(TypeInfo::Struct {
+                    fields: new_fields,
+                    name: name.clone(),
+                    type_parameters: new_type_parameters,
+                }))
+            }
+            TypeInfo::ErrorRecovery
+            | TypeInfo::Unknown
+            | TypeInfo::Unit
+            | TypeInfo::Ref(_)
+            | TypeInfo::UnsignedInteger(_) => None,
         }
     }
 }
@@ -141,6 +204,18 @@ pub mod constructors {
     use crate::type_system::IntegerBits;
 
     use super::TypeInfo;
+
+    pub fn t_gen_(name: &str) -> TypeInfo {
+        TypeInfo::UnknownGeneric {
+            name: name.to_string(),
+        }
+    }
+
+    pub fn t_cus_(name: &str) -> TypeInfo {
+        TypeInfo::Custom {
+            name: name.to_string(),
+        }
+    }
 
     pub fn t_u8() -> TypeInfo {
         TypeInfo::UnsignedInteger(IntegerBits::Eight)
@@ -156,5 +231,9 @@ pub mod constructors {
 
     pub fn t_u64() -> TypeInfo {
         TypeInfo::UnsignedInteger(IntegerBits::SixtyFour)
+    }
+
+    pub fn t_unit() -> TypeInfo {
+        TypeInfo::Unit
     }
 }

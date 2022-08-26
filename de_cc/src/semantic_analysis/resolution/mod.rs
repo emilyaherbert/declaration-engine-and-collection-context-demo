@@ -40,21 +40,30 @@ fn resolve_nodes(
 ) -> Vec<ResolvedNode> {
     nodes
         .into_iter()
-        .map(|node| resolve_node(declaration_engine, node))
+        .flat_map(|node| resolve_node(declaration_engine, node))
         .collect()
 }
 
-fn resolve_node(declaration_engine: &DeclarationEngine, node: TypedNode) -> ResolvedNode {
+fn resolve_node(declaration_engine: &DeclarationEngine, node: TypedNode) -> Vec<ResolvedNode> {
     match node {
         TypedNode::Declaration(declaration) => {
-            ResolvedNode::Declaration(resolve_declaration(declaration_engine, declaration))
+            let declarations = resolve_declaration(declaration_engine, declaration);
+            declarations
+                .into_iter()
+                .map(ResolvedNode::Declaration)
+                .collect()
         }
         TypedNode::Expression(expression) => {
-            ResolvedNode::Expression(resolve_expression(declaration_engine, expression))
+            vec![ResolvedNode::Expression(resolve_expression(
+                declaration_engine,
+                expression,
+            ))]
         }
         TypedNode::ReturnStatement(expression) => {
-            ResolvedNode::ReturnStatement(resolve_expression(declaration_engine, expression))
-        }
-        TypedNode::StarImport(_) => todo!(),
+            vec![ResolvedNode::ReturnStatement(resolve_expression(
+                declaration_engine,
+                expression,
+            ))]
+        } // TypedNode::StarImport(_) => todo!(),
     }
 }

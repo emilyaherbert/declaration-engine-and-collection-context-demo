@@ -29,6 +29,7 @@ name = "de_cc"
 version = "0.1.0"
 dependencies = [
  "colored",
+ "indent_write",
  "lazy_static",
  "linked-hash-map",
 ]
@@ -41,6 +42,12 @@ checksum = "62b467343b94ba476dcb2500d242dadbb39557df889310ac77c5d99100aaac33"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "indent_write"
+version = "2.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0cfe9645a18782869361d9c8732246be7b410ad4e919d3609ebabdac00ba12c3"
 
 [[package]]
 name = "lazy_static"

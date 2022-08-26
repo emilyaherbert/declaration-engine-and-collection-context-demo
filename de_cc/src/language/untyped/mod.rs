@@ -1,5 +1,6 @@
-use colored::Colorize;
 use std::fmt;
+
+use colored::Colorize;
 
 use self::{declaration::Declaration, expression::Expression};
 
@@ -12,14 +13,14 @@ pub struct Application {
 
 impl fmt::Display for Application {
     #[allow(clippy::useless_format)]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}{}\n{}",
             format!("\n++++++++ UNTYPED").red(),
             self.files
                 .iter()
-                .map(|program| program.to_string())
+                .map(|file| file.to_string())
                 .collect::<Vec<_>>()
                 .join("\n"),
             format!("++++++++").red(),
@@ -34,7 +35,7 @@ pub struct File {
 
 impl fmt::Display for File {
     #[allow(clippy::useless_format)]
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut nodes_str = self
             .nodes
             .iter()
@@ -53,7 +54,7 @@ impl fmt::Display for File {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub enum Node {
     StarImport(String),
     Declaration(Declaration),
@@ -62,7 +63,7 @@ pub enum Node {
 }
 
 impl fmt::Display for Node {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Node::Declaration(declaration) => write!(f, "{}", declaration),
             Node::Expression(expression) => write!(f, "{}", expression),

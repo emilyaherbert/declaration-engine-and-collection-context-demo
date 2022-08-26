@@ -1,32 +1,67 @@
+use indent_write::fmt::IndentWriter;
 use std::fmt;
+use std::fmt::Write;
 
 use super::{typed_expression::*, TypedNode};
 
 use crate::{
-    language::untyped::declaration::FunctionDeclaration,
-    type_system::{type_id::TypeId, type_parameter::TypeParameter},
+    declaration_engine::{declaration_engine::DeclarationEngine, declaration_id::DeclarationId},
+    type_system::{
+        type_engine::{insert_type, MonomorphizeHelper},
+        type_id::TypeId,
+        type_info::TypeInfo,
+        type_mapping::TypeMapping,
+        type_parameter::TypeParameter,
+    },
+    types::{copy_types::CopyTypes, create_type_id::CreateTypeId, pretty_print::PrettyPrint},
 };
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug)]
 pub(crate) enum TypedDeclaration {
     Variable(TypedVariableDeclaration),
-    Function(String),
-    Trait(String),
-    Struct(String),
-    Enum(String),
-    TraitImpl(TypedTraitImpl),
+    Function(DeclarationId),
+    Trait(DeclarationId),
+    TraitImpl(DeclarationId),
+    GenericTypeForFunctionScope { type_id: TypeId },
+    Struct(DeclarationId),
 }
 
-impl fmt::Display for TypedDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl CopyTypes for TypedDeclaration {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
         match self {
-            TypedDeclaration::Variable(decl) => write!(f, "{}", decl),
-            TypedDeclaration::Function(name) => write!(f, "{}", name),
-            TypedDeclaration::Trait(name) => write!(f, "{}", name),
-            TypedDeclaration::Struct(name) => write!(f, "{}", name),
-            TypedDeclaration::Enum(name) => write!(f, "{}", name),
-            TypedDeclaration::TraitImpl(_) => todo!(),
+            TypedDeclaration::Variable(decl) => decl.copy_types(type_mapping),
+            TypedDeclaration::Function(_)
+            | TypedDeclaration::Trait(_)
+            | TypedDeclaration::TraitImpl(_)
+            | TypedDeclaration::Struct(_)
+            | TypedDeclaration::GenericTypeForFunctionScope { .. } => {}
         }
+    }
+}
+
+impl PrettyPrint for TypedDeclaration {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        match self {
+            TypedDeclaration::Variable(decl) => decl.pretty_print(declaration_engine),
+            TypedDeclaration::Function(id) => id.pretty_print(declaration_engine),
+            TypedDeclaration::Trait(id) => id.pretty_print(declaration_engine),
+            TypedDeclaration::TraitImpl(id) => id.pretty_print(declaration_engine),
+            TypedDeclaration::GenericTypeForFunctionScope { .. } => todo!(),
+            TypedDeclaration::Struct(id) => id.pretty_print(declaration_engine),
+        }
+    }
+}
+
+impl From<&TypedFunctionParameter> for TypedDeclaration {
+    fn from(param: &TypedFunctionParameter) -> Self {
+        TypedDeclaration::Variable(TypedVariableDeclaration {
+            name: param.name.clone(),
+            type_ascription: param.type_id,
+            body: TypedExpression {
+                variant: TypedExpressionVariant::FunctionParameter,
+                type_id: param.type_id,
+            },
+        })
     }
 }
 
@@ -38,26 +73,58 @@ impl TypedDeclaration {
             Err("not a variable declaration".to_string())
         }
     }
+
+    pub(crate) fn expect_function(self) -> Result<DeclarationId, String> {
+        if let TypedDeclaration::Function(decl_id) = self {
+            Ok(decl_id)
+        } else {
+            Err("not a function declaration".to_string())
+        }
+    }
+
+    pub(crate) fn expect_trait(self) -> Result<DeclarationId, String> {
+        if let TypedDeclaration::Trait(decl_id) = self {
+            Ok(decl_id)
+        } else {
+            Err("not a trait declaration".to_string())
+        }
+    }
+
+    pub(crate) fn expect_struct(self) -> Result<DeclarationId, String> {
+        if let TypedDeclaration::Struct(decl_id) = self {
+            Ok(decl_id)
+        } else {
+            Err("not a struct declaration".to_string())
+        }
+    }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug)]
 pub(crate) struct TypedVariableDeclaration {
     pub(crate) name: String,
     pub(crate) type_ascription: TypeId,
     pub(crate) body: TypedExpression,
 }
 
-impl fmt::Display for TypedVariableDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
+impl CopyTypes for TypedVariableDeclaration {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_ascription.copy_types(type_mapping);
+        self.body.copy_types(type_mapping);
+    }
+}
+
+impl PrettyPrint for TypedVariableDeclaration {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        format!(
             "let {}: {} = {}",
-            self.name, self.type_ascription, self.body
+            self.name,
+            self.type_ascription,
+            self.body.pretty_print(declaration_engine)
         )
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, Debug)]
 pub(crate) struct TypedFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
@@ -66,8 +133,33 @@ pub(crate) struct TypedFunctionDeclaration {
     pub(crate) return_type: TypeId,
 }
 
-impl fmt::Display for TypedFunctionDeclaration {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+impl CopyTypes for TypedFunctionDeclaration {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_parameters
+            .iter_mut()
+            .for_each(|x| x.copy_types(type_mapping));
+        self.parameters
+            .iter_mut()
+            .for_each(|x| x.copy_types(type_mapping));
+        self.return_type.copy_types(type_mapping);
+        self.body
+            .iter_mut()
+            .for_each(|node| node.copy_types(type_mapping));
+    }
+}
+
+impl MonomorphizeHelper for TypedFunctionDeclaration {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn type_parameters(&self) -> &[TypeParameter] {
+        &self.type_parameters
+    }
+}
+
+impl PrettyPrint for TypedFunctionDeclaration {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
         let mut builder = String::new();
         builder.push_str("fn ");
         builder.push_str(&self.name);
@@ -97,70 +189,192 @@ impl fmt::Display for TypedFunctionDeclaration {
         builder.push_str(" {");
         for line in self.body.iter() {
             builder.push_str("\n  ");
-            builder.push_str(&line.to_string());
+            builder.push_str(&line.pretty_print(declaration_engine));
             builder.push(';');
         }
         builder.push_str("\n{");
-        write!(f, "{}", builder)
+        builder
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) struct TypedFunctionParameter {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
 }
 
+impl CopyTypes for TypedFunctionParameter {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_id.copy_types(type_mapping);
+    }
+}
+
 impl fmt::Display for TypedFunctionParameter {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.name, self.type_id)
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone)]
 pub(crate) struct TypedTraitDeclaration {
     pub(crate) name: String,
-    pub(crate) interface_surface: Vec<TypedTraitFn>,
-    pub(crate) methods: Vec<FunctionDeclaration>,
+    pub(crate) interface_surface: Vec<DeclarationId>,
 }
 
-#[derive(Clone, PartialEq)]
+impl PrettyPrint for TypedTraitDeclaration {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        format!(
+            "trait {} {{\n{}\n}}",
+            self.name,
+            self.interface_surface
+                .iter()
+                .map(|trait_fn| trait_fn.pretty_print(declaration_engine))
+                .collect::<Vec<_>>()
+                .join(", "),
+        )
+    }
+}
+
+#[derive(Clone)]
 pub(crate) struct TypedTraitFn {
     pub(crate) name: String,
     pub(crate) parameters: Vec<TypedFunctionParameter>,
     pub(crate) return_type: TypeId,
 }
 
-#[derive(Clone, PartialEq)]
+impl fmt::Display for TypedTraitFn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "fn {}({}) -> {}",
+            self.name,
+            self.parameters
+                .iter()
+                .map(|parameter| parameter.to_string())
+                .collect::<Vec<_>>()
+                .join(", "),
+            self.return_type
+        )
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct TypedTraitImpl {
+    pub(crate) trait_name: String,
+    pub(crate) type_implementing_for: TypeId,
+    pub(crate) type_parameters: Vec<TypeParameter>,
+    pub(crate) methods: Vec<DeclarationId>,
+}
+
+impl PrettyPrint for TypedTraitImpl {
+    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
+        format!(
+            "impl{} {} for {} {{\n{}\n}}",
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    "<{}>",
+                    self.type_parameters
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            },
+            self.trait_name,
+            self.type_implementing_for,
+            self.methods
+                .iter()
+                .map(|method| method.pretty_print(declaration_engine))
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    }
+}
+
+#[derive(Clone)]
 pub(crate) struct TypedStructDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) fields: Vec<TypedStructField>,
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
+impl CreateTypeId for TypedStructDeclaration {
+    fn create_type_id(&self) -> TypeId {
+        insert_type(TypeInfo::Struct {
+            name: self.name.clone(),
+            type_parameters: self.type_parameters.clone(),
+            fields: self.fields.clone(),
+        })
+    }
+}
+
+impl CopyTypes for TypedStructDeclaration {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_parameters
+            .iter_mut()
+            .for_each(|x| x.copy_types(type_mapping));
+        self.fields
+            .iter_mut()
+            .for_each(|x| x.copy_types(type_mapping));
+    }
+}
+
+impl MonomorphizeHelper for TypedStructDeclaration {
+    fn name(&self) -> &str {
+        &self.name
+    }
+
+    fn type_parameters(&self) -> &[TypeParameter] {
+        &self.type_parameters
+    }
+}
+
+impl fmt::Display for TypedStructDeclaration {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "struct {}{} {{",
+            self.name,
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    "<{}>",
+                    self.type_parameters
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+        )
+        .unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for field in self.fields.iter() {
+                writeln!(indent, "{},", field).unwrap();
+            }
+        }
+        write!(f, "}}")
+    }
+}
+
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct TypedStructField {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
 }
 
-#[derive(Clone, PartialEq)]
-pub(crate) struct TypedEnumDeclaration {
-    pub(crate) name: String,
-    pub(crate) type_parameters: Vec<TypeParameter>,
-    pub(crate) variants: Vec<TypedEnumVariant>,
+impl CopyTypes for TypedStructField {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_id.copy_types(type_mapping);
+    }
 }
 
-#[derive(Clone, PartialEq, Eq, Hash)]
-pub struct TypedEnumVariant {
-    pub(crate) name: String,
-    pub(crate) type_id: TypeId,
-    pub(crate) tag: usize,
-}
-
-#[derive(Clone, PartialEq)]
-pub(crate) struct TypedTraitImpl {
-    pub(crate) trait_name: String,
-    pub(crate) type_implementing_for: TypeId,
-    pub(crate) methods: Vec<TypedFunctionDeclaration>,
+impl fmt::Display for TypedStructField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}({})", self.name, self.type_id)
+    }
 }
