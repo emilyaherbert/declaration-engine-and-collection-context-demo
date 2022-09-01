@@ -7,7 +7,7 @@ use super::{typed_expression::*, TypedNode};
 use crate::{
     declaration_engine::declaration_id::DeclarationId,
     type_system::{
-        type_engine::{insert_type, look_up_type_id, MonomorphizeHelper},
+        type_engine::{insert_type, MonomorphizeHelper},
         type_id::TypeId,
         type_info::TypeInfo,
         type_mapping::TypeMapping,
@@ -271,7 +271,7 @@ impl fmt::Display for TypedTraitFn {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) struct TypedTraitImpl {
     pub(crate) trait_name: String,
     pub(crate) type_implementing_for: TypeId,
@@ -284,16 +284,6 @@ impl CopyTypes for TypedTraitImpl {
         self.methods
             .iter_mut()
             .for_each(|x| x.copy_types(type_mapping));
-    }
-}
-
-impl PartialEq for TypedTraitImpl {
-    fn eq(&self, other: &Self) -> bool {
-        self.trait_name == other.trait_name
-            && look_up_type_id(self.type_implementing_for)
-                == look_up_type_id(other.type_implementing_for)
-            && self.type_parameters == other.type_parameters
-            && self.methods == other.methods
     }
 }
 

@@ -1,6 +1,7 @@
 use crate::{
-    declaration_engine::declaration_engine::*,
+    declaration_engine::{declaration_engine::*, declaration_id::DeclarationId},
     language::{
+        semi::{semi_declaration::SemiDeclaration, SemiNode},
         typed::{
             typed_declaration::{
                 TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter,
@@ -9,12 +10,9 @@ use crate::{
             },
             TypedNode,
         },
-        untyped::{
-            declaration::{
-                Declaration, FunctionDeclaration, FunctionParameter, StructDeclaration,
-                StructField, TraitDeclaration, TraitFn, TraitImpl, VariableDeclaration,
-            },
-            Node,
+        untyped::declaration::{
+            FunctionDeclaration, FunctionParameter, StructDeclaration, StructField,
+            TraitDeclaration, TraitFn, TraitImpl, VariableDeclaration,
         },
     },
     namespace::namespace::Namespace,
@@ -29,51 +27,55 @@ use super::{analyze_expression, analyze_node};
 
 pub(super) fn analyze_declaration(
     namespace: &mut Namespace,
-    declaration: Declaration,
+    declaration: SemiDeclaration,
 ) -> TypedDeclaration {
     match declaration {
-        Declaration::Variable(variable_declaration) => {
+        SemiDeclaration::Variable(variable_declaration) => {
             let typed_variable_declaration = analyze_variable(namespace, variable_declaration);
             let name = typed_variable_declaration.name.clone();
             let decl = TypedDeclaration::Variable(typed_variable_declaration);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        Declaration::Function(function_declaration) => {
-            let typed_function_declaration =
-                analyze_function(&mut namespace.scoped(), function_declaration);
-            let name = typed_function_declaration.name.clone();
-            let decl_id = de_insert_function(typed_function_declaration);
-            let decl = TypedDeclaration::Function(decl_id);
-            namespace.insert_symbol(name, decl.clone());
-            decl
+        SemiDeclaration::Function(decl_id) => {
+            unimplemented!();
+            // let typed_function_declaration =
+            //     analyze_function(&mut namespace.scoped(), function_declaration);
+            // let name = typed_function_declaration.name.clone();
+            // let decl_id = de_insert_function(typed_function_declaration);
+            // let decl = TypedDeclaration::Function(decl_id);
+            // namespace.insert_symbol(name, decl.clone());
+            // decl
         }
-        Declaration::Trait(trait_declaration) => {
-            let typed_trait_declaration = analyze_trait(&mut namespace.scoped(), trait_declaration);
-            let name = typed_trait_declaration.name.clone();
-            let decl_id = de_insert_trait(typed_trait_declaration);
-            let decl = TypedDeclaration::Trait(decl_id);
-            namespace.insert_symbol(name, decl.clone());
-            decl
+        SemiDeclaration::Trait(trait_declaration) => {
+            unimplemented!();
+            // let typed_trait_declaration = analyze_trait(&mut namespace.scoped(), trait_declaration);
+            // let name = typed_trait_declaration.name.clone();
+            // let decl_id = de_insert_trait(typed_trait_declaration);
+            // let decl = TypedDeclaration::Trait(decl_id);
+            // namespace.insert_symbol(name, decl.clone());
+            // decl
         }
-        Declaration::TraitImpl(trait_impl) => {
-            let typed_trait_impl = analyze_trait_impl(&mut namespace.scoped(), trait_impl);
-            namespace.insert_methods(
-                typed_trait_impl.type_implementing_for,
-                typed_trait_impl.trait_name.clone(),
-                typed_trait_impl.methods.clone(),
-            );
-            let decl_id = de_insert_trait_impl(typed_trait_impl);
-            TypedDeclaration::TraitImpl(decl_id)
+        SemiDeclaration::TraitImpl(trait_impl) => {
+            unimplemented!();
+            // let typed_trait_impl = analyze_trait_impl(&mut namespace.scoped(), trait_impl);
+            // namespace.insert_methods(
+            //     typed_trait_impl.type_implementing_for,
+            //     typed_trait_impl.trait_name.clone(),
+            //     typed_trait_impl.methods.clone(),
+            // );
+            // let decl_id = de_insert_trait_impl(typed_trait_impl);
+            // TypedDeclaration::TraitImpl(decl_id)
         }
-        Declaration::Struct(struct_declaration) => {
-            let typed_struct_declaration =
-                analyze_struct(&mut namespace.scoped(), struct_declaration);
-            let name = typed_struct_declaration.name.clone();
-            let decl_id = de_insert_struct(typed_struct_declaration);
-            let decl = TypedDeclaration::Struct(decl_id);
-            namespace.insert_symbol(name, decl.clone());
-            decl
+        SemiDeclaration::Struct(struct_declaration) => {
+            unimplemented!();
+            // let typed_struct_declaration =
+            //     analyze_struct(&mut namespace.scoped(), struct_declaration);
+            // let name = typed_struct_declaration.name.clone();
+            // let decl_id = de_insert_struct(typed_struct_declaration);
+            // let decl = TypedDeclaration::Struct(decl_id);
+            // namespace.insert_symbol(name, decl.clone());
+            // decl
         }
     }
 }
@@ -93,10 +95,7 @@ fn analyze_variable(
     }
 }
 
-fn analyze_function(
-    namespace: &mut Namespace,
-    function_declaration: FunctionDeclaration,
-) -> TypedFunctionDeclaration {
+fn analyze_function(namespace: &mut Namespace, decl_id: DeclarationId) -> TypedFunctionDeclaration {
     // insert type params into namespace and handle trait constraints
     for type_parameter in function_declaration.type_parameters.iter() {
         let type_parameter_decl = TypedDeclaration::GenericTypeForFunctionScope {
@@ -163,7 +162,7 @@ fn analyze_function_parameter(
     }
 }
 
-fn analyze_code_block(namespace: &mut Namespace, nodes: Vec<Node>) -> (Vec<TypedNode>, TypeId) {
+fn analyze_code_block(namespace: &mut Namespace, nodes: Vec<SemiNode>) -> (Vec<TypedNode>, TypeId) {
     let mut typed_nodes = vec![];
     for node in nodes.into_iter() {
         let typed_node = analyze_node(namespace, node);

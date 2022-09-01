@@ -18,12 +18,12 @@ pub fn compile(application: Application) -> ResolvedApplication {
 
     // parsing happens here
 
-    // collect
-    collect_types(&application);
+    // do type collection
+    let semi_application = collect_types(application);
 
     // do type inference
     let mut namespace = Namespace::default();
-    let typed_application = analyze(&mut namespace, application);
+    let typed_application = analyze(&mut namespace, semi_application);
 
     // resolve all types
     let resolved_application = resolve(typed_application);

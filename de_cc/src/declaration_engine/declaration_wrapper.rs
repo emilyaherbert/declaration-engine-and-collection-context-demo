@@ -1,9 +1,13 @@
+use either::Either;
 use std::fmt;
 
 use crate::{
-    language::typed::typed_declaration::{
-        TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
-        TypedTraitImpl,
+    language::{
+        semi::semi_declaration::SemiTypedFunctionDeclaration,
+        typed::typed_declaration::{
+            TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
+            TypedTraitImpl,
+        },
     },
     type_system::type_mapping::TypeMapping,
     types::copy_types::CopyTypes,
@@ -15,10 +19,10 @@ use crate::{
 pub(crate) enum DeclarationWrapper {
     // no-op variant to fulfill the default trait
     Unknown,
-    Function(TypedFunctionDeclaration),
+    Function(Either<SemiTypedFunctionDeclaration, TypedFunctionDeclaration>),
     Trait(TypedTraitDeclaration),
-    TraitFn(TypedTraitFn),
-    TraitImpl(TypedTraitImpl),
+    TypedTraitFn(TypedTraitFn),
+    TraitFn(TypedTraitImpl),
     Struct(TypedStructDeclaration),
 }
 
@@ -37,8 +41,8 @@ impl PartialEq for DeclarationWrapper {
             (DeclarationWrapper::Unknown, DeclarationWrapper::Unknown) => true,
             (DeclarationWrapper::Function(l), DeclarationWrapper::Function(r)) => l == r,
             (DeclarationWrapper::Trait(l), DeclarationWrapper::Trait(r)) => l == r,
+            (DeclarationWrapper::TypedTraitFn(l), DeclarationWrapper::TypedTraitFn(r)) => l == r,
             (DeclarationWrapper::TraitFn(l), DeclarationWrapper::TraitFn(r)) => l == r,
-            (DeclarationWrapper::TraitImpl(l), DeclarationWrapper::TraitImpl(r)) => l == r,
             (DeclarationWrapper::Struct(l), DeclarationWrapper::Struct(r)) => l == r,
             _ => false,
         }
@@ -57,8 +61,8 @@ impl CopyTypes for DeclarationWrapper {
             DeclarationWrapper::Unknown => {}
             DeclarationWrapper::Function(decl) => decl.copy_types(type_mapping),
             DeclarationWrapper::Trait(decl) => decl.copy_types(type_mapping),
+            DeclarationWrapper::TypedTraitFn(decl) => decl.copy_types(type_mapping),
             DeclarationWrapper::TraitFn(decl) => decl.copy_types(type_mapping),
-            DeclarationWrapper::TraitImpl(decl) => decl.copy_types(type_mapping),
             DeclarationWrapper::Struct(decl) => decl.copy_types(type_mapping),
         }
     }
@@ -72,12 +76,14 @@ impl DeclarationWrapper {
             DeclarationWrapper::Function(_) => "function",
             DeclarationWrapper::Trait(_) => "trait",
             DeclarationWrapper::Struct(_) => "struct",
-            DeclarationWrapper::TraitImpl(_) => "impl trait",
-            DeclarationWrapper::TraitFn(_) => "trait function",
+            DeclarationWrapper::TraitFn(_) => "impl trait",
+            DeclarationWrapper::TypedTraitFn(_) => "trait function",
         }
     }
 
-    pub(super) fn expect_function(self) -> Result<TypedFunctionDeclaration, String> {
+    pub(super) fn expect_function(
+        self,
+    ) -> Result<Either<SemiTypedFunctionDeclaration, TypedFunctionDeclaration>, String> {
         match self {
             DeclarationWrapper::Function(decl) => Ok(decl),
             DeclarationWrapper::Unknown => {
@@ -105,7 +111,7 @@ impl DeclarationWrapper {
 
     pub(super) fn expect_trait_fn(self) -> Result<TypedTraitFn, String> {
         match self {
-            DeclarationWrapper::TraitFn(decl) => Ok(decl),
+            DeclarationWrapper::TypedTraitFn(decl) => Ok(decl),
             DeclarationWrapper::Unknown => {
                 Err("did not expect to find unknown declaration".to_string())
             }
@@ -118,7 +124,7 @@ impl DeclarationWrapper {
 
     pub(super) fn expect_trait_impl(self) -> Result<TypedTraitImpl, String> {
         match self {
-            DeclarationWrapper::TraitImpl(decl) => Ok(decl),
+            DeclarationWrapper::TraitFn(decl) => Ok(decl),
             DeclarationWrapper::Unknown => {
                 Err("did not expect to find unknown declaration".to_string())
             }

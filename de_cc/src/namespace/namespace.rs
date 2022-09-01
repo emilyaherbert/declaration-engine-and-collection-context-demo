@@ -96,7 +96,7 @@ impl Namespace {
                                 return Ok(decl.into());
                             }
                         }
-                        DeclarationWrapper::TraitFn(decl) => {
+                        DeclarationWrapper::TypedTraitFn(decl) => {
                             if decl.name == func_name {
                                 return Ok(decl.into());
                             }

@@ -6,7 +6,7 @@ use crate::type_system::{type_info::TypeInfo, type_parameter::TypeParameter};
 
 use super::{expression::*, Node};
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum Declaration {
     Variable(VariableDeclaration),
     Function(FunctionDeclaration),
@@ -28,7 +28,7 @@ impl fmt::Display for Declaration {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct VariableDeclaration {
     pub(crate) name: String,
     pub(crate) type_ascription: TypeInfo,
@@ -45,7 +45,7 @@ impl fmt::Display for VariableDeclaration {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct FunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
@@ -107,7 +107,7 @@ impl fmt::Display for FunctionDeclaration {
     }
 }
 
-#[derive(Clone, Hash)]
+#[derive(Clone, Hash, PartialEq)]
 pub struct FunctionParameter {
     pub(crate) name: String,
     pub(crate) type_info: TypeInfo,
@@ -119,7 +119,7 @@ impl fmt::Display for FunctionParameter {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct TraitDeclaration {
     pub(crate) name: String,
     pub(crate) interface_surface: Vec<TraitFn>,
@@ -138,7 +138,7 @@ impl fmt::Display for TraitDeclaration {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct TraitFn {
     pub(crate) name: String,
     pub(crate) parameters: Vec<FunctionParameter>,
@@ -161,7 +161,7 @@ impl fmt::Display for TraitFn {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct TraitImpl {
     pub(crate) trait_name: String,
     pub(crate) type_implementing_for: TypeInfo,
@@ -200,7 +200,7 @@ impl fmt::Display for TraitImpl {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct StructDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
@@ -237,7 +237,7 @@ impl fmt::Display for StructDeclaration {
     }
 }
 
-#[derive(Clone, Hash)]
+#[derive(Clone, Hash, PartialEq)]
 pub struct StructField {
     pub(crate) name: String,
     pub(crate) type_info: TypeInfo,

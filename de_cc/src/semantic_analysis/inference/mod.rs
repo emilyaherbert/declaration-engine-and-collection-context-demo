@@ -6,13 +6,13 @@ use expression::*;
 
 use crate::{
     language::{
+        semi::{SemiApplication, SemiFile, SemiNode},
         typed::{TypedApplication, TypedFile, TypedNode},
-        untyped::{Application, File, Node},
     },
     namespace::namespace::Namespace,
 };
 
-pub(crate) fn analyze(namespace: &mut Namespace, application: Application) -> TypedApplication {
+pub(crate) fn analyze(namespace: &mut Namespace, application: SemiApplication) -> TypedApplication {
     let typed_programs = application
         .files
         .into_iter()
@@ -23,7 +23,7 @@ pub(crate) fn analyze(namespace: &mut Namespace, application: Application) -> Ty
     }
 }
 
-fn analyze_file(namespace: &mut Namespace, file: File) -> TypedFile {
+fn analyze_file(namespace: &mut Namespace, file: SemiFile) -> TypedFile {
     let new_nodes = file
         .nodes
         .into_iter()
@@ -35,17 +35,16 @@ fn analyze_file(namespace: &mut Namespace, file: File) -> TypedFile {
     }
 }
 
-fn analyze_node(namespace: &mut Namespace, node: Node) -> TypedNode {
+fn analyze_node(namespace: &mut Namespace, node: SemiNode) -> TypedNode {
     match node {
-        Node::Declaration(declaration) => {
+        SemiNode::Declaration(declaration) => {
             TypedNode::Declaration(analyze_declaration(namespace, declaration))
         }
-        Node::Expression(expression) => {
+        SemiNode::Expression(expression) => {
             TypedNode::Expression(analyze_expression(namespace, expression))
         }
-        Node::ReturnStatement(expression) => {
+        SemiNode::ReturnStatement(expression) => {
             TypedNode::ReturnStatement(analyze_expression(namespace, expression))
         }
-        Node::StarImport(_) => todo!(),
     }
 }

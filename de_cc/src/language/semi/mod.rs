@@ -2,16 +2,17 @@ use std::fmt;
 
 use colored::Colorize;
 
-use self::{declaration::Declaration, expression::Expression};
+use self::semi_declaration::SemiDeclaration;
 
-pub mod declaration;
-pub mod expression;
+use super::untyped::expression::Expression;
 
-pub struct Application {
-    pub files: Vec<File>,
+pub(crate) mod semi_declaration;
+
+pub struct SemiApplication {
+    pub files: Vec<SemiFile>,
 }
 
-impl fmt::Display for Application {
+impl fmt::Display for SemiApplication {
     #[allow(clippy::useless_format)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -28,12 +29,12 @@ impl fmt::Display for Application {
     }
 }
 
-pub struct File {
+pub struct SemiFile {
     pub name: String,
-    pub nodes: Vec<Node>,
+    pub nodes: Vec<SemiNode>,
 }
 
-impl fmt::Display for File {
+impl fmt::Display for SemiFile {
     #[allow(clippy::useless_format)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut nodes_str = self
@@ -54,33 +55,20 @@ impl fmt::Display for File {
     }
 }
 
-#[derive(Clone, PartialEq)]
-pub enum Node {
-    StarImport(String),
-    Declaration(Declaration),
+#[derive(Clone)]
+pub enum SemiNode {
+    //StarImport(String),
+    Declaration(SemiDeclaration),
     Expression(Expression),
     ReturnStatement(Expression),
 }
 
-impl fmt::Display for Node {
+impl fmt::Display for SemiNode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Node::Declaration(declaration) => write!(f, "{}", declaration),
-            Node::Expression(expression) => write!(f, "{}", expression),
-            Node::ReturnStatement(expression) => write!(f, "return {}", expression),
-            Node::StarImport(name) => write!(f, "use {}::*", name),
+            SemiNode::Declaration(declaration) => write!(f, "{}", declaration),
+            SemiNode::Expression(expression) => write!(f, "{}", expression),
+            SemiNode::ReturnStatement(expression) => write!(f, "return {}", expression),
         }
-    }
-}
-
-pub mod constructors {
-    use super::{Expression, Node};
-
-    pub fn exp(exp: Expression) -> Node {
-        Node::Expression(exp)
-    }
-
-    pub fn return_(exp: Expression) -> Node {
-        Node::ReturnStatement(exp)
     }
 }

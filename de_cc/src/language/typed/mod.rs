@@ -16,7 +16,7 @@ pub(crate) struct TypedFile {
     pub(crate) nodes: Vec<TypedNode>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub(crate) enum TypedNode {
     // StarImport(String),
     Declaration(TypedDeclaration),
@@ -30,17 +30,6 @@ impl fmt::Display for TypedNode {
             TypedNode::Declaration(declaration) => write!(f, "{}", declaration),
             TypedNode::Expression(expression) => write!(f, "{}", expression),
             TypedNode::ReturnStatement(expression) => write!(f, "return {}", expression),
-        }
-    }
-}
-
-impl PartialEq for TypedNode {
-    fn eq(&self, other: &Self) -> bool {
-        match (self, other) {
-            (TypedNode::Declaration(l), TypedNode::Declaration(r)) => l == r,
-            (TypedNode::Expression(l), TypedNode::Expression(r)) => l == r,
-            (TypedNode::ReturnStatement(l), TypedNode::ReturnStatement(r)) => l == r,
-            _ => false,
         }
     }
 }
