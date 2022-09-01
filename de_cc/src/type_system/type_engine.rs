@@ -1,12 +1,12 @@
 use crate::{
     concurrent_slab::ConcurrentSlab,
-    declaration_engine::declaration_engine::DeclarationEngine,
+    declaration_engine::declaration_engine::*,
     language::{
         resolved::resolved_declaration::ResolvedStructField,
         typed::typed_declaration::TypedDeclaration,
     },
     namespace::namespace::Namespace,
-    types::{copy_types::CopyTypes, create_type_id::CreateTypeId, pretty_print::PrettyPrint},
+    types::{copy_types::CopyTypes, create_type_id::CreateTypeId},
 };
 
 use super::{
@@ -26,27 +26,27 @@ lazy_static! {
 
 #[derive(Default)]
 struct TypeEngine {
-    slab: ConcurrentSlab<TypeId, TypeInfo>,
+    slab: ConcurrentSlab<TypeInfo>,
 }
 
 impl TypeEngine {
-    fn insert_type(&self, ty: TypeInfo) -> TypeId {
-        self.slab.insert(ty)
+    pub fn insert_type(&self, ty: TypeInfo) -> TypeId {
+        TypeId::new(self.slab.insert(ty))
     }
 
     fn look_up_type_id_raw(&self, id: TypeId) -> TypeInfo {
-        self.slab.get(id)
+        self.slab.get(*id)
     }
 
     fn look_up_type_id(&self, id: TypeId) -> TypeInfo {
-        match self.slab.get(id) {
+        match self.slab.get(*id) {
             TypeInfo::Ref(other) => self.look_up_type_id(other),
             ty => ty,
         }
     }
 
     fn unify_types(&self, received: TypeId, expected: TypeId) -> Result<(), String> {
-        match (self.slab.get(received), self.slab.get(expected)) {
+        match (self.slab.get(*received), self.slab.get(*expected)) {
             // if the two types are the same literal then we are done
             (TypeInfo::Unit, TypeInfo::Unit) => Ok(()),
             (TypeInfo::UnsignedInteger(a), TypeInfo::UnsignedInteger(b)) if a == b => Ok(()),
@@ -126,14 +126,10 @@ impl TypeEngine {
         }
     }
 
-    fn resolve_type(
-        &self,
-        declaration_engine: &DeclarationEngine,
-        type_id: TypeId,
-    ) -> Result<ResolvedType, String> {
-        match self.slab.get(type_id) {
+    fn resolve_type(&self, type_id: TypeId) -> Result<ResolvedType, String> {
+        match self.slab.get(*type_id) {
             TypeInfo::UnsignedInteger(bits) => Ok(ResolvedType::UnsignedInteger(bits)),
-            TypeInfo::Ref(id) => self.resolve_type(declaration_engine, id),
+            TypeInfo::Ref(id) => self.resolve_type(id),
             TypeInfo::Unit => Ok(ResolvedType::Unit),
             TypeInfo::Struct {
                 name,
@@ -144,8 +140,7 @@ impl TypeEngine {
                     .into_iter()
                     .map(|type_parameter| {
                         Ok(ResolvedTypeParameter {
-                            type_info: self
-                                .resolve_type(declaration_engine, type_parameter.type_id)?,
+                            type_info: self.resolve_type(type_parameter.type_id)?,
                         })
                     })
                     .collect::<Result<_, String>>()?;
@@ -154,7 +149,7 @@ impl TypeEngine {
                     .map(|field| {
                         Ok(ResolvedStructField {
                             name: field.name,
-                            type_info: self.resolve_type(declaration_engine, field.type_id)?,
+                            type_info: self.resolve_type(field.type_id)?,
                         })
                     })
                     .collect::<Result<_, String>>()?;
@@ -173,13 +168,8 @@ impl TypeEngine {
         }
     }
 
-    fn eval_type(
-        &self,
-        id: TypeId,
-        namespace: &mut Namespace,
-        declaration_engine: &mut DeclarationEngine,
-    ) -> Result<TypeId, String> {
-        match self.slab.get(id) {
+    fn eval_type(&self, id: TypeId, namespace: &mut Namespace) -> Result<TypeId, String> {
+        match self.slab.get(*id) {
             TypeInfo::UnknownGeneric { name } => match namespace.get_symbol(&name)? {
                 TypedDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
                     Ok(insert_type(TypeInfo::Ref(type_id)))
@@ -191,26 +181,21 @@ impl TypeEngine {
                 match namespace.get_symbol(&name)? {
                     TypedDeclaration::Struct(decl_id) => {
                         // get the original struct declaration
-                        let mut struct_decl = declaration_engine.get_struct(decl_id).unwrap();
+                        let mut struct_decl = de_get_struct(decl_id).unwrap();
 
                         // monomorphize the struct declaration into a new copy
                         // TODO(joao): optimize this to cache repeated monomorphize copies
-                        monomorphize(&mut struct_decl, &mut [], namespace, declaration_engine)
-                            .unwrap();
+                        monomorphize(&mut struct_decl, &mut [], namespace).unwrap();
 
                         // add the new copy to the declaration engine
-                        declaration_engine
-                            .add_monomorphized_struct_copy(decl_id, struct_decl.clone());
+                        de_add_monomorphized_struct_copy(decl_id, struct_decl.clone());
 
                         Ok(struct_decl.create_type_id())
                     }
                     TypedDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
                         Ok(insert_type(TypeInfo::Ref(type_id)))
                     }
-                    got => Err(format!(
-                        "err, found: {}",
-                        got.pretty_print(declaration_engine)
-                    )),
+                    got => Err(format!("err, found: {}", got)),
                 }
                 // namespace.get_from_collection_context(&name).ok_or("bruhh".to_string())
             }
@@ -223,7 +208,6 @@ impl TypeEngine {
         value: &mut T,
         type_arguments: &mut [TypeArgument],
         namespace: &mut Namespace,
-        declaration_engine: &mut DeclarationEngine,
     ) -> Result<(), String>
     where
         T: MonomorphizeHelper + CopyTypes,
@@ -244,8 +228,7 @@ impl TypeEngine {
                     return Err("incorrect number of type arguments".to_string());
                 }
                 for type_argument in type_arguments.iter_mut() {
-                    type_argument.type_id =
-                        self.eval_type(type_argument.type_id, namespace, declaration_engine)?;
+                    type_argument.type_id = self.eval_type(type_argument.type_id, namespace)?;
                 }
                 let type_mapping = insert_type_parameters(value.type_parameters());
                 for ((_, interim_type), type_argument) in
@@ -276,31 +259,23 @@ pub(crate) fn unify_types(received: TypeId, expected: TypeId) -> Result<(), Stri
     TYPE_ENGINE.unify_types(received, expected)
 }
 
-pub(crate) fn resolve_type(
-    declaration_engine: &DeclarationEngine,
-    type_id: TypeId,
-) -> Result<ResolvedType, String> {
-    TYPE_ENGINE.resolve_type(declaration_engine, type_id)
+pub(crate) fn resolve_type(type_id: TypeId) -> Result<ResolvedType, String> {
+    TYPE_ENGINE.resolve_type(type_id)
 }
 
-pub(crate) fn eval_type(
-    id: TypeId,
-    namespace: &mut Namespace,
-    declaration_engine: &mut DeclarationEngine,
-) -> Result<TypeId, String> {
-    TYPE_ENGINE.eval_type(id, namespace, declaration_engine)
+pub(crate) fn eval_type(id: TypeId, namespace: &mut Namespace) -> Result<TypeId, String> {
+    TYPE_ENGINE.eval_type(id, namespace)
 }
 
 pub(crate) fn monomorphize<T>(
     value: &mut T,
     type_arguments: &mut [TypeArgument],
     namespace: &mut Namespace,
-    declaration_engine: &mut DeclarationEngine,
 ) -> Result<(), String>
 where
     T: MonomorphizeHelper + CopyTypes,
 {
-    TYPE_ENGINE.monomorphize(value, type_arguments, namespace, declaration_engine)
+    TYPE_ENGINE.monomorphize(value, type_arguments, namespace)
 }
 
 pub(crate) trait MonomorphizeHelper {

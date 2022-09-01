@@ -1,8 +1,6 @@
-use crate::{
-    declaration_engine::declaration_engine::DeclarationEngine,
-    type_system::type_mapping::TypeMapping,
-    types::{copy_types::CopyTypes, pretty_print::PrettyPrint},
-};
+use std::fmt;
+
+use crate::{type_system::type_mapping::TypeMapping, types::copy_types::CopyTypes};
 
 use self::{typed_declaration::TypedDeclaration, typed_expression::TypedExpression};
 
@@ -26,24 +24,33 @@ pub(crate) enum TypedNode {
     ReturnStatement(TypedExpression),
 }
 
+impl fmt::Display for TypedNode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TypedNode::Declaration(declaration) => write!(f, "{}", declaration),
+            TypedNode::Expression(expression) => write!(f, "{}", expression),
+            TypedNode::ReturnStatement(expression) => write!(f, "return {}", expression),
+        }
+    }
+}
+
+impl PartialEq for TypedNode {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (TypedNode::Declaration(l), TypedNode::Declaration(r)) => l == r,
+            (TypedNode::Expression(l), TypedNode::Expression(r)) => l == r,
+            (TypedNode::ReturnStatement(l), TypedNode::ReturnStatement(r)) => l == r,
+            _ => false,
+        }
+    }
+}
+
 impl CopyTypes for TypedNode {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         match self {
             TypedNode::Declaration(declaration) => declaration.copy_types(type_mapping),
             TypedNode::Expression(expression) => expression.copy_types(type_mapping),
             TypedNode::ReturnStatement(expression) => expression.copy_types(type_mapping),
-        }
-    }
-}
-
-impl PrettyPrint for TypedNode {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
-        match self {
-            TypedNode::Declaration(declaration) => declaration.pretty_print(declaration_engine),
-            TypedNode::Expression(expression) => expression.pretty_print(declaration_engine),
-            TypedNode::ReturnStatement(expression) => {
-                format!("return {}", expression.pretty_print(declaration_engine))
-            }
         }
     }
 }

@@ -4,7 +4,7 @@ use std::fmt::Write;
 
 use crate::{
     declaration_engine::{
-        declaration_engine::DeclarationEngine, declaration_id::DeclarationId,
+        declaration_engine::*, declaration_id::DeclarationId,
         declaration_wrapper::DeclarationWrapper,
     },
     language::typed::typed_declaration::TypedDeclaration,
@@ -19,7 +19,6 @@ pub(crate) struct Namespace {
     symbols: LinkedHashMap<String, TypedDeclaration>,
     // this should be (type info, trait name) -> declaration id
     methods: Vec<(TypeId, Vec<DeclarationId>)>,
-    collection_context: LinkedHashMap<String, TypeId>,
 }
 
 impl fmt::Display for Namespace {
@@ -47,7 +46,6 @@ impl Namespace {
         Namespace {
             symbols: self.symbols.clone(),
             methods: self.methods.clone(),
-            collection_context: self.collection_context.clone(),
         }
     }
 
@@ -87,13 +85,12 @@ impl Namespace {
         &self,
         type_id: TypeId,
         func_name: &str,
-        declaration_engine: &DeclarationEngine,
     ) -> Result<TypedFunctionSignature, String> {
         for (k, method_ids) in self.methods.iter() {
             // TODO: consider semantic similarity
             if look_up_type_id(*k) == look_up_type_id(type_id) {
                 for method_id in method_ids.iter() {
-                    match declaration_engine.look_up_decl_id(*method_id) {
+                    match de_look_up_decl_id(*method_id) {
                         DeclarationWrapper::Function(decl) => {
                             if decl.name == func_name {
                                 return Ok(decl.into());
@@ -112,17 +109,5 @@ impl Namespace {
             }
         }
         Err("could not find function".to_string())
-    }
-
-    #[allow(unused_variables)]
-    pub(crate) fn insert_into_collection_context(&mut self, name: &str, type_id: TypeId) {
-        unimplemented!();
-        //self.collection_context.insert(name.to_string(), type_id);
-    }
-
-    #[allow(unused_variables)]
-    pub(crate) fn get_from_collection_context(&mut self, name: &str) -> Option<TypeId> {
-        unimplemented!();
-        //self.collection_context.get(name).cloned()
     }
 }

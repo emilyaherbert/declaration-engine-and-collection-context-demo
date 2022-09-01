@@ -1,53 +1,52 @@
-use std::{
-    marker::PhantomData,
-    sync::{Arc, RwLock},
-};
+use std::sync::RwLock;
 
-use crate::{
-    declaration_engine::declaration_engine::DeclarationEngine,
-    type_system::{type_id::TypeId, type_info::TypeInfo},
-    types::pretty_print::PrettyPrint,
-};
+use crate::type_system::{type_id::TypeId, type_info::TypeInfo};
 
-#[derive(Debug, Default, Clone)]
-pub(crate) struct ConcurrentSlab<I, T> {
-    indexer: PhantomData<I>,
-    inner: Arc<RwLock<Vec<T>>>,
+#[derive(Debug)]
+pub(crate) struct ConcurrentSlab<T> {
+    inner: RwLock<Vec<T>>,
 }
 
-impl<I, T> PrettyPrint for ConcurrentSlab<I, T>
+impl<T> Default for ConcurrentSlab<T>
 where
-    T: PrettyPrint,
+    T: Default,
 {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
-        let inner = self.inner.write().unwrap();
-        inner
-            .iter()
-            .map(|i| i.pretty_print(declaration_engine))
-            .collect::<Vec<_>>()
-            .join(", ")
+    fn default() -> Self {
+        Self {
+            inner: Default::default(),
+        }
     }
 }
 
-impl<I, T> ConcurrentSlab<I, T>
+impl<T> ConcurrentSlab<T>
 where
     T: Clone,
-    I: From<usize> + std::ops::Deref<Target = usize>,
 {
-    pub fn insert(&self, value: T) -> I {
+    pub fn insert(&self, value: T) -> usize {
         let mut inner = self.inner.write().unwrap();
         let ret = inner.len();
         inner.push(value);
-        ret.into()
+        ret
     }
 
-    pub fn get(&self, index: I) -> T {
+    pub fn get(&self, index: usize) -> T {
         let inner = self.inner.read().unwrap();
-        inner[*index].clone()
+        inner[index].clone()
+    }
+
+    pub fn clear(&self) {
+        let mut inner = self.inner.write().unwrap();
+        *inner = Vec::new();
+    }
+
+    #[allow(dead_code)]
+    pub fn exists<F: Fn(&T) -> bool>(&self, f: F) -> bool {
+        let inner = self.inner.read().unwrap();
+        inner.iter().any(f)
     }
 }
 
-impl ConcurrentSlab<TypeId, TypeInfo> {
+impl ConcurrentSlab<TypeInfo> {
     pub fn replace(
         &self,
         index: TypeId,

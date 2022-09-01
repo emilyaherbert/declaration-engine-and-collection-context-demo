@@ -5,7 +5,6 @@ use declaration::*;
 use expression::*;
 
 use crate::{
-    declaration_engine::declaration_engine::DeclarationEngine,
     language::{
         typed::{TypedApplication, TypedFile, TypedNode},
         untyped::{Application, File, Node},
@@ -13,30 +12,22 @@ use crate::{
     namespace::namespace::Namespace,
 };
 
-pub(crate) fn analyze(
-    namespace: &mut Namespace,
-    declaration_engine: &mut DeclarationEngine,
-    application: Application,
-) -> TypedApplication {
+pub(crate) fn analyze(namespace: &mut Namespace, application: Application) -> TypedApplication {
     let typed_programs = application
         .files
         .into_iter()
-        .map(|program| analyze_file(namespace, declaration_engine, program))
+        .map(|program| analyze_file(namespace, program))
         .collect();
     TypedApplication {
         files: typed_programs,
     }
 }
 
-fn analyze_file(
-    namespace: &mut Namespace,
-    declaration_engine: &mut DeclarationEngine,
-    file: File,
-) -> TypedFile {
+fn analyze_file(namespace: &mut Namespace, file: File) -> TypedFile {
     let new_nodes = file
         .nodes
         .into_iter()
-        .map(|node| analyze_node(namespace, declaration_engine, node))
+        .map(|node| analyze_node(namespace, node))
         .collect::<Vec<_>>();
     TypedFile {
         name: file.name,
@@ -44,27 +35,17 @@ fn analyze_file(
     }
 }
 
-fn analyze_node(
-    namespace: &mut Namespace,
-    declaration_engine: &mut DeclarationEngine,
-    node: Node,
-) -> TypedNode {
+fn analyze_node(namespace: &mut Namespace, node: Node) -> TypedNode {
     match node {
-        Node::Declaration(declaration) => TypedNode::Declaration(analyze_declaration(
-            namespace,
-            declaration_engine,
-            declaration,
-        )),
-        Node::Expression(expression) => TypedNode::Expression(analyze_expression(
-            namespace,
-            declaration_engine,
-            expression,
-        )),
-        Node::ReturnStatement(expression) => TypedNode::ReturnStatement(analyze_expression(
-            namespace,
-            declaration_engine,
-            expression,
-        )),
+        Node::Declaration(declaration) => {
+            TypedNode::Declaration(analyze_declaration(namespace, declaration))
+        }
+        Node::Expression(expression) => {
+            TypedNode::Expression(analyze_expression(namespace, expression))
+        }
+        Node::ReturnStatement(expression) => {
+            TypedNode::ReturnStatement(analyze_expression(namespace, expression))
+        }
         Node::StarImport(_) => todo!(),
     }
 }

@@ -52,3 +52,9 @@ impl CopyTypes for TypeId {
         };
     }
 }
+
+impl TypeId {
+    pub(super) fn new(index: usize) -> TypeId {
+        TypeId(index)
+    }
+}

@@ -1,4 +1,7 @@
-use linked_hash_map::LinkedHashMap;
+use std::collections::HashMap;
+use std::sync::RwLock;
+
+use lazy_static::lazy_static;
 
 use crate::{
     concurrent_slab::ConcurrentSlab,
@@ -6,149 +9,206 @@ use crate::{
         TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
         TypedTraitImpl,
     },
-    types::pretty_print::PrettyPrint,
 };
 
 use super::{declaration_id::DeclarationId, declaration_wrapper::DeclarationWrapper};
 
-// TODO: will need to use concurrent structure like https://github.com/xacrimon/dashmaps or im::HashMap
+lazy_static! {
+    static ref DECLARATION_ENGINE: DeclarationEngine = DeclarationEngine::default();
+}
 
 /// Used inside of type inference to store declarations.
-pub(crate) struct DeclarationEngine {
-    slab: ConcurrentSlab<DeclarationId, DeclarationWrapper>,
+#[derive(Default)]
+struct DeclarationEngine {
+    slab: ConcurrentSlab<DeclarationWrapper>,
     // *declaration_id -> vec of monomorphized copies
-    // where the declaration_id is the original declartion
-    monomorphized_copies: LinkedHashMap<usize, Vec<DeclarationId>>,
+    // where the declaration_id is the original declaration
+    monomorphized_copies: RwLock<HashMap<usize, Vec<DeclarationId>>>,
 }
 
 impl DeclarationEngine {
-    pub(crate) fn new() -> DeclarationEngine {
-        DeclarationEngine {
-            slab: ConcurrentSlab::default(),
-            monomorphized_copies: LinkedHashMap::new(),
-        }
+    fn clear(&self) {
+        self.slab.clear();
+        let mut monomorphized_copies = self.monomorphized_copies.write().unwrap();
+        monomorphized_copies.clear();
     }
 
-    pub(crate) fn look_up_decl_id(&self, index: DeclarationId) -> DeclarationWrapper {
-        self.slab.get(index)
+    fn de_look_up_decl_id(&self, index: DeclarationId) -> DeclarationWrapper {
+        self.slab.get(*index)
     }
 
-    pub(crate) fn add_monomorphized_copy(
-        &mut self,
-        original_id: DeclarationId,
-        new_id: DeclarationId,
-    ) {
-        match self.monomorphized_copies.get_mut(&*original_id) {
+    fn de_add_monomorphized_copy(&self, original_id: DeclarationId, new_id: DeclarationId) {
+        let mut monomorphized_copies = self.monomorphized_copies.write().unwrap();
+        match monomorphized_copies.get_mut(&*original_id) {
             Some(prev) => {
                 prev.push(new_id);
             }
             None => {
-                self.monomorphized_copies.insert(*original_id, vec![new_id]);
+                monomorphized_copies.insert(*original_id, vec![new_id]);
             }
         }
     }
 
-    pub(crate) fn get_monomorphized_copies(
-        &self,
-        original_id: DeclarationId,
-    ) -> Vec<DeclarationWrapper> {
-        match self.monomorphized_copies.get(&*original_id).cloned() {
-            Some(copies) => copies.into_iter().map(|copy| self.slab.get(copy)).collect(),
+    fn de_get_monomorphized_copies(&self, original_id: DeclarationId) -> Vec<DeclarationWrapper> {
+        let monomorphized_copies = self.monomorphized_copies.write().unwrap();
+        match monomorphized_copies.get(&*original_id).cloned() {
+            Some(copies) => copies
+                .into_iter()
+                .map(|copy| self.slab.get(*copy))
+                .collect(),
             None => vec![],
         }
     }
 
-    #[allow(dead_code)]
-    pub fn debug_print(&self) {
-        println!(
-            "\n\n~~~~~~~~~~\n\nDeclaration Engine:\n{}\n\n~~~~~~~~~~",
-            self.slab.pretty_print(self)
-        );
+    fn de_insert_function(&self, function: TypedFunctionDeclaration) -> DeclarationId {
+        DeclarationId::new(self.slab.insert(DeclarationWrapper::Function(function)))
     }
 
-    pub(crate) fn insert_function(&self, function: TypedFunctionDeclaration) -> DeclarationId {
-        self.slab.insert(DeclarationWrapper::Function(function))
+    fn de_get_function(&self, index: DeclarationId) -> Result<TypedFunctionDeclaration, String> {
+        self.slab.get(*index).expect_function()
     }
 
-    pub(crate) fn get_function(
+    fn de_add_monomorphized_function_copy(
         &self,
-        index: DeclarationId,
-    ) -> Result<TypedFunctionDeclaration, String> {
-        self.slab.get(index).expect_function()
-    }
-
-    // TODO(joao): consider only adding unique copies, if you get a non unique copy, throw it away
-    pub(crate) fn add_monomorphized_function_copy(
-        &mut self,
         original_id: DeclarationId,
         new_copy: TypedFunctionDeclaration,
     ) {
-        let new_id = self.slab.insert(DeclarationWrapper::Function(new_copy));
-        self.add_monomorphized_copy(original_id, new_id)
+        let new_id = DeclarationId::new(self.slab.insert(DeclarationWrapper::Function(new_copy)));
+        self.de_add_monomorphized_copy(original_id, new_id)
     }
 
-    pub(crate) fn get_monomorphized_function_copies(
+    fn de_get_monomorphized_function_copies(
         &self,
         original_id: DeclarationId,
     ) -> Result<Vec<TypedFunctionDeclaration>, String> {
-        self.get_monomorphized_copies(original_id)
+        self.de_get_monomorphized_copies(original_id)
             .into_iter()
             .map(|x| x.expect_function())
             .collect::<Result<_, _>>()
     }
 
-    pub(crate) fn insert_trait(&self, r#trait: TypedTraitDeclaration) -> DeclarationId {
-        self.slab.insert(DeclarationWrapper::Trait(r#trait))
+    fn de_insert_trait(&self, r#trait: TypedTraitDeclaration) -> DeclarationId {
+        DeclarationId::new(self.slab.insert(DeclarationWrapper::Trait(r#trait)))
     }
 
-    pub(crate) fn get_trait(&self, index: DeclarationId) -> Result<TypedTraitDeclaration, String> {
-        self.slab.get(index).expect_trait()
+    fn de_get_trait(&self, index: DeclarationId) -> Result<TypedTraitDeclaration, String> {
+        self.slab.get(*index).expect_trait()
     }
 
-    pub(crate) fn insert_trait_fn(&self, trait_fn: TypedTraitFn) -> DeclarationId {
-        self.slab.insert(DeclarationWrapper::TraitFn(trait_fn))
+    fn de_insert_trait_fn(&self, trait_fn: TypedTraitFn) -> DeclarationId {
+        DeclarationId::new(self.slab.insert(DeclarationWrapper::TraitFn(trait_fn)))
     }
 
-    pub(crate) fn get_trait_fn(&self, index: DeclarationId) -> Result<TypedTraitFn, String> {
-        self.slab.get(index).expect_trait_fn()
+    fn de_get_trait_fn(&self, index: DeclarationId) -> Result<TypedTraitFn, String> {
+        self.slab.get(*index).expect_trait_fn()
     }
 
-    pub(crate) fn insert_trait_impl(&self, trait_impl: TypedTraitImpl) -> DeclarationId {
-        self.slab.insert(DeclarationWrapper::TraitImpl(trait_impl))
+    fn insert_trait_impl(&self, trait_impl: TypedTraitImpl) -> DeclarationId {
+        DeclarationId::new(self.slab.insert(DeclarationWrapper::TraitImpl(trait_impl)))
     }
 
-    pub(crate) fn get_trait_impl(&self, index: DeclarationId) -> Result<TypedTraitImpl, String> {
-        self.slab.get(index).expect_trait_impl()
+    fn de_get_trait_impl(&self, index: DeclarationId) -> Result<TypedTraitImpl, String> {
+        self.slab.get(*index).expect_trait_impl()
     }
 
-    pub(crate) fn insert_struct(&self, r#struct: TypedStructDeclaration) -> DeclarationId {
-        self.slab.insert(DeclarationWrapper::Struct(r#struct))
+    fn de_insert_struct(&self, r#struct: TypedStructDeclaration) -> DeclarationId {
+        DeclarationId::new(self.slab.insert(DeclarationWrapper::Struct(r#struct)))
     }
 
-    pub(crate) fn get_struct(
+    fn de_get_struct(&self, index: DeclarationId) -> Result<TypedStructDeclaration, String> {
+        self.slab.get(*index).expect_struct()
+    }
+
+    fn de_add_monomorphized_struct_copy(
         &self,
-        index: DeclarationId,
-    ) -> Result<TypedStructDeclaration, String> {
-        self.slab.get(index).expect_struct()
-    }
-
-    // TODO(joao): consider only adding unique copies, if you get a non unique copy, throw it away
-    pub(crate) fn add_monomorphized_struct_copy(
-        &mut self,
         original_id: DeclarationId,
         new_copy: TypedStructDeclaration,
     ) {
-        let new_id = self.slab.insert(DeclarationWrapper::Struct(new_copy));
-        self.add_monomorphized_copy(original_id, new_id)
+        let new_id = DeclarationId::new(self.slab.insert(DeclarationWrapper::Struct(new_copy)));
+        self.de_add_monomorphized_copy(original_id, new_id)
     }
 
-    pub(crate) fn get_monomorphized_struct_copies(
+    fn de_get_monomorphized_struct_copies(
         &self,
         original_id: DeclarationId,
     ) -> Result<Vec<TypedStructDeclaration>, String> {
-        self.get_monomorphized_copies(original_id)
+        self.de_get_monomorphized_copies(original_id)
             .into_iter()
             .map(|x| x.expect_struct())
             .collect::<Result<_, _>>()
     }
+}
+
+pub(crate) fn de_clear() {
+    DECLARATION_ENGINE.clear()
+}
+
+pub(crate) fn de_look_up_decl_id(index: DeclarationId) -> DeclarationWrapper {
+    DECLARATION_ENGINE.de_look_up_decl_id(index)
+}
+
+pub(crate) fn de_insert_function(function: TypedFunctionDeclaration) -> DeclarationId {
+    DECLARATION_ENGINE.de_insert_function(function)
+}
+
+pub(crate) fn de_get_function(index: DeclarationId) -> Result<TypedFunctionDeclaration, String> {
+    DECLARATION_ENGINE.de_get_function(index)
+}
+
+pub(crate) fn de_add_monomorphized_function_copy(
+    original_id: DeclarationId,
+    new_copy: TypedFunctionDeclaration,
+) {
+    DECLARATION_ENGINE.de_add_monomorphized_function_copy(original_id, new_copy);
+}
+
+pub(crate) fn de_get_monomorphized_function_copies(
+    original_id: DeclarationId,
+) -> Result<Vec<TypedFunctionDeclaration>, String> {
+    DECLARATION_ENGINE.de_get_monomorphized_function_copies(original_id)
+}
+
+pub(crate) fn de_insert_trait(r#trait: TypedTraitDeclaration) -> DeclarationId {
+    DECLARATION_ENGINE.de_insert_trait(r#trait)
+}
+
+pub(crate) fn de_get_trait(index: DeclarationId) -> Result<TypedTraitDeclaration, String> {
+    DECLARATION_ENGINE.de_get_trait(index)
+}
+
+pub(crate) fn de_insert_trait_fn(trait_fn: TypedTraitFn) -> DeclarationId {
+    DECLARATION_ENGINE.de_insert_trait_fn(trait_fn)
+}
+
+pub(crate) fn de_get_trait_fn(index: DeclarationId) -> Result<TypedTraitFn, String> {
+    DECLARATION_ENGINE.de_get_trait_fn(index)
+}
+
+pub(crate) fn de_insert_trait_impl(trait_impl: TypedTraitImpl) -> DeclarationId {
+    DECLARATION_ENGINE.insert_trait_impl(trait_impl)
+}
+
+pub(crate) fn de_get_trait_impl(index: DeclarationId) -> Result<TypedTraitImpl, String> {
+    DECLARATION_ENGINE.de_get_trait_impl(index)
+}
+
+pub(crate) fn de_insert_struct(r#struct: TypedStructDeclaration) -> DeclarationId {
+    DECLARATION_ENGINE.de_insert_struct(r#struct)
+}
+
+pub(crate) fn de_get_struct(index: DeclarationId) -> Result<TypedStructDeclaration, String> {
+    DECLARATION_ENGINE.de_get_struct(index)
+}
+
+pub(crate) fn de_add_monomorphized_struct_copy(
+    original_id: DeclarationId,
+    new_copy: TypedStructDeclaration,
+) {
+    DECLARATION_ENGINE.de_add_monomorphized_struct_copy(original_id, new_copy);
+}
+
+pub(crate) fn de_get_monomorphized_struct_copies(
+    original_id: DeclarationId,
+) -> Result<Vec<TypedStructDeclaration>, String> {
+    DECLARATION_ENGINE.de_get_monomorphized_struct_copies(original_id)
 }

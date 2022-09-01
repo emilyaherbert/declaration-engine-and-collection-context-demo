@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
+use crate::declaration_engine::declaration_engine::*;
 use crate::{
-    declaration_engine::declaration_engine::DeclarationEngine,
     language::{
         typed::typed_expression::{
             TypedExpression, TypedExpressionVariant, TypedStructExpressionField,
@@ -18,7 +18,6 @@ use crate::{
 
 pub(super) fn analyze_expression(
     namespace: &mut Namespace,
-    declaration_engine: &mut DeclarationEngine,
     expression: Expression,
 ) -> TypedExpression {
     match expression {
@@ -54,7 +53,7 @@ pub(super) fn analyze_expression(
                 .unwrap();
 
             // get the original function declaration
-            let mut typed_function_declaration = declaration_engine.get_function(decl_id).unwrap();
+            let mut typed_function_declaration = de_get_function(decl_id).unwrap();
 
             // make sure we have the correct number of arguments
             if typed_function_declaration.parameters.len() != arguments.len() {
@@ -67,21 +66,18 @@ pub(super) fn analyze_expression(
                 &mut typed_function_declaration,
                 &mut type_arguments,
                 namespace,
-                declaration_engine,
             )
             .unwrap();
 
             // add the new copy to the declaration engine
-            declaration_engine
-                .add_monomorphized_function_copy(decl_id, typed_function_declaration.clone());
+            de_add_monomorphized_function_copy(decl_id, typed_function_declaration.clone());
 
             // type check the arguments
             let new_arguments = arguments
                 .into_iter()
                 .zip(typed_function_declaration.parameters.iter())
                 .map(|(argument, parameter)| {
-                    let typed_argument =
-                        analyze_expression(namespace, declaration_engine, argument);
+                    let typed_argument = analyze_expression(namespace, argument);
                     println!("{}", typed_function_declaration.name);
                     unify_types(typed_argument.type_id, parameter.type_id).unwrap();
                     typed_argument
@@ -114,7 +110,7 @@ pub(super) fn analyze_expression(
                 .unwrap();
 
             // get the original struct declaration
-            let mut typed_struct_declaration = declaration_engine.get_struct(decl_id).unwrap();
+            let mut typed_struct_declaration = de_get_struct(decl_id).unwrap();
 
             // monomorphize the struct declaration into a new copy
             // TODO(joao): optimize this to cache repeated monomorphize copies
@@ -122,13 +118,11 @@ pub(super) fn analyze_expression(
                 &mut typed_struct_declaration,
                 &mut type_arguments,
                 namespace,
-                declaration_engine,
             )
             .unwrap();
 
             // add the new copy to the declaration engine
-            declaration_engine
-                .add_monomorphized_struct_copy(decl_id, typed_struct_declaration.clone());
+            de_add_monomorphized_struct_copy(decl_id, typed_struct_declaration.clone());
 
             // type check the fields
             let given_fields_map: HashMap<_, _> = fields
@@ -150,7 +144,7 @@ pub(super) fn analyze_expression(
             let typed_fields = given_fields_map
                 .into_iter()
                 .map(|(name, value)| {
-                    let typed_value = analyze_expression(namespace, declaration_engine, value);
+                    let typed_value = analyze_expression(namespace, value);
                     let oracle_field = oracle_fields_map.get(&name).unwrap();
                     unify_types(typed_value.type_id, *oracle_field).unwrap();
                     TypedStructExpressionField {
@@ -188,7 +182,7 @@ pub(super) fn analyze_expression(
 
             // get the function call
             let typed_function_declaration = namespace
-                .get_method(parent.type_ascription, &func_name, declaration_engine)
+                .get_method(parent.type_ascription, &func_name)
                 .unwrap();
 
             // type check the arguments
@@ -196,8 +190,7 @@ pub(super) fn analyze_expression(
                 .into_iter()
                 .zip(typed_function_declaration.parameters.iter())
                 .map(|(argument, parameter)| {
-                    let typed_argument =
-                        analyze_expression(namespace, declaration_engine, argument);
+                    let typed_argument = analyze_expression(namespace, argument);
                     unify_types(typed_argument.type_id, parameter.type_id).unwrap();
                     typed_argument
                 })

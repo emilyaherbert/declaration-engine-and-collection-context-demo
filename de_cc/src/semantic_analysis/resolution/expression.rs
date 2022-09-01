@@ -1,5 +1,4 @@
 use crate::{
-    declaration_engine::declaration_engine::DeclarationEngine,
     language::{
         resolved::resolved_expression::{
             ResolvedExpression, ResolvedExpressionVariant, ResolvedStructExpressionField,
@@ -11,28 +10,22 @@ use crate::{
     type_system::type_engine::resolve_type,
 };
 
-pub(super) fn resolve_expression(
-    declaration_engine: &DeclarationEngine,
-    expression: TypedExpression,
-) -> ResolvedExpression {
-    let variant = resolve_expression_variant(declaration_engine, expression.variant);
+pub(super) fn resolve_expression(expression: TypedExpression) -> ResolvedExpression {
+    let variant = resolve_expression_variant(expression.variant);
     ResolvedExpression {
         variant,
-        type_info: resolve_type(declaration_engine, expression.type_id).unwrap(),
+        type_info: resolve_type(expression.type_id).unwrap(),
     }
 }
 
-fn resolve_expression_variant(
-    declaration_engine: &DeclarationEngine,
-    variant: TypedExpressionVariant,
-) -> ResolvedExpressionVariant {
+fn resolve_expression_variant(variant: TypedExpressionVariant) -> ResolvedExpressionVariant {
     match variant {
         TypedExpressionVariant::Literal { value } => ResolvedExpressionVariant::Literal { value },
         TypedExpressionVariant::Variable { name } => ResolvedExpressionVariant::Variable { name },
         TypedExpressionVariant::FunctionApplication { name, arguments } => {
             let resolved_arguments = arguments
                 .into_iter()
-                .map(|argument| resolve_expression(declaration_engine, argument))
+                .map(resolve_expression)
                 .collect::<Vec<_>>();
             ResolvedExpressionVariant::FunctionApplication {
                 name,
@@ -45,7 +38,7 @@ fn resolve_expression_variant(
         } => {
             let resolved_fields = fields
                 .into_iter()
-                .map(|field| resolve_struct_expression_field(declaration_engine, field))
+                .map(resolve_struct_expression_field)
                 .collect::<Vec<_>>();
             ResolvedExpressionVariant::Struct {
                 struct_name,
@@ -59,7 +52,7 @@ fn resolve_expression_variant(
         } => {
             let resolved_arguments = arguments
                 .into_iter()
-                .map(|argument| resolve_expression(declaration_engine, argument))
+                .map(resolve_expression)
                 .collect::<Vec<_>>();
             ResolvedExpressionVariant::MethodCall {
                 parent_name,
@@ -74,10 +67,9 @@ fn resolve_expression_variant(
 }
 
 fn resolve_struct_expression_field(
-    declaration_engine: &DeclarationEngine,
     struct_expression_field: TypedStructExpressionField,
 ) -> ResolvedStructExpressionField {
-    let new_value = resolve_expression(declaration_engine, struct_expression_field.value);
+    let new_value = resolve_expression(struct_expression_field.value);
     ResolvedStructExpressionField {
         name: struct_expression_field.name,
         value: new_value,

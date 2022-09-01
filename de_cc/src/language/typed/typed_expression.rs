@@ -1,11 +1,11 @@
 use indent_write::fmt::IndentWriter;
+use std::fmt;
 use std::fmt::Write;
 
 use crate::{
-    declaration_engine::declaration_engine::DeclarationEngine,
     language::literal::Literal,
     type_system::{type_id::TypeId, type_mapping::TypeMapping},
-    types::{copy_types::CopyTypes, pretty_print::PrettyPrint},
+    types::copy_types::CopyTypes,
 };
 
 #[derive(Clone, PartialEq, Debug)]
@@ -14,16 +14,16 @@ pub(crate) struct TypedExpression {
     pub(crate) type_id: TypeId,
 }
 
+impl fmt::Display for TypedExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.variant)
+    }
+}
+
 impl CopyTypes for TypedExpression {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.variant.copy_types(type_mapping);
         self.type_id.copy_types(type_mapping);
-    }
-}
-
-impl PrettyPrint for TypedExpression {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
-        self.variant.pretty_print(declaration_engine)
     }
 }
 
@@ -53,6 +53,58 @@ pub(crate) enum TypedExpressionVariant {
     },
 }
 
+impl fmt::Display for TypedExpressionVariant {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TypedExpressionVariant::Literal { value } => write!(f, "{}", value),
+            TypedExpressionVariant::Variable { name } => write!(f, "{}", name),
+            TypedExpressionVariant::FunctionApplication { name, arguments } => {
+                write!(
+                    f,
+                    "{}({})",
+                    name,
+                    &arguments
+                        .iter()
+                        .map(|argument| argument.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            TypedExpressionVariant::MethodCall {
+                parent_name: parent,
+                func_name: name,
+                arguments,
+            } => {
+                write!(
+                    f,
+                    "{}.{}({})",
+                    parent,
+                    name,
+                    &arguments
+                        .iter()
+                        .map(|argument| argument.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            TypedExpressionVariant::Struct {
+                struct_name,
+                fields,
+            } => {
+                writeln!(f, "{} {{", struct_name,).unwrap();
+                {
+                    let mut indent = IndentWriter::new("  ", &mut f);
+                    for field in fields.iter() {
+                        writeln!(indent, "{},", field).unwrap();
+                    }
+                }
+                write!(f, "}}")
+            }
+            TypedExpressionVariant::FunctionParameter => write!(f, "function param"),
+        }
+    }
+}
+
 impl CopyTypes for TypedExpressionVariant {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         match self {
@@ -76,76 +128,20 @@ impl CopyTypes for TypedExpressionVariant {
     }
 }
 
-impl PrettyPrint for TypedExpressionVariant {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
-        match self {
-            TypedExpressionVariant::Literal { value } => format!("{}", value),
-            TypedExpressionVariant::Variable { name } => name.to_string(),
-            TypedExpressionVariant::FunctionApplication { name, arguments } => {
-                format!(
-                    "{}({})",
-                    name,
-                    &arguments
-                        .iter()
-                        .map(|argument| argument.pretty_print(declaration_engine))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-            }
-            TypedExpressionVariant::FunctionParameter => "function param".to_string(),
-            TypedExpressionVariant::Struct {
-                struct_name,
-                fields,
-            } => {
-                let mut builder = String::new();
-                writeln!(builder, "{} {{", struct_name).unwrap();
-                {
-                    let mut indent = IndentWriter::new("  ", &mut builder);
-                    for field in fields.iter() {
-                        writeln!(indent, "{},", field.pretty_print(declaration_engine)).unwrap();
-                    }
-                }
-                write!(builder, "}}").unwrap();
-                builder
-            }
-            TypedExpressionVariant::MethodCall {
-                parent_name: parent,
-                func_name,
-                arguments,
-            } => {
-                format!(
-                    "{}.{}({})",
-                    parent,
-                    func_name,
-                    &arguments
-                        .iter()
-                        .map(|argument| argument.pretty_print(declaration_engine))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-            }
-        }
-    }
-}
-
 #[derive(Clone, PartialEq, Debug)]
 pub(crate) struct TypedStructExpressionField {
     pub(crate) name: String,
     pub(crate) value: TypedExpression,
 }
 
-impl CopyTypes for TypedStructExpressionField {
-    fn copy_types(&mut self, type_mapping: &TypeMapping) {
-        self.value.copy_types(type_mapping)
+impl fmt::Display for TypedStructExpressionField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {}", self.name, self.value)
     }
 }
 
-impl PrettyPrint for TypedStructExpressionField {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
-        format!(
-            "{}: {}",
-            self.name,
-            self.value.pretty_print(declaration_engine)
-        )
+impl CopyTypes for TypedStructExpressionField {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.value.copy_types(type_mapping)
     }
 }

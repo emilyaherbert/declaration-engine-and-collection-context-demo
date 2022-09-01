@@ -1,16 +1,31 @@
 use std::fmt;
 
-use crate::types::pretty_print::PrettyPrint;
+use crate::{type_system::type_mapping::TypeMapping, types::copy_types::CopyTypes};
 
-use super::declaration_engine::DeclarationEngine;
+use super::declaration_engine::de_look_up_decl_id;
 
-/// An I.D. used to refer to an item in the [DeclarationEngine]
-#[derive(Clone, Copy, Debug, Default)]
+/// An ID used to refer to an item in the [DeclarationEngine](super::declaration_engine::DeclarationEngine)
+#[derive(Debug, Eq, Copy)]
 pub struct DeclarationId(usize);
+
+impl Clone for DeclarationId {
+    fn clone(&self) -> Self {
+        Self(self.0)
+    }
+}
+
+// NOTE: Hash and PartialEq must uphold the invariant:
+// k1 == k2 -> hash(k1) == hash(k2)
+// https://doc.rust-lang.org/std/collections/struct.HashMap.html
+impl PartialEq for DeclarationId {
+    fn eq(&self, other: &Self) -> bool {
+        de_look_up_decl_id(*self) == de_look_up_decl_id(*other)
+    }
+}
 
 impl fmt::Display for DeclarationId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+        f.write_str(&de_look_up_decl_id(*self).to_string())
     }
 }
 
@@ -21,16 +36,21 @@ impl std::ops::Deref for DeclarationId {
     }
 }
 
-impl From<usize> for DeclarationId {
-    fn from(o: usize) -> Self {
-        DeclarationId(o)
+#[allow(clippy::from_over_into)]
+impl Into<usize> for DeclarationId {
+    fn into(self) -> usize {
+        self.0
     }
 }
 
-impl PrettyPrint for DeclarationId {
-    fn pretty_print(&self, declaration_engine: &DeclarationEngine) -> String {
-        declaration_engine
-            .look_up_decl_id(*self)
-            .pretty_print(declaration_engine)
+impl CopyTypes for DeclarationId {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        de_look_up_decl_id(*self).copy_types(type_mapping)
+    }
+}
+
+impl DeclarationId {
+    pub(super) fn new(index: usize) -> DeclarationId {
+        DeclarationId(index)
     }
 }
