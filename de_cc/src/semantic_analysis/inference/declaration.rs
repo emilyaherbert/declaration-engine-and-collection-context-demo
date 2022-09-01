@@ -22,7 +22,8 @@ use crate::{
         type_engine::{eval_type, insert_type, unify_types},
         type_id::TypeId,
         type_info::TypeInfo,
-    }, types::create_type_id::CreateTypeId,
+    },
+    types::create_type_id::CreateTypeId,
 };
 
 use super::{analyze_expression, analyze_node};
@@ -338,7 +339,11 @@ fn analyze_struct(
         fields: typed_fields,
     };
     let type_id = decl.create_type_id();
-    unify_types(type_id, namespace.get_from_collection_context(&decl.name).unwrap()).unwrap();
+    unify_types(
+        type_id,
+        namespace.get_from_collection_context(&decl.name).unwrap(),
+    )
+    .unwrap();
     decl
 }
 

@@ -114,11 +114,15 @@ impl Namespace {
         Err("could not find function".to_string())
     }
 
+    #[allow(unused_variables)]
     pub(crate) fn insert_into_collection_context(&mut self, name: &str, type_id: TypeId) {
-        self.collection_context.insert(name.to_string(), type_id);
+        unimplemented!();
+        //self.collection_context.insert(name.to_string(), type_id);
     }
 
+    #[allow(unused_variables)]
     pub(crate) fn get_from_collection_context(&mut self, name: &str) -> Option<TypeId> {
-        self.collection_context.get(name).cloned()
+        unimplemented!();
+        //self.collection_context.get(name).cloned()
     }
 }

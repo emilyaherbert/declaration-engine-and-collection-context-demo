@@ -167,7 +167,9 @@ impl TypeEngine {
             found @ TypeInfo::ErrorRecovery
             | found @ TypeInfo::Unknown
             | found @ TypeInfo::UnknownGeneric { .. }
-            | found @ TypeInfo::Custom { .. } => Err(format!("type error in resolution, found: {}", found)),
+            | found @ TypeInfo::Custom { .. } => {
+                Err(format!("type error in resolution, found: {}", found))
+            }
         }
     }
 
@@ -186,31 +188,31 @@ impl TypeEngine {
             },
             TypeInfo::Ref(id) => Ok(id),
             TypeInfo::Custom { name } => {
-                // match namespace.get_symbol(&name)? {
-                //     TypedDeclaration::Struct(decl_id) => {
-                //         // get the original struct declaration
-                //         let mut struct_decl = declaration_engine.get_struct(decl_id).unwrap();
+                match namespace.get_symbol(&name)? {
+                    TypedDeclaration::Struct(decl_id) => {
+                        // get the original struct declaration
+                        let mut struct_decl = declaration_engine.get_struct(decl_id).unwrap();
 
-                //         // monomorphize the struct declaration into a new copy
-                //         // TODO(joao): optimize this to cache repeated monomorphize copies
-                //         monomorphize(&mut struct_decl, &mut [], namespace, declaration_engine)
-                //             .unwrap();
+                        // monomorphize the struct declaration into a new copy
+                        // TODO(joao): optimize this to cache repeated monomorphize copies
+                        monomorphize(&mut struct_decl, &mut [], namespace, declaration_engine)
+                            .unwrap();
 
-                //         // add the new copy to the declaration engine
-                //         declaration_engine
-                //             .add_monomorphized_struct_copy(decl_id, struct_decl.clone());
+                        // add the new copy to the declaration engine
+                        declaration_engine
+                            .add_monomorphized_struct_copy(decl_id, struct_decl.clone());
 
-                //         Ok(struct_decl.create_type_id())
-                //     }
-                //     TypedDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
-                //         Ok(insert_type(TypeInfo::Ref(type_id)))
-                //     }
-                //     got => Err(format!(
-                //         "err, found: {}",
-                //         got.pretty_print(declaration_engine)
-                //     )),
-                // }
-                namespace.get_from_collection_context(&name).ok_or("bruhh".to_string())
+                        Ok(struct_decl.create_type_id())
+                    }
+                    TypedDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
+                        Ok(insert_type(TypeInfo::Ref(type_id)))
+                    }
+                    got => Err(format!(
+                        "err, found: {}",
+                        got.pretty_print(declaration_engine)
+                    )),
+                }
+                // namespace.get_from_collection_context(&name).ok_or("bruhh".to_string())
             }
             o => Ok(insert_type(o)),
         }
