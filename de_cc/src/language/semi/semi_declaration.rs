@@ -3,14 +3,15 @@ use std::fmt;
 use crate::{
     declaration_engine::declaration_id::DeclarationId,
     language::{
-        typed::typed_declaration::TypedFunctionParameter,
-        untyped::{declaration::VariableDeclaration, Node},
+        typed::typed_declaration::TypedFunctionParameter, untyped::declaration::VariableDeclaration,
     },
     type_system::{type_id::TypeId, type_mapping::TypeMapping, type_parameter::TypeParameter},
     types::copy_types::CopyTypes,
 };
 
-#[derive(Clone)]
+use super::SemiNode;
+
+#[derive(Clone, PartialEq, Debug)]
 pub enum SemiDeclaration {
     Variable(VariableDeclaration),
     Function(DeclarationId),
@@ -31,12 +32,12 @@ impl fmt::Display for SemiDeclaration {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) struct SemiTypedFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) parameters: Vec<TypedFunctionParameter>,
-    pub(crate) body: Vec<Node>,
+    pub(crate) body: Vec<SemiNode>,
     pub(crate) return_type: TypeId,
 }
 

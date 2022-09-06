@@ -28,7 +28,7 @@ impl fmt::Display for Declaration {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct VariableDeclaration {
     pub(crate) name: String,
     pub(crate) type_ascription: TypeInfo,

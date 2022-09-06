@@ -55,7 +55,7 @@ impl fmt::Display for SemiFile {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum SemiNode {
     //StarImport(String),
     Declaration(SemiDeclaration),

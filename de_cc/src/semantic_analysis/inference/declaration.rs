@@ -4,16 +4,12 @@ use crate::{
         semi::{semi_declaration::SemiDeclaration, SemiNode},
         typed::{
             typed_declaration::{
-                TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter,
-                TypedStructDeclaration, TypedStructField, TypedTraitDeclaration, TypedTraitFn,
-                TypedTraitImpl, TypedVariableDeclaration,
+                TypedDeclaration, TypedFunctionDeclaration, TypedTraitImpl,
+                TypedVariableDeclaration,
             },
             TypedNode,
         },
-        untyped::declaration::{
-            FunctionDeclaration, FunctionParameter, StructDeclaration, StructField,
-            TraitDeclaration, TraitFn, TraitImpl, VariableDeclaration,
-        },
+        untyped::declaration::VariableDeclaration,
     },
     namespace::namespace::Namespace,
     type_system::{
@@ -38,44 +34,35 @@ pub(super) fn analyze_declaration(
             decl
         }
         SemiDeclaration::Function(decl_id) => {
-            unimplemented!();
-            // let typed_function_declaration =
-            //     analyze_function(&mut namespace.scoped(), function_declaration);
-            // let name = typed_function_declaration.name.clone();
-            // let decl_id = de_insert_function(typed_function_declaration);
-            // let decl = TypedDeclaration::Function(decl_id);
-            // namespace.insert_symbol(name, decl.clone());
-            // decl
+            let typed_function_declaration = analyze_function(&mut namespace.scoped(), decl_id);
+            let name = typed_function_declaration.name.clone();
+            let decl = TypedDeclaration::Function(de_insert_function(typed_function_declaration));
+            namespace.insert_symbol(name, decl.clone());
+            decl
         }
-        SemiDeclaration::Trait(trait_declaration) => {
-            unimplemented!();
-            // let typed_trait_declaration = analyze_trait(&mut namespace.scoped(), trait_declaration);
-            // let name = typed_trait_declaration.name.clone();
-            // let decl_id = de_insert_trait(typed_trait_declaration);
-            // let decl = TypedDeclaration::Trait(decl_id);
-            // namespace.insert_symbol(name, decl.clone());
-            // decl
+        SemiDeclaration::Trait(decl_id) => {
+            let typed_trait_declaration = de_get_trait(decl_id).unwrap();
+            let name = typed_trait_declaration.name;
+            let decl = TypedDeclaration::Trait(decl_id);
+            namespace.insert_symbol(name, decl.clone());
+            decl
         }
-        SemiDeclaration::TraitImpl(trait_impl) => {
-            unimplemented!();
-            // let typed_trait_impl = analyze_trait_impl(&mut namespace.scoped(), trait_impl);
-            // namespace.insert_methods(
-            //     typed_trait_impl.type_implementing_for,
-            //     typed_trait_impl.trait_name.clone(),
-            //     typed_trait_impl.methods.clone(),
-            // );
-            // let decl_id = de_insert_trait_impl(typed_trait_impl);
-            // TypedDeclaration::TraitImpl(decl_id)
+        SemiDeclaration::TraitImpl(decl_id) => {
+            let typed_trait_impl =
+                analyze_trait_impl(&mut namespace.scoped(), de_get_trait_impl(decl_id).unwrap());
+            namespace.insert_methods(
+                typed_trait_impl.type_implementing_for,
+                typed_trait_impl.trait_name.clone(),
+                typed_trait_impl.methods,
+            );
+            TypedDeclaration::TraitImpl(decl_id)
         }
-        SemiDeclaration::Struct(struct_declaration) => {
-            unimplemented!();
-            // let typed_struct_declaration =
-            //     analyze_struct(&mut namespace.scoped(), struct_declaration);
-            // let name = typed_struct_declaration.name.clone();
-            // let decl_id = de_insert_struct(typed_struct_declaration);
-            // let decl = TypedDeclaration::Struct(decl_id);
-            // namespace.insert_symbol(name, decl.clone());
-            // decl
+        SemiDeclaration::Struct(decl_id) => {
+            let typed_struct_declaration = de_get_struct(decl_id).unwrap();
+            let name = typed_struct_declaration.name;
+            let decl = TypedDeclaration::Struct(decl_id);
+            namespace.insert_symbol(name, decl.clone());
+            decl
         }
     }
 }
@@ -96,69 +83,31 @@ fn analyze_variable(
 }
 
 fn analyze_function(namespace: &mut Namespace, decl_id: DeclarationId) -> TypedFunctionDeclaration {
-    // insert type params into namespace and handle trait constraints
-    for type_parameter in function_declaration.type_parameters.iter() {
-        let type_parameter_decl = TypedDeclaration::GenericTypeForFunctionScope {
-            type_id: type_parameter.type_id,
-        };
-        namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);
+    // get the function from the declaration engine
+    let function_declaration = de_get_function(decl_id).unwrap().unwrap_left();
 
-        // if the type param has a trait constraint, take the TypedTraitFn's from
-        // the trait it is constrained upon and insert them into the namespace
-        // under the type param
-        if let Some(constraint) = &type_parameter.trait_constraint {
-            let decl_id = namespace
-                .get_symbol(&constraint.trait_name)
-                .unwrap()
-                .expect_trait()
-                .unwrap();
-            let trait_decl = de_get_trait(decl_id).unwrap();
-            namespace.insert_methods(
-                type_parameter.type_id,
-                constraint.trait_name.clone(),
-                trait_decl.interface_surface,
-            );
-        }
+    if !function_declaration.type_parameters.is_empty() {
+        panic!("no type parameters yet");
     }
 
-    // type check the function params
-    let typed_parameters = function_declaration
-        .parameters
-        .into_iter()
-        .map(|parameter| {
-            let typed_parameter = analyze_function_parameter(namespace, parameter);
-            namespace.insert_symbol(typed_parameter.name.clone(), (&typed_parameter).into());
-            typed_parameter
-        })
-        .collect::<Vec<_>>();
-
-    // type check the function return type
-    let return_type = eval_type(insert_type(function_declaration.return_type), namespace).unwrap();
+    // insert the typed function params into the namespace
+    for param in function_declaration.parameters.iter() {
+        namespace.insert_symbol(param.name.clone(), param.into());
+    }
 
     // type check the function body
     let (typed_body, typed_body_return_type) =
         analyze_code_block(namespace, function_declaration.body);
 
     // unify the funtion return type and body return type
-    unify_types(typed_body_return_type, return_type).unwrap();
+    unify_types(typed_body_return_type, function_declaration.return_type).unwrap();
 
     TypedFunctionDeclaration {
         name: function_declaration.name,
         type_parameters: function_declaration.type_parameters,
-        parameters: typed_parameters,
+        parameters: function_declaration.parameters,
         body: typed_body,
-        return_type,
-    }
-}
-
-fn analyze_function_parameter(
-    namespace: &mut Namespace,
-    function_parameter: FunctionParameter,
-) -> TypedFunctionParameter {
-    let type_id = eval_type(insert_type(function_parameter.type_info), namespace).unwrap();
-    TypedFunctionParameter {
-        name: function_parameter.name,
-        type_id,
+        return_type: function_declaration.return_type,
     }
 }
 
@@ -178,49 +127,9 @@ fn analyze_code_block(namespace: &mut Namespace, nodes: Vec<SemiNode>) -> (Vec<T
     (typed_nodes, insert_type(TypeInfo::Unit))
 }
 
-fn analyze_trait(
-    namespace: &mut Namespace,
-    trait_declaration: TraitDeclaration,
-) -> TypedTraitDeclaration {
-    let new_interface_surface = trait_declaration
-        .interface_surface
-        .into_iter()
-        .map(|trait_fn| {
-            let trait_fn = analyze_trait_fn(namespace, trait_fn);
-            de_insert_trait_fn(trait_fn)
-        })
-        .collect::<Vec<_>>();
-    TypedTraitDeclaration {
-        name: trait_declaration.name,
-        interface_surface: new_interface_surface,
-    }
-}
-
-fn analyze_trait_fn(namespace: &mut Namespace, trait_fn: TraitFn) -> TypedTraitFn {
-    let new_parameters = trait_fn
-        .parameters
-        .into_iter()
-        .map(|parameter| {
-            let typed_parameter = analyze_function_parameter(namespace, parameter);
-            namespace.insert_symbol(typed_parameter.name.clone(), (&typed_parameter).into());
-            typed_parameter
-        })
-        .collect::<Vec<_>>();
-    let return_type = eval_type(insert_type(trait_fn.return_type), namespace).unwrap();
-    TypedTraitFn {
-        name: trait_fn.name,
-        parameters: new_parameters,
-        return_type,
-    }
-}
-
-fn analyze_trait_impl(namespace: &mut Namespace, trait_impl: TraitImpl) -> TypedTraitImpl {
-    // insert type params into namespace
-    for type_parameter in trait_impl.type_parameters.iter() {
-        let type_parameter_decl = TypedDeclaration::GenericTypeForFunctionScope {
-            type_id: type_parameter.type_id,
-        };
-        namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);
+fn analyze_trait_impl(namespace: &mut Namespace, trait_impl: TypedTraitImpl) -> TypedTraitImpl {
+    if !trait_impl.type_parameters.is_empty() {
+        panic!("no type parameters yet");
     }
 
     // get the trait from the declaration engine
@@ -235,10 +144,6 @@ fn analyze_trait_impl(namespace: &mut Namespace, trait_impl: TraitImpl) -> Typed
     // when generic traits are implemented add the monomorphized copies to the declaration
     // engine
 
-    // type check the type we are implementing for
-    let type_implementing_for =
-        eval_type(insert_type(trait_impl.type_implementing_for), namespace).unwrap();
-
     // type check the methods
     let typed_method_ids = trait_impl
         .methods
@@ -251,41 +156,8 @@ fn analyze_trait_impl(namespace: &mut Namespace, trait_impl: TraitImpl) -> Typed
 
     TypedTraitImpl {
         trait_name: trait_impl.trait_name,
-        type_implementing_for,
+        type_implementing_for: trait_impl.type_implementing_for,
         type_parameters: trait_impl.type_parameters,
         methods: typed_method_ids,
-    }
-}
-
-fn analyze_struct(
-    namespace: &mut Namespace,
-    struct_declaration: StructDeclaration,
-) -> TypedStructDeclaration {
-    // insert type params into namespace
-    for type_parameter in struct_declaration.type_parameters.iter() {
-        let type_parameter_decl = TypedDeclaration::GenericTypeForFunctionScope {
-            type_id: type_parameter.type_id,
-        };
-        namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);
-    }
-
-    // type check the fields
-    let typed_fields = struct_declaration
-        .fields
-        .into_iter()
-        .map(|field| analyze_struct_field(namespace, field))
-        .collect::<Vec<_>>();
-
-    TypedStructDeclaration {
-        name: struct_declaration.name,
-        type_parameters: struct_declaration.type_parameters,
-        fields: typed_fields,
-    }
-}
-
-fn analyze_struct_field(namespace: &mut Namespace, struct_field: StructField) -> TypedStructField {
-    TypedStructField {
-        name: struct_field.name,
-        type_id: eval_type(insert_type(struct_field.type_info), namespace).unwrap(),
     }
 }

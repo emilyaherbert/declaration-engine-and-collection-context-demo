@@ -8,18 +8,26 @@ use crate::{
         declaration_wrapper::DeclarationWrapper,
     },
     language::{
-        semi::semi_declaration::{SemiDeclaration, SemiTypedFunctionDeclaration},
+        semi::{
+            semi_declaration::{SemiDeclaration, SemiTypedFunctionDeclaration},
+            SemiNode,
+        },
         typed::typed_declaration::{
             TypedFunctionParameter, TypedStructDeclaration, TypedStructField,
             TypedTraitDeclaration, TypedTraitFn, TypedTraitImpl,
         },
-        untyped::declaration::{
-            Declaration, FunctionDeclaration, FunctionParameter, StructDeclaration, StructField,
-            TraitDeclaration, TraitFn, TraitImpl,
+        untyped::{
+            declaration::{
+                Declaration, FunctionDeclaration, FunctionParameter, StructDeclaration,
+                StructField, TraitDeclaration, TraitFn, TraitImpl,
+            },
+            Node,
         },
     },
     type_system::type_engine::insert_type,
 };
+
+use super::collect_types_node;
 
 pub(super) fn collect_types_declaration(declaration: Declaration) -> SemiDeclaration {
     match declaration {
@@ -70,7 +78,7 @@ fn collect_types_function(
         name: function_declaration.name,
         type_parameters: vec![],
         parameters,
-        body: function_declaration.body,
+        body: collect_types_code_block(function_declaration.body),
         return_type,
     }
 }
@@ -82,6 +90,10 @@ fn collect_types_function_parameter(
         name: function_parameter.name,
         type_id: insert_type(function_parameter.type_info),
     }
+}
+
+fn collect_types_code_block(nodes: Vec<Node>) -> Vec<SemiNode> {
+    nodes.into_iter().map(collect_types_node).collect()
 }
 
 fn collect_types_trait(trait_declaration: TraitDeclaration) -> TypedTraitDeclaration {

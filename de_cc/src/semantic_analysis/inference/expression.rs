@@ -53,7 +53,7 @@ pub(super) fn analyze_expression(
                 .unwrap();
 
             // get the original function declaration
-            let mut typed_function_declaration = de_get_function(decl_id).unwrap();
+            let mut typed_function_declaration = de_get_function(decl_id).unwrap().unwrap_right();
 
             // make sure we have the correct number of arguments
             if typed_function_declaration.parameters.len() != arguments.len() {
@@ -61,7 +61,6 @@ pub(super) fn analyze_expression(
             }
 
             // monomorphize the function declaration into a new copy
-            // TODO(joao): optimize this to cache repeated monomorphize copies
             monomorphize(
                 &mut typed_function_declaration,
                 &mut type_arguments,
@@ -78,7 +77,6 @@ pub(super) fn analyze_expression(
                 .zip(typed_function_declaration.parameters.iter())
                 .map(|(argument, parameter)| {
                     let typed_argument = analyze_expression(namespace, argument);
-                    println!("{}", typed_function_declaration.name);
                     unify_types(typed_argument.type_id, parameter.type_id).unwrap();
                     typed_argument
                 })
@@ -113,7 +111,6 @@ pub(super) fn analyze_expression(
             let mut typed_struct_declaration = de_get_struct(decl_id).unwrap();
 
             // monomorphize the struct declaration into a new copy
-            // TODO(joao): optimize this to cache repeated monomorphize copies
             monomorphize(
                 &mut typed_struct_declaration,
                 &mut type_arguments,

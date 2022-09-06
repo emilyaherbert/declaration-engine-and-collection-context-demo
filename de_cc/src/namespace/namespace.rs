@@ -1,3 +1,4 @@
+use either::Either;
 use indent_write::fmt::IndentWriter;
 use std::fmt;
 use std::fmt::Write;
@@ -92,8 +93,12 @@ impl Namespace {
                 for method_id in method_ids.iter() {
                     match de_look_up_decl_id(*method_id) {
                         DeclarationWrapper::Function(decl) => {
-                            if decl.name == func_name {
-                                return Ok(decl.into());
+                            let (name, signature) = match decl {
+                                Either::Left(decl) => (decl.name.clone(), decl.into()),
+                                Either::Right(decl) => (decl.name.clone(), decl.into()),
+                            };
+                            if name == func_name {
+                                return Ok(signature);
                             }
                         }
                         DeclarationWrapper::TypedTraitFn(decl) => {

@@ -1,6 +1,9 @@
 use crate::{
-    language::typed::typed_declaration::{
-        TypedFunctionDeclaration, TypedFunctionParameter, TypedTraitFn,
+    language::{
+        semi::semi_declaration::SemiTypedFunctionDeclaration,
+        typed::typed_declaration::{
+            TypedFunctionDeclaration, TypedFunctionParameter, TypedTraitFn,
+        },
     },
     type_system::{type_id::TypeId, type_parameter::TypeParameter},
 };
@@ -30,6 +33,17 @@ impl From<TypedTraitFn> for TypedFunctionSignature {
         TypedFunctionSignature {
             name: decl.name,
             type_parameters: vec![],
+            parameters: decl.parameters,
+            return_type: decl.return_type,
+        }
+    }
+}
+
+impl From<SemiTypedFunctionDeclaration> for TypedFunctionSignature {
+    fn from(decl: SemiTypedFunctionDeclaration) -> Self {
+        TypedFunctionSignature {
+            name: decl.name,
+            type_parameters: decl.type_parameters,
             parameters: decl.parameters,
             return_type: decl.return_type,
         }

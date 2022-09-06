@@ -355,7 +355,7 @@ impl fmt::Display for TypedStructDeclaration {
     }
 }
 
-#[derive(Clone, Hash, PartialEq, Eq)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct TypedStructField {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,

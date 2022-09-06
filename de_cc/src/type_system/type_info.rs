@@ -10,7 +10,7 @@ use super::type_mapping::TypeMapping;
 use super::type_parameter::TypeParameter;
 use super::{type_id::*, IntegerBits};
 
-#[derive(Clone, Eq)]
+#[derive(Clone, Eq, Debug)]
 pub enum TypeInfo {
     ErrorRecovery,
     Unknown,
