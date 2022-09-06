@@ -305,7 +305,7 @@ fn generic_struct_test() {
 }
 
 #[test]
-fn generic_struct_with_trait_test() {
+fn struct_with_trait_test() {
     println!(
         "\n\n**********************************************************************************"
     );
@@ -546,28 +546,6 @@ fn trait_constraint_test() {
             call_it_fn,
             main_fn,
         ],
-    };
-    let application = Application {
-        files: vec![program_1],
-    };
-    println!("{}", application);
-    let resolved_application = compile(application);
-    println!("{}", resolved_application);
-}
-
-#[test]
-fn recursive_struct_test() {
-    println!(
-        "\n\n**********************************************************************************"
-    );
-
-    let data_decl = struct_("MyData", &[], &[struct_field("inner", t_cus_("MyValue"))]);
-    let value_decl = struct_("MyValue", &[], &[struct_field("inner", t_cus_("MyData"))]);
-
-    let main_fn = func_decl("main", &[], &[], &[], t_unit());
-    let program_1 = File {
-        name: "bob.sw".to_string(),
-        nodes: vec![data_decl, value_decl, main_fn],
     };
     let application = Application {
         files: vec![program_1],

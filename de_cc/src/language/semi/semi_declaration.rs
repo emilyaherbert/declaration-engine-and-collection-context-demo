@@ -12,22 +12,26 @@ use crate::{
 use super::SemiNode;
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum SemiDeclaration {
+pub enum SemiTypedDeclaration {
     Variable(VariableDeclaration),
     Function(DeclarationId),
     Trait(DeclarationId),
     TraitImpl(DeclarationId),
     Struct(DeclarationId),
+    GenericTypeForFunctionScope { type_id: TypeId },
 }
 
-impl fmt::Display for SemiDeclaration {
+impl fmt::Display for SemiTypedDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SemiDeclaration::Variable(decl) => write!(f, "{}", decl),
-            SemiDeclaration::Function(decl) => write!(f, "\n{}", decl),
-            SemiDeclaration::Trait(decl) => write!(f, "\n{}", decl),
-            SemiDeclaration::TraitImpl(decl) => write!(f, "\n{}", decl),
-            SemiDeclaration::Struct(decl) => write!(f, "\n{}", decl),
+            SemiTypedDeclaration::Variable(decl) => write!(f, "{}", decl),
+            SemiTypedDeclaration::Function(decl) => write!(f, "\n{}", decl),
+            SemiTypedDeclaration::Trait(decl) => write!(f, "\n{}", decl),
+            SemiTypedDeclaration::TraitImpl(decl) => write!(f, "\n{}", decl),
+            SemiTypedDeclaration::Struct(decl) => write!(f, "\n{}", decl),
+            SemiTypedDeclaration::GenericTypeForFunctionScope { type_id } => {
+                write!(f, "{}", type_id)
+            }
         }
     }
 }

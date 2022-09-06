@@ -1,4 +1,3 @@
-use either::Either;
 use indent_write::fmt::IndentWriter;
 use std::fmt;
 use std::fmt::Write;
@@ -91,24 +90,18 @@ impl Namespace {
             // TODO: consider semantic similarity
             if look_up_type_id(*k) == look_up_type_id(type_id) {
                 for method_id in method_ids.iter() {
-                    match de_look_up_decl_id(*method_id) {
-                        DeclarationWrapper::Function(decl) => {
-                            let (name, signature) = match decl {
-                                Either::Left(decl) => (decl.name.clone(), decl.into()),
-                                Either::Right(decl) => (decl.name.clone(), decl.into()),
-                            };
-                            if name == func_name {
-                                return Ok(signature);
-                            }
-                        }
-                        DeclarationWrapper::TypedTraitFn(decl) => {
-                            if decl.name == func_name {
-                                return Ok(decl.into());
-                            }
-                        }
+                    let (name, signature) = match de_look_up_decl_id(*method_id) {
+                        DeclarationWrapper::Function(decl) => match decl {
+                            either::Either::Left(decl) => (decl.name.clone(), decl.into()),
+                            either::Either::Right(decl) => (decl.name.clone(), decl.into()),
+                        },
+                        DeclarationWrapper::TypedTraitFn(decl) => (decl.name.clone(), decl.into()),
                         _ => {
                             return Err("found bad item in self.methods".to_string());
                         }
+                    };
+                    if name == func_name {
+                        return Ok(signature);
                     }
                 }
             }

@@ -1,5 +1,5 @@
 use language::{resolved::ResolvedApplication, untyped::Application};
-use namespace::namespace::Namespace;
+use namespace::{collection_namespace::CollectionNamespace, namespace::Namespace};
 use semantic_analysis::{inference::analyze, resolution::resolve, type_collection::collect_types};
 
 mod concurrent_slab;
@@ -19,9 +19,10 @@ pub fn compile(application: Application) -> ResolvedApplication {
     // parsing happens here
 
     // do type collection
-    let semi_application = collect_types(application);
+    let mut namespace = CollectionNamespace::default();
+    let semi_application = collect_types(&mut namespace, application);
 
-    // do type inference
+    // do type inference with new namespace
     let mut namespace = Namespace::default();
     let typed_application = analyze(&mut namespace, semi_application);
 

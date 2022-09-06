@@ -1,7 +1,7 @@
 use crate::{
     declaration_engine::{declaration_engine::*, declaration_id::DeclarationId},
     language::{
-        semi::{semi_declaration::SemiDeclaration, SemiNode},
+        semi::{semi_declaration::SemiTypedDeclaration, SemiNode},
         typed::{
             typed_declaration::{
                 TypedDeclaration, TypedFunctionDeclaration, TypedTraitImpl,
@@ -23,46 +23,49 @@ use super::{analyze_expression, analyze_node};
 
 pub(super) fn analyze_declaration(
     namespace: &mut Namespace,
-    declaration: SemiDeclaration,
+    declaration: SemiTypedDeclaration,
 ) -> TypedDeclaration {
     match declaration {
-        SemiDeclaration::Variable(variable_declaration) => {
+        SemiTypedDeclaration::Variable(variable_declaration) => {
             let typed_variable_declaration = analyze_variable(namespace, variable_declaration);
             let name = typed_variable_declaration.name.clone();
             let decl = TypedDeclaration::Variable(typed_variable_declaration);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        SemiDeclaration::Function(decl_id) => {
+        SemiTypedDeclaration::Function(decl_id) => {
             let typed_function_declaration = analyze_function(&mut namespace.scoped(), decl_id);
             let name = typed_function_declaration.name.clone();
             let decl = TypedDeclaration::Function(de_insert_function(typed_function_declaration));
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        SemiDeclaration::Trait(decl_id) => {
+        SemiTypedDeclaration::Trait(decl_id) => {
             let typed_trait_declaration = de_get_trait(decl_id).unwrap();
             let name = typed_trait_declaration.name;
             let decl = TypedDeclaration::Trait(decl_id);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        SemiDeclaration::TraitImpl(decl_id) => {
+        SemiTypedDeclaration::TraitImpl(decl_id) => {
             let typed_trait_impl =
                 analyze_trait_impl(&mut namespace.scoped(), de_get_trait_impl(decl_id).unwrap());
             namespace.insert_methods(
                 typed_trait_impl.type_implementing_for,
                 typed_trait_impl.trait_name.clone(),
-                typed_trait_impl.methods,
+                typed_trait_impl.methods.clone(),
             );
-            TypedDeclaration::TraitImpl(decl_id)
+            TypedDeclaration::TraitImpl(de_insert_trait_impl(typed_trait_impl))
         }
-        SemiDeclaration::Struct(decl_id) => {
+        SemiTypedDeclaration::Struct(decl_id) => {
             let typed_struct_declaration = de_get_struct(decl_id).unwrap();
             let name = typed_struct_declaration.name;
             let decl = TypedDeclaration::Struct(decl_id);
             namespace.insert_symbol(name, decl.clone());
             decl
+        }
+        SemiTypedDeclaration::GenericTypeForFunctionScope { .. } => {
+            panic!("should not see this here")
         }
     }
 }
@@ -84,10 +87,14 @@ fn analyze_variable(
 
 fn analyze_function(namespace: &mut Namespace, decl_id: DeclarationId) -> TypedFunctionDeclaration {
     // get the function from the declaration engine
-    let function_declaration = de_get_function(decl_id).unwrap().unwrap_left();
+    let function_declaration = de_get_function_semi_typed(decl_id).unwrap();
 
-    if !function_declaration.type_parameters.is_empty() {
-        panic!("no type parameters yet");
+    // insert type params into namespace
+    for type_parameter in function_declaration.type_parameters.iter() {
+        let type_parameter_decl = TypedDeclaration::GenericTypeForFunctionScope {
+            type_id: type_parameter.type_id,
+        };
+        namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);
     }
 
     // insert the typed function params into the namespace
@@ -99,7 +106,7 @@ fn analyze_function(namespace: &mut Namespace, decl_id: DeclarationId) -> TypedF
     let (typed_body, typed_body_return_type) =
         analyze_code_block(namespace, function_declaration.body);
 
-    // unify the funtion return type and body return type
+    // unify the function return type and body return type
     unify_types(typed_body_return_type, function_declaration.return_type).unwrap();
 
     TypedFunctionDeclaration {

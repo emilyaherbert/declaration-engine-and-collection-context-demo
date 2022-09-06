@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::declaration_engine::declaration_engine::*;
+use crate::type_system::type_engine::eval_type;
 use crate::{
     language::{
         typed::typed_expression::{
@@ -53,20 +54,20 @@ pub(super) fn analyze_expression(
                 .unwrap();
 
             // get the original function declaration
-            let mut typed_function_declaration = de_get_function(decl_id).unwrap().unwrap_right();
+            let mut typed_function_declaration = de_get_function_typed(decl_id).unwrap();
 
             // make sure we have the correct number of arguments
             if typed_function_declaration.parameters.len() != arguments.len() {
                 panic!();
             }
 
+            // type check the type arguments
+            for type_argument in type_arguments.iter_mut() {
+                type_argument.type_id = eval_type(type_argument.type_id, namespace).unwrap();
+            }
+
             // monomorphize the function declaration into a new copy
-            monomorphize(
-                &mut typed_function_declaration,
-                &mut type_arguments,
-                namespace,
-            )
-            .unwrap();
+            monomorphize(&mut typed_function_declaration, &type_arguments).unwrap();
 
             // add the new copy to the declaration engine
             de_add_monomorphized_function_copy(decl_id, typed_function_declaration.clone());
@@ -110,13 +111,13 @@ pub(super) fn analyze_expression(
             // get the original struct declaration
             let mut typed_struct_declaration = de_get_struct(decl_id).unwrap();
 
+            // type check the type arguments
+            for type_argument in type_arguments.iter_mut() {
+                type_argument.type_id = eval_type(type_argument.type_id, namespace).unwrap();
+            }
+
             // monomorphize the struct declaration into a new copy
-            monomorphize(
-                &mut typed_struct_declaration,
-                &mut type_arguments,
-                namespace,
-            )
-            .unwrap();
+            monomorphize(&mut typed_struct_declaration, &type_arguments).unwrap();
 
             // add the new copy to the declaration engine
             de_add_monomorphized_struct_copy(decl_id, typed_struct_declaration.clone());

@@ -64,15 +64,11 @@ fn resolve_variable_declaration(
 }
 
 fn resolve_function_declaration(function_id: DeclarationId) -> Vec<ResolvedFunctionDeclaration> {
-    let original_copy = de_get_function(function_id).unwrap().unwrap_right();
+    let original_copy = de_get_function_typed(function_id).unwrap();
     if original_copy.type_parameters.is_empty() {
         resolve_function_declaration_inner(vec![original_copy])
     } else {
-        let monomorphized_copies = de_get_monomorphized_function_copies(function_id)
-            .unwrap()
-            .into_iter()
-            .map(|x| x.unwrap_right())
-            .collect();
+        let monomorphized_copies = de_get_monomorphized_function_copies(function_id).unwrap();
         resolve_function_declaration_inner(monomorphized_copies)
     }
 }

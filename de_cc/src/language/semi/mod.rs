@@ -2,7 +2,7 @@ use std::fmt;
 
 use colored::Colorize;
 
-use self::semi_declaration::SemiDeclaration;
+use self::semi_declaration::SemiTypedDeclaration;
 
 use super::untyped::expression::Expression;
 
@@ -58,7 +58,7 @@ impl fmt::Display for SemiFile {
 #[derive(Clone, PartialEq, Debug)]
 pub enum SemiNode {
     //StarImport(String),
-    Declaration(SemiDeclaration),
+    Declaration(SemiTypedDeclaration),
     Expression(Expression),
     ReturnStatement(Expression),
 }

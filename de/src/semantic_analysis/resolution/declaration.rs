@@ -51,7 +51,7 @@ pub(super) fn resolve_declaration(
                 .into_iter()
                 .map(ResolvedDeclaration::Struct)
                 .collect()
-        } // TypedDeclaration::Enum(_) => todo!(),
+        }
     }
 }
 

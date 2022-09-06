@@ -3,9 +3,9 @@ use crate::{
     declaration_engine::declaration_engine::*,
     language::{
         resolved::resolved_declaration::ResolvedStructField,
-        typed::typed_declaration::TypedDeclaration,
+        semi::semi_declaration::SemiTypedDeclaration, typed::typed_declaration::TypedDeclaration,
     },
-    namespace::namespace::Namespace,
+    namespace::{collection_namespace::CollectionNamespace, namespace::Namespace},
     types::{copy_types::CopyTypes, create_type_id::CreateTypeId},
 };
 
@@ -184,8 +184,7 @@ impl TypeEngine {
                         let mut struct_decl = de_get_struct(decl_id).unwrap();
 
                         // monomorphize the struct declaration into a new copy
-                        // TODO(joao): optimize this to cache repeated monomorphize copies
-                        monomorphize(&mut struct_decl, &mut [], namespace).unwrap();
+                        monomorphize(&mut struct_decl, &[]).unwrap();
 
                         // add the new copy to the declaration engine
                         de_add_monomorphized_struct_copy(decl_id, struct_decl.clone());
@@ -197,18 +196,50 @@ impl TypeEngine {
                     }
                     got => Err(format!("err, found: {}", got)),
                 }
-                // namespace.get_from_collection_context(&name).ok_or("bruhh".to_string())
             }
             o => Ok(insert_type(o)),
         }
     }
 
-    fn monomorphize<T>(
+    // TODO: figure out a better way to do this
+    fn eval_type2(
         &self,
-        value: &mut T,
-        type_arguments: &mut [TypeArgument],
-        namespace: &mut Namespace,
-    ) -> Result<(), String>
+        id: TypeId,
+        namespace: &mut CollectionNamespace,
+    ) -> Result<TypeId, String> {
+        match self.slab.get(*id) {
+            TypeInfo::UnknownGeneric { name } => match namespace.get_symbol(&name)? {
+                SemiTypedDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
+                    Ok(insert_type(TypeInfo::Ref(type_id)))
+                }
+                _ => Err("could not find generic declaration".to_string()),
+            },
+            TypeInfo::Ref(id) => Ok(id),
+            TypeInfo::Custom { name } => {
+                match namespace.get_symbol(&name)? {
+                    SemiTypedDeclaration::Struct(decl_id) => {
+                        // get the original struct declaration
+                        let mut struct_decl = de_get_struct(decl_id).unwrap();
+
+                        // monomorphize the struct declaration into a new copy
+                        monomorphize(&mut struct_decl, &[]).unwrap();
+
+                        // add the new copy to the declaration engine
+                        de_add_monomorphized_struct_copy(decl_id, struct_decl.clone());
+
+                        Ok(struct_decl.create_type_id())
+                    }
+                    SemiTypedDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
+                        Ok(insert_type(TypeInfo::Ref(type_id)))
+                    }
+                    got => Err(format!("err, found: {}", got)),
+                }
+            }
+            o => Ok(insert_type(o)),
+        }
+    }
+
+    fn monomorphize<T>(&self, value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>
     where
         T: MonomorphizeHelper + CopyTypes,
     {
@@ -226,9 +257,6 @@ impl TypeEngine {
             (false, false) => {
                 if value.type_parameters().len() != type_arguments.len() {
                     return Err("incorrect number of type arguments".to_string());
-                }
-                for type_argument in type_arguments.iter_mut() {
-                    type_argument.type_id = self.eval_type(type_argument.type_id, namespace)?;
                 }
                 let type_mapping = insert_type_parameters(value.type_parameters());
                 for ((_, interim_type), type_argument) in
@@ -267,15 +295,18 @@ pub(crate) fn eval_type(id: TypeId, namespace: &mut Namespace) -> Result<TypeId,
     TYPE_ENGINE.eval_type(id, namespace)
 }
 
-pub(crate) fn monomorphize<T>(
-    value: &mut T,
-    type_arguments: &mut [TypeArgument],
-    namespace: &mut Namespace,
-) -> Result<(), String>
+pub(crate) fn eval_type2(
+    id: TypeId,
+    namespace: &mut CollectionNamespace,
+) -> Result<TypeId, String> {
+    TYPE_ENGINE.eval_type2(id, namespace)
+}
+
+pub(crate) fn monomorphize<T>(value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>
 where
     T: MonomorphizeHelper + CopyTypes,
 {
-    TYPE_ENGINE.monomorphize(value, type_arguments, namespace)
+    TYPE_ENGINE.monomorphize(value, type_arguments)
 }
 
 pub(crate) trait MonomorphizeHelper {

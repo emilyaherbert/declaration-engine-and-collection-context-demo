@@ -75,11 +75,15 @@ impl DeclarationEngine {
         )
     }
 
-    fn get_function(
+    fn get_function_typed(&self, index: DeclarationId) -> Result<TypedFunctionDeclaration, String> {
+        self.slab.get(*index).expect_function_typed()
+    }
+
+    fn get_function_semi_typed(
         &self,
         index: DeclarationId,
-    ) -> Result<Either<SemiTypedFunctionDeclaration, TypedFunctionDeclaration>, String> {
-        self.slab.get(*index).expect_function()
+    ) -> Result<SemiTypedFunctionDeclaration, String> {
+        self.slab.get(*index).expect_function_semi_typed()
     }
 
     fn add_monomorphized_function_copy(
@@ -97,10 +101,10 @@ impl DeclarationEngine {
     fn get_monomorphized_function_copies(
         &self,
         original_id: DeclarationId,
-    ) -> Result<Vec<Either<SemiTypedFunctionDeclaration, TypedFunctionDeclaration>>, String> {
+    ) -> Result<Vec<TypedFunctionDeclaration>, String> {
         self.get_monomorphized_copies(original_id)
             .into_iter()
-            .map(|x| x.expect_function())
+            .map(|x| x.expect_function_typed())
             .collect::<Result<_, _>>()
     }
 
@@ -172,10 +176,16 @@ pub(crate) fn de_insert_function(function: TypedFunctionDeclaration) -> Declarat
     DECLARATION_ENGINE.insert_function(function)
 }
 
-pub(crate) fn de_get_function(
+pub(crate) fn de_get_function_typed(
     index: DeclarationId,
-) -> Result<Either<SemiTypedFunctionDeclaration, TypedFunctionDeclaration>, String> {
-    DECLARATION_ENGINE.get_function(index)
+) -> Result<TypedFunctionDeclaration, String> {
+    DECLARATION_ENGINE.get_function_typed(index)
+}
+
+pub(crate) fn de_get_function_semi_typed(
+    index: DeclarationId,
+) -> Result<SemiTypedFunctionDeclaration, String> {
+    DECLARATION_ENGINE.get_function_semi_typed(index)
 }
 
 pub(crate) fn de_add_monomorphized_function_copy(
@@ -187,7 +197,7 @@ pub(crate) fn de_add_monomorphized_function_copy(
 
 pub(crate) fn de_get_monomorphized_function_copies(
     original_id: DeclarationId,
-) -> Result<Vec<Either<SemiTypedFunctionDeclaration, TypedFunctionDeclaration>>, String> {
+) -> Result<Vec<TypedFunctionDeclaration>, String> {
     DECLARATION_ENGINE.get_monomorphized_function_copies(original_id)
 }
 

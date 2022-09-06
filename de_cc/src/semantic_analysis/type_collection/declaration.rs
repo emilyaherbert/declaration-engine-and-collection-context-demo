@@ -9,7 +9,7 @@ use crate::{
     },
     language::{
         semi::{
-            semi_declaration::{SemiDeclaration, SemiTypedFunctionDeclaration},
+            semi_declaration::{SemiTypedDeclaration, SemiTypedFunctionDeclaration},
             SemiNode,
         },
         typed::typed_declaration::{
@@ -24,84 +24,106 @@ use crate::{
             Node,
         },
     },
-    type_system::type_engine::insert_type,
+    namespace::collection_namespace::CollectionNamespace,
+    type_system::type_engine::{eval_type2, insert_type},
 };
 
 use super::collect_types_node;
 
-pub(super) fn collect_types_declaration(declaration: Declaration) -> SemiDeclaration {
+pub(super) fn collect_types_declaration(
+    namespace: &mut CollectionNamespace,
+    declaration: Declaration,
+) -> SemiTypedDeclaration {
     match declaration {
-        Declaration::Variable(decl) => SemiDeclaration::Variable(decl),
+        Declaration::Variable(decl) => SemiTypedDeclaration::Variable(decl),
         Declaration::Function(function_declaration) => {
-            let function_declaration = collect_types_function(function_declaration);
+            let function_declaration =
+                collect_types_function(&mut namespace.scoped(), function_declaration);
             let decl_id = de_insert(DeclarationWrapper::Function(Either::Left(
                 function_declaration,
             )));
-            SemiDeclaration::Function(decl_id)
+            SemiTypedDeclaration::Function(decl_id)
         }
         Declaration::Trait(trait_declaration) => {
-            let trait_declaration = collect_types_trait(trait_declaration);
+            let trait_declaration = collect_types_trait(&mut namespace.scoped(), trait_declaration);
             let decl_id = de_insert_trait(trait_declaration);
-            SemiDeclaration::Trait(decl_id)
+            SemiTypedDeclaration::Trait(decl_id)
         }
         Declaration::TraitImpl(trait_impl) => {
-            let trait_impl = collect_types_trait_impl(trait_impl);
-            let decl_id = de_insert_trait_impl(trait_impl);
-            SemiDeclaration::TraitImpl(decl_id)
+            let trait_impl = collect_types_trait_impl(&mut namespace.scoped(), trait_impl);
+            SemiTypedDeclaration::TraitImpl(de_insert_trait_impl(trait_impl))
         }
         Declaration::Struct(struct_declaration) => {
-            let struct_declaration = collect_types_struct(struct_declaration);
-            let decl_id = de_insert_struct(struct_declaration);
-            SemiDeclaration::Struct(decl_id)
+            let struct_declaration =
+                collect_types_struct(&mut namespace.scoped(), struct_declaration);
+            let name = struct_declaration.name.clone();
+            let decl = SemiTypedDeclaration::Struct(de_insert_struct(struct_declaration));
+            namespace.insert_symbol(name, decl.clone());
+            decl
         }
     }
 }
 
 fn collect_types_function(
+    namespace: &mut CollectionNamespace,
     function_declaration: FunctionDeclaration,
 ) -> SemiTypedFunctionDeclaration {
-    if !function_declaration.type_parameters.is_empty() {
-        panic!()
+    // insert type params into namespace
+    for type_parameter in function_declaration.type_parameters.iter() {
+        let type_parameter_decl = SemiTypedDeclaration::GenericTypeForFunctionScope {
+            type_id: type_parameter.type_id,
+        };
+        namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);
     }
 
     // type check the function params
     let parameters = function_declaration
         .parameters
         .into_iter()
-        .map(collect_types_function_parameter)
+        .map(|param| collect_types_function_parameter(namespace, param))
         .collect::<Vec<_>>();
 
     // type check the function return type
-    let return_type = insert_type(function_declaration.return_type);
+    let return_type = eval_type2(insert_type(function_declaration.return_type), namespace).unwrap();
 
     SemiTypedFunctionDeclaration {
         name: function_declaration.name,
-        type_parameters: vec![],
+        type_parameters: function_declaration.type_parameters,
         parameters,
-        body: collect_types_code_block(function_declaration.body),
+        body: collect_types_code_block(namespace, function_declaration.body),
         return_type,
     }
 }
 
 fn collect_types_function_parameter(
+    namespace: &mut CollectionNamespace,
     function_parameter: FunctionParameter,
 ) -> TypedFunctionParameter {
     TypedFunctionParameter {
         name: function_parameter.name,
-        type_id: insert_type(function_parameter.type_info),
+        type_id: eval_type2(insert_type(function_parameter.type_info), namespace).unwrap(),
     }
 }
 
-fn collect_types_code_block(nodes: Vec<Node>) -> Vec<SemiNode> {
-    nodes.into_iter().map(collect_types_node).collect()
+fn collect_types_code_block(
+    namespace: &mut CollectionNamespace,
+    nodes: Vec<Node>,
+) -> Vec<SemiNode> {
+    nodes
+        .into_iter()
+        .map(|node| collect_types_node(namespace, node))
+        .collect()
 }
 
-fn collect_types_trait(trait_declaration: TraitDeclaration) -> TypedTraitDeclaration {
+fn collect_types_trait(
+    namespace: &mut CollectionNamespace,
+    trait_declaration: TraitDeclaration,
+) -> TypedTraitDeclaration {
     let interface_surface = trait_declaration
         .interface_surface
         .into_iter()
         .map(|trait_fn| {
-            let trait_fn = collect_types_trait_fn(trait_fn);
+            let trait_fn = collect_types_trait_fn(namespace, trait_fn);
             de_insert_trait_fn(trait_fn)
         })
         .collect::<Vec<_>>();
@@ -111,20 +133,23 @@ fn collect_types_trait(trait_declaration: TraitDeclaration) -> TypedTraitDeclara
     }
 }
 
-fn collect_types_trait_fn(trait_fn: TraitFn) -> TypedTraitFn {
+fn collect_types_trait_fn(namespace: &mut CollectionNamespace, trait_fn: TraitFn) -> TypedTraitFn {
     let parameters = trait_fn
         .parameters
         .into_iter()
-        .map(collect_types_function_parameter)
+        .map(|param| collect_types_function_parameter(namespace, param))
         .collect::<Vec<_>>();
     TypedTraitFn {
         name: trait_fn.name,
         parameters,
-        return_type: insert_type(trait_fn.return_type),
+        return_type: eval_type2(insert_type(trait_fn.return_type), namespace).unwrap(),
     }
 }
 
-fn collect_types_trait_impl(trait_impl: TraitImpl) -> TypedTraitImpl {
+fn collect_types_trait_impl(
+    namespace: &mut CollectionNamespace,
+    trait_impl: TraitImpl,
+) -> TypedTraitImpl {
     if !trait_impl.type_parameters.is_empty() {
         panic!()
     }
@@ -139,41 +164,52 @@ fn collect_types_trait_impl(trait_impl: TraitImpl) -> TypedTraitImpl {
         .methods
         .into_iter()
         .map(|method| {
-            let method = collect_types_function(method);
+            let method = collect_types_function(namespace, method);
             de_insert(DeclarationWrapper::Function(Either::Left(method)))
         })
         .collect::<Vec<_>>();
 
     TypedTraitImpl {
         trait_name: trait_impl.trait_name,
-        type_implementing_for: insert_type(trait_impl.type_implementing_for),
+        type_implementing_for: eval_type2(insert_type(trait_impl.type_implementing_for), namespace)
+            .unwrap(),
         type_parameters: vec![],
         methods,
     }
 }
 
-fn collect_types_struct(struct_declaration: StructDeclaration) -> TypedStructDeclaration {
-    if !struct_declaration.type_parameters.is_empty() {
-        panic!()
+fn collect_types_struct(
+    namespace: &mut CollectionNamespace,
+    struct_declaration: StructDeclaration,
+) -> TypedStructDeclaration {
+    // insert type params into namespace
+    for type_parameter in struct_declaration.type_parameters.iter() {
+        let type_parameter_decl = SemiTypedDeclaration::GenericTypeForFunctionScope {
+            type_id: type_parameter.type_id,
+        };
+        namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);
     }
 
     // type check the fields
     let fields = struct_declaration
         .fields
         .into_iter()
-        .map(collect_types_struct_field)
+        .map(|field| collect_types_struct_field(namespace, field))
         .collect::<Vec<_>>();
 
     TypedStructDeclaration {
         name: struct_declaration.name,
-        type_parameters: vec![],
+        type_parameters: struct_declaration.type_parameters,
         fields,
     }
 }
 
-fn collect_types_struct_field(struct_field: StructField) -> TypedStructField {
+fn collect_types_struct_field(
+    namespace: &mut CollectionNamespace,
+    struct_field: StructField,
+) -> TypedStructField {
     TypedStructField {
         name: struct_field.name,
-        type_id: insert_type(struct_field.type_info),
+        type_id: eval_type2(insert_type(struct_field.type_info), namespace).unwrap(),
     }
 }
