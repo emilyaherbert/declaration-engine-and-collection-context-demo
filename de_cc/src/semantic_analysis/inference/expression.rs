@@ -17,17 +17,18 @@ use crate::{
     types::create_type_id::CreateTypeId,
 };
 
-pub(super) fn analyze_expression(
-    namespace: &mut Namespace,
-    expression: Expression,
-) -> TypedExpression {
+pub(super) fn analyze_expression(namespace: &mut Namespace, expression: &TypedExpression) {
+    unimplemented!()
+}
+
+fn analyze_expression_variant(namespace: &mut Namespace, expression: &TypedExpressionVariant) {
     match expression {
-        Expression::Literal { value } => {
+        TypedExpressionVariant::Literal { value } => {
             let type_id = insert_type(value.to_type());
             let variant = TypedExpressionVariant::Literal { value };
             TypedExpression { variant, type_id }
         }
-        Expression::Variable { name } => {
+        TypedExpressionVariant::Variable { name } => {
             let variable_decl = namespace
                 .get_symbol(&name)
                 .unwrap()
@@ -37,7 +38,7 @@ pub(super) fn analyze_expression(
             let variant = TypedExpressionVariant::Variable { name };
             TypedExpression { variant, type_id }
         }
-        Expression::FunctionApplication {
+        TypedExpressionVariant::FunctionApplication {
             name,
             mut type_arguments,
             arguments,
@@ -92,7 +93,7 @@ pub(super) fn analyze_expression(
             };
             TypedExpression { variant, type_id }
         }
-        Expression::Struct {
+        TypedExpressionVariant::Struct {
             struct_name,
             mut type_arguments,
             fields,
@@ -161,7 +162,7 @@ pub(super) fn analyze_expression(
                 type_id: typed_struct_declaration.create_type_id(),
             }
         }
-        Expression::MethodCall {
+        TypedExpressionVariant::MethodCall {
             parent_name,
             func_name,
             type_arguments,

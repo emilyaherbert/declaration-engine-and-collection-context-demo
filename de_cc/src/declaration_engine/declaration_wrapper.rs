@@ -1,13 +1,9 @@
 use std::fmt;
 
 use crate::{
-    language::{
-        partial::partial_declaration::PartialFunctionDeclaration,
-        typed::typed_declaration::{
-            TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
-            TypedTraitImpl,
-        },
-        typing_context::function::TyFunctionContext,
+    language::typed::typed_declaration::{
+        TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
+        TypedTraitImpl,
     },
     namespace::function_signature::TypedFunctionSignature,
     type_system::type_mapping::TypeMapping,
@@ -20,7 +16,7 @@ use crate::{
 pub(crate) enum DeclarationWrapper {
     // no-op variant to fulfill the default trait
     Unknown,
-    Function(TyFunctionContext),
+    Function(TypedFunctionDeclaration),
     Trait(TypedTraitDeclaration),
     TraitFn(TypedTraitFn),
     TraitImpl(TypedTraitImpl),
@@ -82,9 +78,9 @@ impl DeclarationWrapper {
         }
     }
 
-    pub(super) fn expect_function_typed(self) -> Result<TypedFunctionDeclaration, String> {
+    pub(super) fn expect_function(self) -> Result<TypedFunctionDeclaration, String> {
         match self {
-            DeclarationWrapper::Function(decl) => decl.expect_typed(),
+            DeclarationWrapper::Function(decl) => Ok(decl),
             DeclarationWrapper::Unknown => {
                 Err("did not expect to find unknown declaration".to_string())
             }
@@ -95,18 +91,31 @@ impl DeclarationWrapper {
         }
     }
 
-    pub(super) fn expect_function_partial(self) -> Result<PartialFunctionDeclaration, String> {
-        match self {
-            DeclarationWrapper::Function(decl) => decl.expect_partial(),
-            DeclarationWrapper::Unknown => {
-                Err("did not expect to find unknown declaration".to_string())
-            }
-            actually => Err(format!(
-                "did not expect to find {} declaration",
-                actually.friendly_name()
-            )),
-        }
-    }
+    // pub(super) fn expect_function_typed(self) -> Result<TypedFunctionDeclaration, String> {
+    //     match self {
+    //         DeclarationWrapper::Function(decl) => decl.expect_typed(),
+    //         DeclarationWrapper::Unknown => {
+    //             Err("did not expect to find unknown declaration".to_string())
+    //         }
+    //         actually => Err(format!(
+    //             "did not expect to find {} declaration",
+    //             actually.friendly_name()
+    //         )),
+    //     }
+    // }
+
+    // pub(super) fn expect_function_partial(self) -> Result<PartialFunctionDeclaration, String> {
+    //     match self {
+    //         DeclarationWrapper::Function(decl) => decl.expect_partial(),
+    //         DeclarationWrapper::Unknown => {
+    //             Err("did not expect to find unknown declaration".to_string())
+    //         }
+    //         actually => Err(format!(
+    //             "did not expect to find {} declaration",
+    //             actually.friendly_name()
+    //         )),
+    //     }
+    // }
 
     pub(super) fn expect_function_signature(self) -> Result<TypedFunctionSignature, String> {
         match self {

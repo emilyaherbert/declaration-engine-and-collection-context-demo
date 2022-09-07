@@ -7,6 +7,7 @@ use self::{declaration::Declaration, expression::Expression};
 pub mod declaration;
 pub mod expression;
 
+#[derive(Clone)]
 pub struct Application {
     pub files: Vec<File>,
 }
@@ -28,6 +29,7 @@ impl fmt::Display for Application {
     }
 }
 
+#[derive(Clone)]
 pub struct File {
     pub name: String,
     pub nodes: Vec<Node>,

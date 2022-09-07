@@ -5,13 +5,9 @@ use lazy_static::lazy_static;
 
 use crate::{
     concurrent_slab::ConcurrentSlab,
-    language::{
-        partial::partial_declaration::PartialFunctionDeclaration,
-        typed::typed_declaration::{
-            TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
-            TypedTraitImpl,
-        },
-        typing_context::function::TyFunctionContext,
+    language::typed::typed_declaration::{
+        TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
+        TypedTraitImpl,
     },
     namespace::function_signature::TypedFunctionSignature,
 };
@@ -78,16 +74,24 @@ impl DeclarationEngine {
         }
     }
 
-    fn get_function_typed(&self, index: DeclarationId) -> Result<TypedFunctionDeclaration, String> {
-        self.slab.get(*index).expect_function_typed()
+    fn insert_function(&self, function: TypedFunctionDeclaration) -> DeclarationId {
+        DeclarationId::new(self.slab.insert(DeclarationWrapper::Function(function)))
     }
 
-    fn get_function_partial(
-        &self,
-        index: DeclarationId,
-    ) -> Result<PartialFunctionDeclaration, String> {
-        self.slab.get(*index).expect_function_partial()
+    fn get_function(&self, index: DeclarationId) -> Result<TypedFunctionDeclaration, String> {
+        self.slab.get(*index).expect_function()
     }
+
+    // fn get_function_typed(&self, index: DeclarationId) -> Result<TypedFunctionDeclaration, String> {
+    //     self.slab.get(*index).expect_function_typed()
+    // }
+
+    // fn get_function_partial(
+    //     &self,
+    //     index: DeclarationId,
+    // ) -> Result<PartialFunctionDeclaration, String> {
+    //     self.slab.get(*index).expect_function_partial()
+    // }
 
     fn get_function_signature(
         &self,
@@ -101,9 +105,7 @@ impl DeclarationEngine {
         original_id: DeclarationId,
         new_copy: TypedFunctionDeclaration,
     ) {
-        let new_id = DeclarationId::new(self.slab.insert(DeclarationWrapper::Function(
-            TyFunctionContext::typed(new_copy),
-        )));
+        let new_id = DeclarationId::new(self.slab.insert(DeclarationWrapper::Function(new_copy)));
         self.add_monomorphized_copy(original_id, new_id)
     }
 
@@ -113,7 +115,7 @@ impl DeclarationEngine {
     ) -> Result<Vec<TypedFunctionDeclaration>, String> {
         self.get_monomorphized_copies(original_id)
             .into_iter()
-            .map(|x| x.expect_function_typed())
+            .map(|x| x.expect_function())
             .collect::<Result<_, _>>()
     }
 
@@ -189,17 +191,25 @@ pub(crate) fn de_replace(
     DECLARATION_ENGINE.replace(index, prev_value, new_value);
 }
 
-pub(crate) fn de_get_function_typed(
-    index: DeclarationId,
-) -> Result<TypedFunctionDeclaration, String> {
-    DECLARATION_ENGINE.get_function_typed(index)
+pub(crate) fn de_insert_function(function: TypedFunctionDeclaration) -> DeclarationId {
+    DECLARATION_ENGINE.insert_function(function)
 }
 
-pub(crate) fn de_get_function_partial(
-    index: DeclarationId,
-) -> Result<PartialFunctionDeclaration, String> {
-    DECLARATION_ENGINE.get_function_partial(index)
+pub(crate) fn de_get_function(index: DeclarationId) -> Result<TypedFunctionDeclaration, String> {
+    DECLARATION_ENGINE.get_function(index)
 }
+
+// pub(crate) fn de_get_function_typed(
+//     index: DeclarationId,
+// ) -> Result<TypedFunctionDeclaration, String> {
+//     DECLARATION_ENGINE.get_function_typed(index)
+// }
+
+// pub(crate) fn de_get_function_partial(
+//     index: DeclarationId,
+// ) -> Result<PartialFunctionDeclaration, String> {
+//     DECLARATION_ENGINE.get_function_partial(index)
+// }
 
 pub(crate) fn de_get_function_signature(
     index: DeclarationId,

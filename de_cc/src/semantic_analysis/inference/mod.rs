@@ -5,49 +5,27 @@ use declaration::*;
 use expression::*;
 
 use crate::{
-    language::{
-        partial::{PartialApplication, PartialFile, PartialNode},
-        typed::{TypedApplication, TypedFile, TypedNode},
-    },
+    language::typed::{TypedApplication, TypedFile, TypedNode},
     namespace::namespace::Namespace,
 };
 
-pub(crate) fn analyze(
-    namespace: &mut Namespace,
-    application: PartialApplication,
-) -> TypedApplication {
-    let typed_programs = application
+pub(crate) fn analyze(namespace: &mut Namespace, application: &TypedApplication) {
+    application
         .files
-        .into_iter()
-        .map(|program| analyze_file(namespace, program))
-        .collect();
-    TypedApplication {
-        files: typed_programs,
-    }
+        .iter()
+        .for_each(|program| analyze_file(namespace, program));
 }
 
-fn analyze_file(namespace: &mut Namespace, file: PartialFile) -> TypedFile {
-    let new_nodes = file
-        .nodes
-        .into_iter()
-        .map(|node| analyze_node(namespace, node))
-        .collect::<Vec<_>>();
-    TypedFile {
-        name: file.name,
-        nodes: new_nodes,
-    }
+fn analyze_file(namespace: &mut Namespace, file: &TypedFile) {
+    file.nodes
+        .iter()
+        .for_each(|node| analyze_node(namespace, node));
 }
 
-fn analyze_node(namespace: &mut Namespace, node: PartialNode) -> TypedNode {
+fn analyze_node(namespace: &mut Namespace, node: &TypedNode) {
     match node {
-        PartialNode::Declaration(declaration) => {
-            TypedNode::Declaration(analyze_declaration(namespace, declaration))
-        }
-        PartialNode::Expression(expression) => {
-            TypedNode::Expression(analyze_expression(namespace, expression))
-        }
-        PartialNode::ReturnStatement(expression) => {
-            TypedNode::ReturnStatement(analyze_expression(namespace, expression))
-        }
+        TypedNode::Declaration(declaration) => analyze_declaration(namespace, declaration),
+        TypedNode::Expression(expression) => analyze_expression(namespace, expression),
+        TypedNode::ReturnStatement(expression) => analyze_expression(namespace, expression),
     }
 }
