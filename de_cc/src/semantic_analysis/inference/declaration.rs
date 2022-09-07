@@ -89,12 +89,29 @@ fn analyze_function(namespace: &mut Namespace, decl_id: DeclarationId) -> TypedF
     // get the function from the declaration engine
     let function_declaration = de_get_function_semi_typed(decl_id).unwrap();
 
-    // insert type params into namespace
+    // insert type params into namespace and handle trait constraints
     for type_parameter in function_declaration.type_parameters.iter() {
         let type_parameter_decl = TypedDeclaration::GenericTypeForFunctionScope {
             type_id: type_parameter.type_id,
         };
         namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);
+
+        // if the type param has a trait constraint, take the TypedTraitFn's from
+        // the trait it is constrained upon and insert them into the namespace
+        // under the type param
+        if let Some(constraint) = &type_parameter.trait_constraint {
+            let decl_id = namespace
+                .get_symbol(&constraint.trait_name)
+                .unwrap()
+                .expect_trait()
+                .unwrap();
+            let trait_decl = de_get_trait(decl_id).unwrap();
+            namespace.insert_methods(
+                type_parameter.type_id,
+                constraint.trait_name.clone(),
+                trait_decl.interface_surface,
+            );
+        }
     }
 
     // insert the typed function params into the namespace
