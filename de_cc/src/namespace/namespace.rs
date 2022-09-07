@@ -62,7 +62,7 @@ impl Namespace {
         self.symbols
             .get(name)
             .cloned()
-            .ok_or_else(|| "not found".to_string())
+            .ok_or_else(|| "symbol not found".to_string())
     }
 
     pub(crate) fn insert_methods(

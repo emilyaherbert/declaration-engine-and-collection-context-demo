@@ -12,7 +12,7 @@ use crate::{
             TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
             TypedTraitImpl,
         },
-    },
+    }, namespace::function_signature::TypedFunctionSignature,
 };
 
 use super::{declaration_id::DeclarationId, declaration_wrapper::DeclarationWrapper};
@@ -84,6 +84,13 @@ impl DeclarationEngine {
         index: DeclarationId,
     ) -> Result<SemiTypedFunctionDeclaration, String> {
         self.slab.get(*index).expect_function_semi_typed()
+    }
+
+    fn get_function_signature(
+        &self,
+        index: DeclarationId,
+    ) -> Result<TypedFunctionSignature, String> {
+        self.slab.get(*index).expect_function_signature()
     }
 
     fn add_monomorphized_function_copy(
@@ -186,6 +193,12 @@ pub(crate) fn de_get_function_semi_typed(
     index: DeclarationId,
 ) -> Result<SemiTypedFunctionDeclaration, String> {
     DECLARATION_ENGINE.get_function_semi_typed(index)
+}
+
+pub(crate) fn de_get_function_signature(
+    index: DeclarationId,
+) -> Result<TypedFunctionSignature, String> {
+    DECLARATION_ENGINE.get_function_signature(index)
 }
 
 pub(crate) fn de_add_monomorphized_function_copy(

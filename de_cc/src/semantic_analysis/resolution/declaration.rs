@@ -47,7 +47,7 @@ pub(super) fn resolve_declaration(declaration: TypedDeclaration) -> Vec<Resolved
                 .into_iter()
                 .map(ResolvedDeclaration::Struct)
                 .collect()
-        } // TypedDeclaration::Enum(_) => todo!(),
+        }
     }
 }
 

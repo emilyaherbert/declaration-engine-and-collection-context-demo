@@ -554,3 +554,52 @@ fn trait_constraint_test() {
     let resolved_application = compile(application);
     println!("{}", resolved_application);
 }
+
+#[test]
+fn mutual_recursion_function_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+
+    let ping_fn = func_decl(
+        "ping",
+        &[],
+        &[func_param("n", t_u64())],
+        &[return_(func_app("pong", &[], &[var("n")]))],
+        t_u64(),
+    );
+    let pong_fn = func_decl(
+        "pong",
+        &[],
+        &[func_param("n", t_u64())],
+        &[return_(func_app("ping", &[], &[var("n")]))],
+        t_u64(),
+    );
+
+    let foo_decl = var_decl(
+        "foo",
+        None,
+        func_app("pong", &[], &[u64(5u64)]),
+    );
+    let main_fn = func_decl(
+        "main",
+        &[],
+        &[],
+        &[foo_decl],
+        t_unit(),
+    );
+    let program_1 = File {
+        name: "bob.sw".to_string(),
+        nodes: vec![
+            ping_fn,
+            pong_fn,
+            main_fn,
+        ],
+    };
+    let application = Application {
+        files: vec![program_1],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
+}

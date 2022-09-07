@@ -10,7 +10,7 @@ use crate::{
         },
     },
     type_system::type_mapping::TypeMapping,
-    types::copy_types::CopyTypes,
+    types::copy_types::CopyTypes, namespace::function_signature::TypedFunctionSignature,
 };
 
 /// The [DeclarationWrapper] type is used in the [DeclarationEngine]
@@ -102,6 +102,22 @@ impl DeclarationWrapper {
             DeclarationWrapper::Function(decl) => match decl {
                 Either::Left(decl) => Ok(decl),
                 Either::Right(_) => Err("did not expect to find typed declaration".to_string()),
+            },
+            DeclarationWrapper::Unknown => {
+                Err("did not expect to find unknown declaration".to_string())
+            }
+            actually => Err(format!(
+                "did not expect to find {} declaration",
+                actually.friendly_name()
+            )),
+        }
+    }
+
+    pub(super) fn expect_function_signature(self) -> Result<TypedFunctionSignature, String> {
+        match self {
+            DeclarationWrapper::Function(decl) => match decl {
+                Either::Left(decl) => Ok(decl.into()),
+                Either::Right(decl) => Ok(decl.into()),
             },
             DeclarationWrapper::Unknown => {
                 Err("did not expect to find unknown declaration".to_string())
