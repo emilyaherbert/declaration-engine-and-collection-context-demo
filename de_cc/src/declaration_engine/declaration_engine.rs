@@ -1,18 +1,19 @@
 use std::collections::HashMap;
 use std::sync::RwLock;
 
-use either::Either;
 use lazy_static::lazy_static;
 
 use crate::{
     concurrent_slab::ConcurrentSlab,
     language::{
-        semi::semi_declaration::SemiTypedFunctionDeclaration,
+        partial::partial_declaration::PartialFunctionDeclaration,
         typed::typed_declaration::{
             TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
             TypedTraitImpl,
         },
-    }, namespace::function_signature::TypedFunctionSignature,
+        typing_context::function::TyFunctionContext,
+    },
+    namespace::function_signature::TypedFunctionSignature,
 };
 
 use super::{declaration_id::DeclarationId, declaration_wrapper::DeclarationWrapper};
@@ -45,6 +46,15 @@ impl DeclarationEngine {
         self.slab.get(*index)
     }
 
+    fn replace(
+        &self,
+        index: DeclarationId,
+        prev_value: &DeclarationWrapper,
+        new_value: DeclarationWrapper,
+    ) {
+        self.slab.replace(*index, prev_value, new_value);
+    }
+
     fn add_monomorphized_copy(&self, original_id: DeclarationId, new_id: DeclarationId) {
         let mut monomorphized_copies = self.monomorphized_copies.write().unwrap();
         match monomorphized_copies.get_mut(&*original_id) {
@@ -68,22 +78,15 @@ impl DeclarationEngine {
         }
     }
 
-    fn insert_function(&self, function: TypedFunctionDeclaration) -> DeclarationId {
-        DeclarationId::new(
-            self.slab
-                .insert(DeclarationWrapper::Function(Either::Right(function))),
-        )
-    }
-
     fn get_function_typed(&self, index: DeclarationId) -> Result<TypedFunctionDeclaration, String> {
         self.slab.get(*index).expect_function_typed()
     }
 
-    fn get_function_semi_typed(
+    fn get_function_partial(
         &self,
         index: DeclarationId,
-    ) -> Result<SemiTypedFunctionDeclaration, String> {
-        self.slab.get(*index).expect_function_semi_typed()
+    ) -> Result<PartialFunctionDeclaration, String> {
+        self.slab.get(*index).expect_function_partial()
     }
 
     fn get_function_signature(
@@ -98,10 +101,9 @@ impl DeclarationEngine {
         original_id: DeclarationId,
         new_copy: TypedFunctionDeclaration,
     ) {
-        let new_id = DeclarationId::new(
-            self.slab
-                .insert(DeclarationWrapper::Function(Either::Right(new_copy))),
-        );
+        let new_id = DeclarationId::new(self.slab.insert(DeclarationWrapper::Function(
+            TyFunctionContext::typed(new_copy),
+        )));
         self.add_monomorphized_copy(original_id, new_id)
     }
 
@@ -124,7 +126,7 @@ impl DeclarationEngine {
     }
 
     fn insert_trait_fn(&self, trait_fn: TypedTraitFn) -> DeclarationId {
-        DeclarationId::new(self.slab.insert(DeclarationWrapper::TypedTraitFn(trait_fn)))
+        DeclarationId::new(self.slab.insert(DeclarationWrapper::TraitFn(trait_fn)))
     }
 
     fn get_trait_fn(&self, index: DeclarationId) -> Result<TypedTraitFn, String> {
@@ -132,7 +134,7 @@ impl DeclarationEngine {
     }
 
     fn insert_trait_impl(&self, trait_impl: TypedTraitImpl) -> DeclarationId {
-        DeclarationId::new(self.slab.insert(DeclarationWrapper::TraitFn(trait_impl)))
+        DeclarationId::new(self.slab.insert(DeclarationWrapper::TraitImpl(trait_impl)))
     }
 
     fn get_trait_impl(&self, index: DeclarationId) -> Result<TypedTraitImpl, String> {
@@ -179,8 +181,12 @@ pub(crate) fn de_look_up_decl_id(index: DeclarationId) -> DeclarationWrapper {
     DECLARATION_ENGINE.look_up_decl_id(index)
 }
 
-pub(crate) fn de_insert_function(function: TypedFunctionDeclaration) -> DeclarationId {
-    DECLARATION_ENGINE.insert_function(function)
+pub(crate) fn de_replace(
+    index: DeclarationId,
+    prev_value: &DeclarationWrapper,
+    new_value: DeclarationWrapper,
+) {
+    DECLARATION_ENGINE.replace(index, prev_value, new_value);
 }
 
 pub(crate) fn de_get_function_typed(
@@ -189,10 +195,10 @@ pub(crate) fn de_get_function_typed(
     DECLARATION_ENGINE.get_function_typed(index)
 }
 
-pub(crate) fn de_get_function_semi_typed(
+pub(crate) fn de_get_function_partial(
     index: DeclarationId,
-) -> Result<SemiTypedFunctionDeclaration, String> {
-    DECLARATION_ENGINE.get_function_semi_typed(index)
+) -> Result<PartialFunctionDeclaration, String> {
+    DECLARATION_ENGINE.get_function_partial(index)
 }
 
 pub(crate) fn de_get_function_signature(

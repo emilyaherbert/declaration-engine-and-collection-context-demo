@@ -1,5 +1,3 @@
-use either::Either;
-
 use crate::{
     declaration_engine::{
         declaration_engine::{
@@ -8,14 +6,15 @@ use crate::{
         declaration_wrapper::DeclarationWrapper,
     },
     language::{
-        semi::{
-            semi_declaration::{SemiTypedDeclaration, SemiTypedFunctionDeclaration},
-            SemiNode,
+        partial::{
+            partial_declaration::{PartialDeclaration, PartialFunctionDeclaration},
+            PartialNode,
         },
         typed::typed_declaration::{
             TypedFunctionParameter, TypedStructDeclaration, TypedStructField,
             TypedTraitDeclaration, TypedTraitFn, TypedTraitImpl,
         },
+        typing_context::function::TyFunctionContext,
         untyped::{
             declaration::{
                 Declaration, FunctionDeclaration, FunctionParameter, StructDeclaration,
@@ -33,31 +32,31 @@ use super::collect_types_node;
 pub(super) fn collect_types_declaration(
     namespace: &mut CollectionNamespace,
     declaration: Declaration,
-) -> SemiTypedDeclaration {
+) -> PartialDeclaration {
     match declaration {
-        Declaration::Variable(decl) => SemiTypedDeclaration::Variable(decl),
+        Declaration::Variable(decl) => PartialDeclaration::Variable(decl),
         Declaration::Function(function_declaration) => {
             let function_declaration =
                 collect_types_function(&mut namespace.scoped(), function_declaration);
-            let decl_id = de_insert(DeclarationWrapper::Function(Either::Left(
+            let decl_id = de_insert(DeclarationWrapper::Function(TyFunctionContext::partial(
                 function_declaration,
             )));
-            SemiTypedDeclaration::Function(decl_id)
+            PartialDeclaration::Function(decl_id)
         }
         Declaration::Trait(trait_declaration) => {
             let trait_declaration = collect_types_trait(&mut namespace.scoped(), trait_declaration);
             let decl_id = de_insert_trait(trait_declaration);
-            SemiTypedDeclaration::Trait(decl_id)
+            PartialDeclaration::Trait(decl_id)
         }
         Declaration::TraitImpl(trait_impl) => {
             let trait_impl = collect_types_trait_impl(&mut namespace.scoped(), trait_impl);
-            SemiTypedDeclaration::TraitImpl(de_insert_trait_impl(trait_impl))
+            PartialDeclaration::TraitImpl(de_insert_trait_impl(trait_impl))
         }
         Declaration::Struct(struct_declaration) => {
             let struct_declaration =
                 collect_types_struct(&mut namespace.scoped(), struct_declaration);
             let name = struct_declaration.name.clone();
-            let decl = SemiTypedDeclaration::Struct(de_insert_struct(struct_declaration));
+            let decl = PartialDeclaration::Struct(de_insert_struct(struct_declaration));
             namespace.insert_symbol(name, decl.clone());
             decl
         }
@@ -67,10 +66,10 @@ pub(super) fn collect_types_declaration(
 fn collect_types_function(
     namespace: &mut CollectionNamespace,
     function_declaration: FunctionDeclaration,
-) -> SemiTypedFunctionDeclaration {
+) -> PartialFunctionDeclaration {
     // insert type params into namespace
     for type_parameter in function_declaration.type_parameters.iter() {
-        let type_parameter_decl = SemiTypedDeclaration::GenericTypeForFunctionScope {
+        let type_parameter_decl = PartialDeclaration::GenericTypeForFunctionScope {
             type_id: type_parameter.type_id,
         };
         namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);
@@ -86,7 +85,7 @@ fn collect_types_function(
     // type check the function return type
     let return_type = eval_type2(insert_type(function_declaration.return_type), namespace).unwrap();
 
-    SemiTypedFunctionDeclaration {
+    PartialFunctionDeclaration {
         name: function_declaration.name,
         type_parameters: function_declaration.type_parameters,
         parameters,
@@ -108,7 +107,7 @@ fn collect_types_function_parameter(
 fn collect_types_code_block(
     namespace: &mut CollectionNamespace,
     nodes: Vec<Node>,
-) -> Vec<SemiNode> {
+) -> Vec<PartialNode> {
     nodes
         .into_iter()
         .map(|node| collect_types_node(namespace, node))
@@ -165,7 +164,9 @@ fn collect_types_trait_impl(
         .into_iter()
         .map(|method| {
             let method = collect_types_function(namespace, method);
-            de_insert(DeclarationWrapper::Function(Either::Left(method)))
+            de_insert(DeclarationWrapper::Function(TyFunctionContext::partial(
+                method,
+            )))
         })
         .collect::<Vec<_>>();
 
@@ -184,7 +185,7 @@ fn collect_types_struct(
 ) -> TypedStructDeclaration {
     // insert type params into namespace
     for type_parameter in struct_declaration.type_parameters.iter() {
-        let type_parameter_decl = SemiTypedDeclaration::GenericTypeForFunctionScope {
+        let type_parameter_decl = PartialDeclaration::GenericTypeForFunctionScope {
             type_id: type_parameter.type_id,
         };
         namespace.insert_symbol(type_parameter.name.clone(), type_parameter_decl);

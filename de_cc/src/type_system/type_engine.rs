@@ -2,8 +2,9 @@ use crate::{
     concurrent_slab::ConcurrentSlab,
     declaration_engine::declaration_engine::*,
     language::{
+        partial::partial_declaration::PartialDeclaration,
         resolved::resolved_declaration::ResolvedStructField,
-        semi::semi_declaration::SemiTypedDeclaration, typed::typed_declaration::TypedDeclaration,
+        typed::typed_declaration::TypedDeclaration,
     },
     namespace::{collection_namespace::CollectionNamespace, namespace::Namespace},
     types::{copy_types::CopyTypes, create_type_id::CreateTypeId},
@@ -55,7 +56,7 @@ impl TypeEngine {
             (TypeInfo::Unknown, _) => {
                 match self
                     .slab
-                    .replace(received, &TypeInfo::Unknown, TypeInfo::Ref(expected))
+                    .replace(*received, &TypeInfo::Unknown, TypeInfo::Ref(expected))
                 {
                     None => Ok(()),
                     Some(_) => self.unify_types(received, expected),
@@ -64,7 +65,7 @@ impl TypeEngine {
             (_, TypeInfo::Unknown) => {
                 match self
                     .slab
-                    .replace(expected, &TypeInfo::Unknown, TypeInfo::Ref(received))
+                    .replace(*expected, &TypeInfo::Unknown, TypeInfo::Ref(received))
                 {
                     None => Ok(()),
                     Some(_) => self.unify_types(received, expected),
@@ -82,13 +83,13 @@ impl TypeEngine {
             ) if l_name.as_str() == r_name.as_str() => Ok(()),
             (ref received_info @ TypeInfo::UnknownGeneric { .. }, _) => {
                 self.slab
-                    .replace(received, received_info, TypeInfo::Ref(expected));
+                    .replace(*received, received_info, TypeInfo::Ref(expected));
                 Ok(())
             }
 
             (_, ref expected_info @ TypeInfo::UnknownGeneric { .. }) => {
                 self.slab
-                    .replace(expected, expected_info, TypeInfo::Ref(received));
+                    .replace(*expected, expected_info, TypeInfo::Ref(received));
                 Ok(())
             }
 
@@ -209,7 +210,7 @@ impl TypeEngine {
     ) -> Result<TypeId, String> {
         match self.slab.get(*id) {
             TypeInfo::UnknownGeneric { name } => match namespace.get_symbol(&name)? {
-                SemiTypedDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
+                PartialDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
                     Ok(insert_type(TypeInfo::Ref(type_id)))
                 }
                 _ => Err("could not find generic declaration".to_string()),
@@ -217,7 +218,7 @@ impl TypeEngine {
             TypeInfo::Ref(id) => Ok(id),
             TypeInfo::Custom { name } => {
                 match namespace.get_symbol(&name)? {
-                    SemiTypedDeclaration::Struct(decl_id) => {
+                    PartialDeclaration::Struct(decl_id) => {
                         // get the original struct declaration
                         let mut struct_decl = de_get_struct(decl_id).unwrap();
 
@@ -229,7 +230,7 @@ impl TypeEngine {
 
                         Ok(struct_decl.create_type_id())
                     }
-                    SemiTypedDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
+                    PartialDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
                         Ok(insert_type(TypeInfo::Ref(type_id)))
                     }
                     got => Err(format!("err, found: {}", got)),

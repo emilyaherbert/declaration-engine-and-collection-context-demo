@@ -9,10 +9,10 @@ use crate::{
     types::copy_types::CopyTypes,
 };
 
-use super::SemiNode;
+use super::PartialNode;
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum SemiTypedDeclaration {
+pub enum PartialDeclaration {
     Variable(VariableDeclaration),
     Function(DeclarationId),
     Trait(DeclarationId),
@@ -21,15 +21,15 @@ pub enum SemiTypedDeclaration {
     GenericTypeForFunctionScope { type_id: TypeId },
 }
 
-impl fmt::Display for SemiTypedDeclaration {
+impl fmt::Display for PartialDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SemiTypedDeclaration::Variable(decl) => write!(f, "{}", decl),
-            SemiTypedDeclaration::Function(decl) => write!(f, "\n{}", decl),
-            SemiTypedDeclaration::Trait(decl) => write!(f, "\n{}", decl),
-            SemiTypedDeclaration::TraitImpl(decl) => write!(f, "\n{}", decl),
-            SemiTypedDeclaration::Struct(decl) => write!(f, "\n{}", decl),
-            SemiTypedDeclaration::GenericTypeForFunctionScope { type_id } => {
+            PartialDeclaration::Variable(decl) => write!(f, "{}", decl),
+            PartialDeclaration::Function(decl) => write!(f, "\n{}", decl),
+            PartialDeclaration::Trait(decl) => write!(f, "\n{}", decl),
+            PartialDeclaration::TraitImpl(decl) => write!(f, "\n{}", decl),
+            PartialDeclaration::Struct(decl) => write!(f, "\n{}", decl),
+            PartialDeclaration::GenericTypeForFunctionScope { type_id } => {
                 write!(f, "{}", type_id)
             }
         }
@@ -37,15 +37,15 @@ impl fmt::Display for SemiTypedDeclaration {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub(crate) struct SemiTypedFunctionDeclaration {
+pub(crate) struct PartialFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) parameters: Vec<TypedFunctionParameter>,
-    pub(crate) body: Vec<SemiNode>,
+    pub(crate) body: Vec<PartialNode>,
     pub(crate) return_type: TypeId,
 }
 
-impl CopyTypes for SemiTypedFunctionDeclaration {
+impl CopyTypes for PartialFunctionDeclaration {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.type_parameters
             .iter_mut()
@@ -57,7 +57,7 @@ impl CopyTypes for SemiTypedFunctionDeclaration {
     }
 }
 
-// impl MonomorphizeHelper for SemiTypedFunctionDeclaration {
+// impl MonomorphizeHelper for PartialFunctionDeclaration {
 //     fn name(&self) -> &str {
 //         &self.name
 //     }

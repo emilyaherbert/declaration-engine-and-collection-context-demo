@@ -576,25 +576,11 @@ fn mutual_recursion_function_test() {
         t_u64(),
     );
 
-    let foo_decl = var_decl(
-        "foo",
-        None,
-        func_app("pong", &[], &[u64(5u64)]),
-    );
-    let main_fn = func_decl(
-        "main",
-        &[],
-        &[],
-        &[foo_decl],
-        t_unit(),
-    );
+    let foo_decl = var_decl("foo", None, func_app("pong", &[], &[u64(5u64)]));
+    let main_fn = func_decl("main", &[], &[], &[foo_decl], t_unit());
     let program_1 = File {
         name: "bob.sw".to_string(),
-        nodes: vec![
-            ping_fn,
-            pong_fn,
-            main_fn,
-        ],
+        nodes: vec![ping_fn, pong_fn, main_fn],
     };
     let application = Application {
         files: vec![program_1],

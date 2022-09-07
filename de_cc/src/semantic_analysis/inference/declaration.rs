@@ -1,7 +1,10 @@
 use crate::{
-    declaration_engine::{declaration_engine::*, declaration_id::DeclarationId},
+    declaration_engine::{declaration_engine::*, declaration_wrapper::DeclarationWrapper},
     language::{
-        semi::{semi_declaration::SemiTypedDeclaration, SemiNode},
+        partial::{
+            partial_declaration::{PartialDeclaration, PartialFunctionDeclaration},
+            PartialNode,
+        },
         typed::{
             typed_declaration::{
                 TypedDeclaration, TypedFunctionDeclaration, TypedTraitImpl,
@@ -9,6 +12,7 @@ use crate::{
             },
             TypedNode,
         },
+        typing_context::function::TyFunctionContext,
         untyped::declaration::VariableDeclaration,
     },
     namespace::namespace::Namespace,
@@ -23,48 +27,60 @@ use super::{analyze_expression, analyze_node};
 
 pub(super) fn analyze_declaration(
     namespace: &mut Namespace,
-    declaration: SemiTypedDeclaration,
+    declaration: PartialDeclaration,
 ) -> TypedDeclaration {
     match declaration {
-        SemiTypedDeclaration::Variable(variable_declaration) => {
+        PartialDeclaration::Variable(variable_declaration) => {
             let typed_variable_declaration = analyze_variable(namespace, variable_declaration);
             let name = typed_variable_declaration.name.clone();
             let decl = TypedDeclaration::Variable(typed_variable_declaration);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        SemiTypedDeclaration::Function(decl_id) => {
-            let typed_function_declaration = analyze_function(&mut namespace.scoped(), decl_id);
+        PartialDeclaration::Function(decl_id) => {
+            let function_declaration = de_get_function_partial(decl_id).unwrap();
+            let typed_function_declaration =
+                analyze_function(&mut namespace.scoped(), function_declaration.clone());
             let name = typed_function_declaration.name.clone();
-            let decl = TypedDeclaration::Function(de_insert_function(typed_function_declaration));
+            de_replace(
+                decl_id,
+                &DeclarationWrapper::Function(TyFunctionContext::partial(function_declaration)),
+                DeclarationWrapper::Function(TyFunctionContext::typed(typed_function_declaration)),
+            );
+            let decl = TypedDeclaration::Function(decl_id);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        SemiTypedDeclaration::Trait(decl_id) => {
+        PartialDeclaration::Trait(decl_id) => {
             let typed_trait_declaration = de_get_trait(decl_id).unwrap();
             let name = typed_trait_declaration.name;
             let decl = TypedDeclaration::Trait(decl_id);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        SemiTypedDeclaration::TraitImpl(decl_id) => {
-            let typed_trait_impl =
-                analyze_trait_impl(&mut namespace.scoped(), de_get_trait_impl(decl_id).unwrap());
+        PartialDeclaration::TraitImpl(decl_id) => {
+            let trait_impl = de_get_trait_impl(decl_id).unwrap();
+            let typed_trait_impl = analyze_trait_impl(&mut namespace.scoped(), trait_impl.clone());
             namespace.insert_methods(
                 typed_trait_impl.type_implementing_for,
                 typed_trait_impl.trait_name.clone(),
                 typed_trait_impl.methods.clone(),
             );
-            TypedDeclaration::TraitImpl(de_insert_trait_impl(typed_trait_impl))
+            de_replace(
+                decl_id,
+                &DeclarationWrapper::TraitImpl(trait_impl),
+                DeclarationWrapper::TraitImpl(typed_trait_impl),
+            );
+            TypedDeclaration::TraitImpl(decl_id)
         }
-        SemiTypedDeclaration::Struct(decl_id) => {
+        PartialDeclaration::Struct(decl_id) => {
             let typed_struct_declaration = de_get_struct(decl_id).unwrap();
             let name = typed_struct_declaration.name;
             let decl = TypedDeclaration::Struct(decl_id);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        SemiTypedDeclaration::GenericTypeForFunctionScope { .. } => {
+        PartialDeclaration::GenericTypeForFunctionScope { .. } => {
             panic!("should not see this here")
         }
     }
@@ -85,10 +101,10 @@ fn analyze_variable(
     }
 }
 
-fn analyze_function(namespace: &mut Namespace, decl_id: DeclarationId) -> TypedFunctionDeclaration {
-    // get the function from the declaration engine
-    let function_declaration = de_get_function_semi_typed(decl_id).unwrap();
-
+fn analyze_function(
+    namespace: &mut Namespace,
+    function_declaration: PartialFunctionDeclaration,
+) -> TypedFunctionDeclaration {
     // insert type params into namespace and handle trait constraints
     for type_parameter in function_declaration.type_parameters.iter() {
         let type_parameter_decl = TypedDeclaration::GenericTypeForFunctionScope {
@@ -135,7 +151,10 @@ fn analyze_function(namespace: &mut Namespace, decl_id: DeclarationId) -> TypedF
     }
 }
 
-fn analyze_code_block(namespace: &mut Namespace, nodes: Vec<SemiNode>) -> (Vec<TypedNode>, TypeId) {
+fn analyze_code_block(
+    namespace: &mut Namespace,
+    nodes: Vec<PartialNode>,
+) -> (Vec<TypedNode>, TypeId) {
     let mut typed_nodes = vec![];
     for node in nodes.into_iter() {
         let typed_node = analyze_node(namespace, node);
@@ -172,9 +191,15 @@ fn analyze_trait_impl(namespace: &mut Namespace, trait_impl: TypedTraitImpl) -> 
     let typed_method_ids = trait_impl
         .methods
         .into_iter()
-        .map(|method| {
-            let typed_method = analyze_function(namespace, method);
-            de_insert_function(typed_method)
+        .map(|method_id| {
+            let method = de_get_function_partial(method_id).unwrap();
+            let typed_method = analyze_function(namespace, method.clone());
+            de_replace(
+                method_id,
+                &DeclarationWrapper::Function(TyFunctionContext::partial(method)),
+                DeclarationWrapper::Function(TyFunctionContext::typed(typed_method)),
+            );
+            method_id
         })
         .collect::<Vec<_>>();
 

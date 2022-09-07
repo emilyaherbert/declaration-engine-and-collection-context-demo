@@ -1,9 +1,10 @@
 use crate::{
     language::{
-        semi::semi_declaration::SemiTypedFunctionDeclaration,
+        partial::partial_declaration::PartialFunctionDeclaration,
         typed::typed_declaration::{
             TypedFunctionDeclaration, TypedFunctionParameter, TypedTraitFn,
         },
+        typing_context::function::TyFunctionContext,
     },
     type_system::{type_id::TypeId, type_parameter::TypeParameter},
 };
@@ -39,13 +40,22 @@ impl From<TypedTraitFn> for TypedFunctionSignature {
     }
 }
 
-impl From<SemiTypedFunctionDeclaration> for TypedFunctionSignature {
-    fn from(decl: SemiTypedFunctionDeclaration) -> Self {
+impl From<PartialFunctionDeclaration> for TypedFunctionSignature {
+    fn from(decl: PartialFunctionDeclaration) -> Self {
         TypedFunctionSignature {
             name: decl.name,
             type_parameters: decl.type_parameters,
             parameters: decl.parameters,
             return_type: decl.return_type,
+        }
+    }
+}
+
+impl From<TyFunctionContext> for TypedFunctionSignature {
+    fn from(ctx: TyFunctionContext) -> Self {
+        match ctx.inner {
+            either::Either::Left(partial) => partial.into(),
+            either::Either::Right(typed) => typed.into(),
         }
     }
 }

@@ -2,17 +2,17 @@ use std::fmt;
 
 use colored::Colorize;
 
-use self::semi_declaration::SemiTypedDeclaration;
+use self::partial_declaration::PartialDeclaration;
 
 use super::untyped::expression::Expression;
 
-pub(crate) mod semi_declaration;
+pub(crate) mod partial_declaration;
 
-pub struct SemiApplication {
-    pub files: Vec<SemiFile>,
+pub struct PartialApplication {
+    pub files: Vec<PartialFile>,
 }
 
-impl fmt::Display for SemiApplication {
+impl fmt::Display for PartialApplication {
     #[allow(clippy::useless_format)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
@@ -29,12 +29,12 @@ impl fmt::Display for SemiApplication {
     }
 }
 
-pub struct SemiFile {
+pub struct PartialFile {
     pub name: String,
-    pub nodes: Vec<SemiNode>,
+    pub nodes: Vec<PartialNode>,
 }
 
-impl fmt::Display for SemiFile {
+impl fmt::Display for PartialFile {
     #[allow(clippy::useless_format)]
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut nodes_str = self
@@ -56,19 +56,18 @@ impl fmt::Display for SemiFile {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum SemiNode {
-    //StarImport(String),
-    Declaration(SemiTypedDeclaration),
+pub enum PartialNode {
+    Declaration(PartialDeclaration),
     Expression(Expression),
     ReturnStatement(Expression),
 }
 
-impl fmt::Display for SemiNode {
+impl fmt::Display for PartialNode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SemiNode::Declaration(declaration) => write!(f, "{}", declaration),
-            SemiNode::Expression(expression) => write!(f, "{}", expression),
-            SemiNode::ReturnStatement(expression) => write!(f, "return {}", expression),
+            PartialNode::Declaration(declaration) => write!(f, "{}", declaration),
+            PartialNode::Expression(expression) => write!(f, "{}", expression),
+            PartialNode::ReturnStatement(expression) => write!(f, "return {}", expression),
         }
     }
 }

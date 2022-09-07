@@ -91,11 +91,10 @@ impl Namespace {
             if look_up_type_id(*k) == look_up_type_id(type_id) {
                 for method_id in method_ids.iter() {
                     let (name, signature) = match de_look_up_decl_id(*method_id) {
-                        DeclarationWrapper::Function(decl) => match decl {
-                            either::Either::Left(decl) => (decl.name.clone(), decl.into()),
-                            either::Either::Right(decl) => (decl.name.clone(), decl.into()),
-                        },
-                        DeclarationWrapper::TypedTraitFn(decl) => (decl.name.clone(), decl.into()),
+                        DeclarationWrapper::Function(decl) => {
+                            (decl.name().to_string(), decl.into())
+                        }
+                        DeclarationWrapper::TraitFn(decl) => (decl.name.clone(), decl.into()),
                         _ => {
                             return Err("found bad item in self.methods".to_string());
                         }
