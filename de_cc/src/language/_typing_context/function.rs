@@ -3,7 +3,7 @@ use either::Either;
 use crate::{
     language::{
         partial::partial_declaration::PartialFunctionDeclaration,
-        typed::typed_declaration::TyFunctionDeclaration,
+        ty::typed_declaration::TyFunctionDeclaration,
     },
     type_system::type_mapping::TypeMapping,
     types::copy_types::CopyTypes,

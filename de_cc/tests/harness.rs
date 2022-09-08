@@ -1,6 +1,6 @@
 use de_cc::{
     compile,
-    language::untyped::{
+    language::parsed::{
         constructors::*, declaration::constructors::*, expression::constructors::*, Application,
         File,
     },

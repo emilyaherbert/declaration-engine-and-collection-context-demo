@@ -4,19 +4,19 @@ use crate::{
         de_insert_trait_impl,
     },
     language::{
-        typed::{
-            typed_declaration::{
-                TyDeclaration, TyFunctionDeclaration, TyFunctionParameter, TyStructDeclaration,
-                TyStructField, TyTraitDeclaration, TyTraitFn, TyTraitImpl, TyVariableDeclaration,
-            },
-            TyNode,
-        },
-        untyped::{
+        parsed::{
             declaration::{
                 Declaration, FunctionDeclaration, FunctionParameter, StructDeclaration,
                 StructField, TraitDeclaration, TraitFn, TraitImpl, VariableDeclaration,
             },
             Node,
+        },
+        ty::{
+            typed_declaration::{
+                TyDeclaration, TyFunctionDeclaration, TyFunctionParameter, TyStructDeclaration,
+                TyStructField, TyTraitDeclaration, TyTraitFn, TyTraitImpl, TyVariableDeclaration,
+            },
+            TyNode,
         },
     },
     namespace::namespace::Namespace,

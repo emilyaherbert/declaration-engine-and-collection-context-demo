@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use de_cc::{
-    language::untyped::{
+    language::parsed::{
         constructors::*, declaration::constructors::*, expression::constructors::*, Node,
     },
     type_system::type_info::{constructors::t_u64, TypeInfo},

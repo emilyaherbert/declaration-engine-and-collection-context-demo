@@ -1,7 +1,7 @@
 use crate::{
     language::{
-        typed::typed_expression::{TyExpression, TyExpressionVariant, TyStructExpressionField},
-        untyped::expression::Expression,
+        parsed::expression::Expression,
+        ty::typed_expression::{TyExpression, TyExpressionVariant, TyStructExpressionField},
     },
     namespace::namespace::Namespace,
     type_system::{type_engine::insert_type, type_info::TypeInfo},

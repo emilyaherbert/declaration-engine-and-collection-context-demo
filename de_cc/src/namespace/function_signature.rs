@@ -1,9 +1,5 @@
 use crate::{
-    language::{
-        partial::partial_declaration::PartialFunctionDeclaration,
-        typed::typed_declaration::{TyFunctionDeclaration, TyFunctionParameter, TyTraitFn},
-        typing_context::function::TyFunctionContext,
-    },
+    language::ty::typed_declaration::{TyFunctionDeclaration, TyFunctionParameter, TyTraitFn},
     type_system::{type_id::TypeId, type_parameter::TypeParameter},
 };
 
@@ -34,26 +30,6 @@ impl From<TyTraitFn> for TypedFunctionSignature {
             type_parameters: vec![],
             parameters: decl.parameters,
             return_type: decl.return_type,
-        }
-    }
-}
-
-impl From<PartialFunctionDeclaration> for TypedFunctionSignature {
-    fn from(decl: PartialFunctionDeclaration) -> Self {
-        TypedFunctionSignature {
-            name: decl.name,
-            type_parameters: decl.type_parameters,
-            parameters: decl.parameters,
-            return_type: decl.return_type,
-        }
-    }
-}
-
-impl From<TyFunctionContext> for TypedFunctionSignature {
-    fn from(ctx: TyFunctionContext) -> Self {
-        match ctx.inner {
-            either::Either::Left(partial) => partial.into(),
-            either::Either::Right(typed) => typed.into(),
         }
     }
 }

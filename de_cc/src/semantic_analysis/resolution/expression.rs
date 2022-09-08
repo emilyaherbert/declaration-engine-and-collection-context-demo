@@ -3,7 +3,7 @@ use crate::{
         resolved::resolved_expression::{
             ResolvedExpression, ResolvedExpressionVariant, ResolvedStructExpressionField,
         },
-        typed::typed_expression::{TyExpression, TyExpressionVariant, TyStructExpressionField},
+        ty::typed_expression::{TyExpression, TyExpressionVariant, TyStructExpressionField},
     },
     type_system::type_engine::resolve_type,
 };

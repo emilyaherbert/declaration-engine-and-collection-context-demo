@@ -265,7 +265,7 @@ pub struct EnumVariant {
 
 pub mod constructors {
     use crate::{
-        language::untyped::{Expression, Node},
+        language::parsed::{Expression, Node},
         type_system::{
             trait_constraint::TraitConstraint, type_engine::insert_type, type_info::TypeInfo,
             type_parameter::TypeParameter,

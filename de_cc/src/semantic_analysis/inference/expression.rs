@@ -4,8 +4,8 @@ use crate::declaration_engine::declaration_engine::*;
 use crate::type_system::type_engine::eval_type;
 use crate::{
     language::{
-        typed::typed_expression::{TyExpression, TyExpressionVariant, TyStructExpressionField},
-        untyped::expression::Expression,
+        parsed::expression::Expression,
+        ty::typed_expression::{TyExpression, TyExpressionVariant, TyStructExpressionField},
     },
     namespace::namespace::Namespace,
     type_system::{

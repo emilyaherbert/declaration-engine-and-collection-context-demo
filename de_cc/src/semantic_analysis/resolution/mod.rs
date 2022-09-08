@@ -6,7 +6,7 @@ use expression::*;
 
 use crate::language::{
     resolved::{ResolvedApplication, ResolvedFile, ResolvedNode},
-    typed::{TyApplication, TyFile, TyNode},
+    ty::{TyApplication, TyFile, TyNode},
 };
 
 pub(crate) fn resolve(application: TyApplication) -> ResolvedApplication {

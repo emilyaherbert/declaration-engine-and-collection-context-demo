@@ -5,7 +5,7 @@ use declaration::*;
 use expression::*;
 
 use crate::{
-    language::typed::{TyApplication, TyFile, TyNode},
+    language::ty::{TyApplication, TyFile, TyNode},
     namespace::namespace::Namespace,
 };
 

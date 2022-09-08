@@ -1,4 +1,4 @@
-use language::{resolved::ResolvedApplication, untyped::Application};
+use language::{parsed::Application, resolved::ResolvedApplication};
 use namespace::namespace::Namespace;
 use semantic_analysis::{inference::analyze, resolution::resolve, type_collection::type_collect};
 

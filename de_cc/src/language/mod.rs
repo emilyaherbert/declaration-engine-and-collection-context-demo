@@ -10,8 +10,9 @@
 //!     which is a codegen-safe well-formed subset of [TypeInfo](crate::type_system::type_info::TypeInfo).
 
 pub(crate) mod literal;
-pub(crate) mod partial;
+pub mod parsed;
 pub(crate) mod resolved;
-pub(crate) mod typed;
-pub(crate) mod typing_context;
-pub mod untyped;
+pub(crate) mod ty;
+
+// pub(crate) mod partial;
+// pub(crate) mod typing_context;

@@ -3,7 +3,7 @@ use std::fmt;
 use crate::{
     declaration_engine::declaration_id::DeclarationId,
     language::{
-        typed::typed_declaration::TyFunctionParameter, untyped::declaration::VariableDeclaration,
+        ty::typed_declaration::TyFunctionParameter, parsed::declaration::VariableDeclaration,
     },
     type_system::{type_id::TypeId, type_mapping::TypeMapping, type_parameter::TypeParameter},
     types::copy_types::CopyTypes,

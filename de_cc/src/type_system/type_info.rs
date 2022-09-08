@@ -2,7 +2,7 @@ use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 
-use crate::language::typed::typed_declaration::TyStructField;
+use crate::language::ty::typed_declaration::TyStructField;
 
 use super::type_engine::insert_type;
 use super::type_engine::look_up_type_id;

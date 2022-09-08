@@ -6,7 +6,7 @@ use crate::{
             ResolvedStructDeclaration, ResolvedStructField, ResolvedTraitDeclaration,
             ResolvedTraitFn, ResolvedTraitImpl, ResolvedVariableDeclaration,
         },
-        typed::typed_declaration::{
+        ty::typed_declaration::{
             TyDeclaration, TyFunctionDeclaration, TyFunctionParameter, TyStructDeclaration,
             TyStructField, TyVariableDeclaration,
         },

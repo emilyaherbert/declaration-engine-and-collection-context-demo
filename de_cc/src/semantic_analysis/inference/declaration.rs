@@ -1,7 +1,7 @@
 use crate::{
     declaration_engine::{declaration_engine::*, declaration_wrapper::DeclarationWrapper},
     language::{
-        typed::{
+        ty::{
             typed_declaration::{
                 TyDeclaration, TyFunctionDeclaration, TyTraitImpl, TyVariableDeclaration,
             },

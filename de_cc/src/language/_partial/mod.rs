@@ -4,7 +4,7 @@ use colored::Colorize;
 
 use self::partial_declaration::PartialDeclaration;
 
-use super::untyped::expression::Expression;
+use super::parsed::expression::Expression;
 
 pub(crate) mod partial_declaration;
 

@@ -5,7 +5,7 @@ use lazy_static::lazy_static;
 
 use crate::{
     concurrent_slab::ConcurrentSlab,
-    language::typed::typed_declaration::{
+    language::ty::typed_declaration::{
         TyFunctionDeclaration, TyStructDeclaration, TyTraitDeclaration, TyTraitFn, TyTraitImpl,
     },
     namespace::function_signature::TypedFunctionSignature,

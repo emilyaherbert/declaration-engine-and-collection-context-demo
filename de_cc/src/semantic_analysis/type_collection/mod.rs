@@ -6,8 +6,8 @@ use expression::*;
 
 use crate::{
     language::{
-        typed::{TyApplication, TyFile, TyNode},
-        untyped::{Application, File, Node},
+        parsed::{Application, File, Node},
+        ty::{TyApplication, TyFile, TyNode},
     },
     namespace::namespace::Namespace,
 };

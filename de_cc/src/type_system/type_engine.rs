@@ -3,8 +3,7 @@ use crate::{
     declaration_engine::declaration_engine::*,
     language::{
         partial::partial_declaration::PartialDeclaration,
-        resolved::resolved_declaration::ResolvedStructField,
-        typed::typed_declaration::TyDeclaration,
+        resolved::resolved_declaration::ResolvedStructField, ty::typed_declaration::TyDeclaration,
     },
     namespace::{collection_namespace::CollectionNamespace, namespace::Namespace},
     types::{copy_types::CopyTypes, create_type_id::CreateTypeId},

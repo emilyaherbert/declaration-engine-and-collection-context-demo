@@ -1,7 +1,7 @@
 use std::fmt;
 
 use crate::{
-    language::typed::typed_declaration::{
+    language::ty::typed_declaration::{
         TyFunctionDeclaration, TyStructDeclaration, TyTraitDeclaration, TyTraitFn, TyTraitImpl,
     },
     namespace::function_signature::TypedFunctionSignature,

@@ -7,7 +7,7 @@ use crate::{
         declaration_engine::*, declaration_id::DeclarationId,
         declaration_wrapper::DeclarationWrapper,
     },
-    language::typed::typed_declaration::TyDeclaration,
+    language::ty::typed_declaration::TyDeclaration,
     type_system::{type_engine::look_up_type_id, type_id::TypeId},
 };
 use linked_hash_map::LinkedHashMap;
