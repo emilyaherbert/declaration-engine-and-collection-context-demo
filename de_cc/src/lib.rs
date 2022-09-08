@@ -1,6 +1,8 @@
 use language::{parsed::Application, resolved::ResolvedApplication};
 use namespace::namespace::Namespace;
-use semantic_analysis::{inference::analyze, resolution::resolve, type_collection::type_collect};
+use semantic_analysis::{
+    inference::analyze, parsed_to_ty::to_ty, resolution::resolve, type_collection::collect_types,
+};
 
 mod concurrent_slab;
 mod declaration_engine;
@@ -16,20 +18,23 @@ use declaration_engine::declaration_engine as de;
 pub fn compile(application: Application) -> ResolvedApplication {
     de::de_clear();
 
-    // parsing happens here
+    // 1. parsing happens here
 
-    // do type collection
+    // 2. transform to the Ty AST
+    let ty_application = to_ty(application);
+
+    // 3. do type collection
     let mut namespace = Namespace::default();
-    let typed_application = type_collect(&mut namespace, application);
+    collect_types(&mut namespace, &ty_application);
 
-    // do type inference with new namespace
+    // 4. do type inference with new namespace
     let mut namespace = Namespace::default();
-    let typed_application = analyze(&mut namespace, typed_application);
+    analyze(&mut namespace, &ty_application);
 
-    // resolve all types
-    let resolved_application = resolve(typed_application);
+    // 5. resolve all types
+    let resolved_application = resolve(ty_application);
 
-    // ir generation happens
+    // 6. ir generation happens here
 
     resolved_application
 }

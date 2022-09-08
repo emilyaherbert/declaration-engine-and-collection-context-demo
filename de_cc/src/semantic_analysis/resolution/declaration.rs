@@ -32,7 +32,6 @@ pub(super) fn resolve_declaration(declaration: TyDeclaration) -> Vec<ResolvedDec
                 .map(ResolvedDeclaration::Function)
                 .collect()
         }
-        TyDeclaration::GenericTypeForFunctionScope { .. } => panic!("should not see this here"),
         TyDeclaration::Trait(id) => {
             let trait_declaration = resolve_trait_declaration(id);
             vec![ResolvedDeclaration::Trait(trait_declaration)]
@@ -64,7 +63,7 @@ fn resolve_variable_declaration(
 }
 
 fn resolve_function_declaration(function_id: DeclarationId) -> Vec<ResolvedFunctionDeclaration> {
-    let original_copy = de_get_function_typed(function_id).unwrap();
+    let original_copy = de_get_function(function_id).unwrap();
     if original_copy.type_parameters.is_empty() {
         resolve_function_declaration_inner(vec![original_copy])
     } else {

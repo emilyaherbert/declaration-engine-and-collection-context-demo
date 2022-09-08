@@ -15,11 +15,7 @@ use crate::{
 };
 
 pub(crate) fn to_ty(application: Application) -> TyApplication {
-    let files = application
-        .files
-        .into_iter()
-        .map(|file| to_ty_file(file))
-        .collect();
+    let files = application.files.into_iter().map(to_ty_file).collect();
     TyApplication { files }
 }
 
@@ -42,7 +38,11 @@ fn to_ty_node(type_mapping: &TypeMapping, node: Node) -> TyNode {
     match node {
         Node::StarImport(_) => todo!(),
         Node::Declaration(decl) => TyNode::Declaration(to_ty_declaration(type_mapping, decl)),
-        Node::Expression(expression) => TyNode::Expression(to_ty_expression(expression)),
-        Node::ReturnStatement(expression) => TyNode::Expression(to_ty_expression(expression)),
+        Node::Expression(expression) => {
+            TyNode::Expression(to_ty_expression(type_mapping, expression))
+        }
+        Node::ReturnStatement(expression) => {
+            TyNode::ReturnStatement(to_ty_expression(type_mapping, expression))
+        }
     }
 }

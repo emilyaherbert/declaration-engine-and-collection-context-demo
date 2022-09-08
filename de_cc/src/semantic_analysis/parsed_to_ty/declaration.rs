@@ -46,9 +46,7 @@ pub(super) fn to_ty_declaration(
         }
         Declaration::Struct(struct_declaration) => {
             let struct_declaration = to_ty_struct(type_mapping, struct_declaration);
-            let name = struct_declaration.name.clone();
-            let decl = TyDeclaration::Struct(de_insert_struct(struct_declaration));
-            decl
+            TyDeclaration::Struct(de_insert_struct(struct_declaration))
         }
     }
 }
@@ -57,7 +55,7 @@ fn to_ty_variable_declaration(
     type_mapping: &TypeMapping,
     variable_declaration: VariableDeclaration,
 ) -> TyVariableDeclaration {
-    let new_body = to_ty_expression(variable_declaration.body);
+    let new_body = to_ty_expression(type_mapping, variable_declaration.body);
     let mut new_type_ascription = insert_type(variable_declaration.type_ascription);
     new_type_ascription.copy_types(type_mapping);
     TyVariableDeclaration {
@@ -68,19 +66,20 @@ fn to_ty_variable_declaration(
 }
 
 fn to_ty_function(
-    mut type_mapping: &TypeMapping,
+    type_mapping: &TypeMapping,
     function_declaration: FunctionDeclaration,
 ) -> TyFunctionDeclaration {
+    let mut type_mapping = type_mapping.clone();
     type_mapping.extend(insert_type_parameters(
         &function_declaration.type_parameters,
     ));
     let parameters = function_declaration
         .parameters
         .into_iter()
-        .map(|param| to_ty_function_parameter(type_mapping, param))
+        .map(|param| to_ty_function_parameter(&type_mapping, param))
         .collect::<Vec<_>>();
     let mut return_type = insert_type(function_declaration.return_type);
-    return_type.copy_types(type_mapping);
+    return_type.copy_types(&type_mapping);
     TyFunctionDeclaration {
         name: function_declaration.name,
         type_parameters: function_declaration.type_parameters,
@@ -155,14 +154,15 @@ fn to_ty_trait_impl(type_mapping: &TypeMapping, trait_impl: TraitImpl) -> TyTrai
 }
 
 fn to_ty_struct(
-    mut type_mapping: &TypeMapping,
+    type_mapping: &TypeMapping,
     struct_declaration: StructDeclaration,
 ) -> TyStructDeclaration {
+    let mut type_mapping = type_mapping.clone();
     type_mapping.extend(insert_type_parameters(&struct_declaration.type_parameters));
     let fields = struct_declaration
         .fields
         .into_iter()
-        .map(|field| to_ty_struct_field(type_mapping, field))
+        .map(|field| to_ty_struct_field(&type_mapping, field))
         .collect::<Vec<_>>();
     TyStructDeclaration {
         name: struct_declaration.name,

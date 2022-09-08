@@ -4,7 +4,7 @@ use std::fmt::Write;
 
 use crate::{
     language::literal::Literal,
-    type_system::{type_id::TypeId, type_mapping::TypeMapping},
+    type_system::{type_argument::TypeArgument, type_id::TypeId, type_mapping::TypeMapping},
     types::copy_types::CopyTypes,
 };
 
@@ -37,6 +37,7 @@ pub(crate) enum TyExpressionVariant {
     },
     FunctionApplication {
         name: String,
+        type_arguments: Vec<TypeArgument>,
         arguments: Vec<TyExpression>,
     },
     // a no-op variant used to indicate that a variable is in scope
@@ -44,11 +45,13 @@ pub(crate) enum TyExpressionVariant {
     FunctionParameter,
     Struct {
         struct_name: String,
+        type_arguments: Vec<TypeArgument>,
         fields: Vec<TyStructExpressionField>,
     },
     MethodCall {
         parent_name: String,
         func_name: String,
+        type_arguments: Vec<TypeArgument>,
         arguments: Vec<TyExpression>,
     },
 }
@@ -58,11 +61,27 @@ impl fmt::Display for TyExpressionVariant {
         match self {
             TyExpressionVariant::Literal { value } => write!(f, "{}", value),
             TyExpressionVariant::Variable { name } => write!(f, "{}", name),
-            TyExpressionVariant::FunctionApplication { name, arguments } => {
+            TyExpressionVariant::FunctionApplication {
+                name,
+                type_arguments,
+                arguments,
+            } => {
                 write!(
                     f,
-                    "{}({})",
+                    "{}{}({})",
                     name,
+                    if type_arguments.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "::<{}>",
+                            type_arguments
+                                .iter()
+                                .map(|type_argument| type_argument.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    },
                     &arguments
                         .iter()
                         .map(|argument| argument.to_string())
@@ -73,13 +92,26 @@ impl fmt::Display for TyExpressionVariant {
             TyExpressionVariant::MethodCall {
                 parent_name: parent,
                 func_name: name,
+                type_arguments,
                 arguments,
             } => {
                 write!(
                     f,
-                    "{}.{}({})",
+                    "{}.{}{}({})",
                     parent,
                     name,
+                    if type_arguments.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "::<{}>",
+                            type_arguments
+                                .iter()
+                                .map(|type_argument| type_argument.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    },
                     &arguments
                         .iter()
                         .map(|argument| argument.to_string())
@@ -89,9 +121,27 @@ impl fmt::Display for TyExpressionVariant {
             }
             TyExpressionVariant::Struct {
                 struct_name,
+                type_arguments,
                 fields,
             } => {
-                writeln!(f, "{} {{", struct_name,).unwrap();
+                writeln!(
+                    f,
+                    "{}{} {{",
+                    struct_name,
+                    if type_arguments.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "::<{}>",
+                            type_arguments
+                                .iter()
+                                .map(|type_argument| type_argument.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    }
+                )
+                .unwrap();
                 {
                     let mut indent = IndentWriter::new("  ", &mut f);
                     for field in fields.iter() {

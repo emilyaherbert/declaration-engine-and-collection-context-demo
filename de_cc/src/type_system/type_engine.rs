@@ -169,12 +169,6 @@ impl TypeEngine {
 
     fn eval_type(&self, id: TypeId, namespace: &mut Namespace) -> Result<TypeId, String> {
         match self.slab.get(*id) {
-            TypeInfo::UnknownGeneric { name } => match namespace.get_symbol(&name)? {
-                TyDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
-                    Ok(insert_type(TypeInfo::Ref(type_id)))
-                }
-                _ => Err("could not find generic declaration".to_string()),
-            },
             TypeInfo::Ref(id) => Ok(id),
             TypeInfo::Custom { name } => {
                 match namespace.get_symbol(&name)? {
@@ -189,9 +183,6 @@ impl TypeEngine {
                         de_add_monomorphized_struct_copy(decl_id, struct_decl.clone());
 
                         Ok(struct_decl.create_type_id())
-                    }
-                    TyDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
-                        Ok(insert_type(TypeInfo::Ref(type_id)))
                     }
                     got => Err(format!("err, found: {}", got)),
                 }

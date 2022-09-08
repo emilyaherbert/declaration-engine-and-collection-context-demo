@@ -1,108 +1,80 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::declaration_engine::declaration_engine::*;
-use crate::type_system::type_engine::eval_type;
 use crate::{
-    language::{
-        parsed::expression::Expression,
-        ty::typed_expression::{TyExpression, TyExpressionVariant, TyStructExpressionField},
-    },
+    language::ty::typed_expression::{TyExpression, TyExpressionVariant},
     namespace::namespace::Namespace,
-    type_system::{
-        type_engine::{insert_type, monomorphize, unify_types},
-        type_info::TypeInfo,
-    },
+    type_system::type_engine::{monomorphize, unify_types},
     types::create_type_id::CreateTypeId,
 };
 
 pub(super) fn analyze_expression(namespace: &mut Namespace, expression: &TyExpression) {
-    unimplemented!()
-}
-
-fn analyze_expression_variant(namespace: &mut Namespace, expression: &TyExpressionVariant) {
-    match expression {
-        TyExpressionVariant::Literal { value } => {
-            let type_id = insert_type(value.to_type());
-            let variant = TyExpressionVariant::Literal { value };
-            TyExpression { variant, type_id }
-        }
+    match &expression.variant {
+        TyExpressionVariant::Literal { .. } => {}
         TyExpressionVariant::Variable { name } => {
             let variable_decl = namespace
-                .get_symbol(&name)
+                .get_symbol(name)
                 .unwrap()
                 .expect_variable()
                 .unwrap();
-            let type_id = variable_decl.type_ascription;
-            let variant = TyExpressionVariant::Variable { name };
-            TyExpression { variant, type_id }
+            unify_types(variable_decl.type_ascription, expression.type_id).unwrap();
         }
         TyExpressionVariant::FunctionApplication {
             name,
-            mut type_arguments,
+            type_arguments,
             arguments,
         } => {
+            // don't allow type arguments in the prototype
             if !type_arguments.is_empty() {
                 panic!()
             }
 
             // get the original decl id for the function from the namespace
             let decl_id = namespace
-                .get_symbol(&name)
+                .get_symbol(name)
                 .unwrap()
                 .expect_function()
                 .unwrap();
 
             // get the original function declaration
-            let mut typed_function_declaration = de_get_function_typed(decl_id).unwrap();
+            let mut typed_function_declaration = de_get_function(decl_id).unwrap();
 
             // make sure we have the correct number of arguments
             if typed_function_declaration.parameters.len() != arguments.len() {
                 panic!();
             }
 
-            // type check the type arguments
-            for type_argument in type_arguments.iter_mut() {
-                type_argument.type_id = eval_type(type_argument.type_id, namespace).unwrap();
-            }
-
-            // monomorphize the function declaration into a new copy
-            monomorphize(&mut typed_function_declaration, &type_arguments).unwrap();
+            // monomorphize the function declaration into a new copy, in place
+            monomorphize(&mut typed_function_declaration, type_arguments).unwrap();
 
             // add the new copy to the declaration engine
             de_add_monomorphized_function_copy(decl_id, typed_function_declaration.clone());
 
-            // type check the arguments
-            let new_arguments = arguments
-                .into_iter()
+            // do type inference on the arguments
+            arguments
+                .iter()
                 .zip(typed_function_declaration.parameters.iter())
-                .map(|(argument, parameter)| {
-                    let typed_argument = analyze_expression(namespace, argument);
-                    unify_types(typed_argument.type_id, parameter.type_id).unwrap();
-                    typed_argument
-                })
-                .collect::<Vec<_>>();
+                .for_each(|(argument, parameter)| {
+                    analyze_expression(namespace, argument);
+                    unify_types(argument.type_id, parameter.type_id).unwrap();
+                });
 
-            // the type id is the functions return type id
-            let type_id = insert_type(TypeInfo::Ref(typed_function_declaration.return_type));
-
-            let variant = TyExpressionVariant::FunctionApplication {
-                name,
-                arguments: new_arguments,
-            };
-            TyExpression { variant, type_id }
+            // unify the return type of the function declaration and the expression
+            unify_types(typed_function_declaration.return_type, expression.type_id).unwrap();
         }
         TyExpressionVariant::Struct {
             struct_name,
-            mut type_arguments,
+            type_arguments,
             fields,
         } => {
+            // don't allow type arguments in the prototype
             if !type_arguments.is_empty() {
                 panic!()
             }
 
             // get the original decl id for the struct from the namespace
             let decl_id = namespace
-                .get_symbol(&struct_name)
+                .get_symbol(struct_name)
                 .unwrap()
                 .expect_struct()
                 .unwrap();
@@ -110,21 +82,16 @@ fn analyze_expression_variant(namespace: &mut Namespace, expression: &TyExpressi
             // get the original struct declaration
             let mut typed_struct_declaration = de_get_struct(decl_id).unwrap();
 
-            // type check the type arguments
-            for type_argument in type_arguments.iter_mut() {
-                type_argument.type_id = eval_type(type_argument.type_id, namespace).unwrap();
-            }
-
-            // monomorphize the struct declaration into a new copy
-            monomorphize(&mut typed_struct_declaration, &type_arguments).unwrap();
+            // monomorphize the struct declaration into a new copy, in place
+            monomorphize(&mut typed_struct_declaration, type_arguments).unwrap();
 
             // add the new copy to the declaration engine
             de_add_monomorphized_struct_copy(decl_id, typed_struct_declaration.clone());
 
-            // type check the fields
+            // create reference maps for the expression and the declaration
             let given_fields_map: HashMap<_, _> = fields
-                .into_iter()
-                .map(|field| (field.name, field.value))
+                .iter()
+                .map(|field| (field.name.clone(), field.value.clone()))
                 .collect();
             let oracle_fields_map: HashMap<_, _> = typed_struct_declaration
                 .fields
@@ -132,33 +99,28 @@ fn analyze_expression_variant(namespace: &mut Namespace, expression: &TyExpressi
                 .cloned()
                 .map(|field| (field.name, field.type_id))
                 .collect();
+
+            // check to see that all of the necessary fields are provided and that no erroneous
+            // fields are provided
             if given_fields_map.keys().into_iter().collect::<HashSet<_>>()
                 != oracle_fields_map.keys().into_iter().collect::<HashSet<_>>()
             {
                 panic!();
             }
 
-            let typed_fields = given_fields_map
-                .into_iter()
-                .map(|(name, value)| {
-                    let typed_value = analyze_expression(namespace, value);
-                    let oracle_field = oracle_fields_map.get(&name).unwrap();
-                    unify_types(typed_value.type_id, *oracle_field).unwrap();
-                    TyStructExpressionField {
-                        name,
-                        value: typed_value,
-                    }
-                })
-                .collect::<Vec<_>>();
+            // do type inference on the fields
+            given_fields_map.iter().for_each(|(name, value)| {
+                analyze_expression(namespace, value);
+                let oracle_field = oracle_fields_map.get(name).unwrap();
+                unify_types(value.type_id, *oracle_field).unwrap();
+            });
 
-            let variant = TyExpressionVariant::Struct {
-                struct_name,
-                fields: typed_fields,
-            };
-            TyExpression {
-                variant,
-                type_id: typed_struct_declaration.create_type_id(),
-            }
+            // unify the struct type id with the expression type id
+            unify_types(
+                typed_struct_declaration.create_type_id(),
+                expression.type_id,
+            )
+            .unwrap();
         }
         TyExpressionVariant::MethodCall {
             parent_name,
@@ -166,42 +128,35 @@ fn analyze_expression_variant(namespace: &mut Namespace, expression: &TyExpressi
             type_arguments,
             arguments,
         } => {
+            // don't allow type arguments in the prototype
             if !type_arguments.is_empty() {
                 panic!()
             }
 
             // get the variable decl for this method call
             let parent = namespace
-                .get_symbol(&parent_name)
+                .get_symbol(parent_name)
                 .unwrap()
                 .expect_variable()
                 .unwrap();
 
-            // get the function call
-            let typed_function_declaration = namespace
-                .get_method(parent.type_ascription, &func_name)
+            // get the method declaration
+            let typed_method_declaration = namespace
+                .get_method(parent.type_ascription, func_name)
                 .unwrap();
 
-            // type check the arguments
-            let new_arguments = arguments
-                .into_iter()
-                .zip(typed_function_declaration.parameters.iter())
-                .map(|(argument, parameter)| {
-                    let typed_argument = analyze_expression(namespace, argument);
-                    unify_types(typed_argument.type_id, parameter.type_id).unwrap();
-                    typed_argument
-                })
-                .collect::<Vec<_>>();
+            // do type inference on the arguments
+            arguments
+                .iter()
+                .zip(typed_method_declaration.parameters.iter())
+                .for_each(|(argument, parameter)| {
+                    analyze_expression(namespace, argument);
+                    unify_types(argument.type_id, parameter.type_id).unwrap();
+                });
 
-            // the type id is the functions return type id
-            let type_id = insert_type(TypeInfo::Ref(typed_function_declaration.return_type));
-
-            let variant = TyExpressionVariant::MethodCall {
-                parent_name,
-                func_name,
-                arguments: new_arguments,
-            };
-            TyExpression { variant, type_id }
+            // unify the return type of the method declaration and the expression
+            unify_types(typed_method_declaration.return_type, expression.type_id).unwrap();
         }
+        TyExpressionVariant::FunctionParameter => todo!(),
     }
 }

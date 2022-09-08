@@ -20,7 +20,11 @@ fn resolve_expression_variant(variant: TyExpressionVariant) -> ResolvedExpressio
     match variant {
         TyExpressionVariant::Literal { value } => ResolvedExpressionVariant::Literal { value },
         TyExpressionVariant::Variable { name } => ResolvedExpressionVariant::Variable { name },
-        TyExpressionVariant::FunctionApplication { name, arguments } => {
+        TyExpressionVariant::FunctionApplication {
+            name,
+            type_arguments: _,
+            arguments,
+        } => {
             let resolved_arguments = arguments
                 .into_iter()
                 .map(resolve_expression)
@@ -32,6 +36,7 @@ fn resolve_expression_variant(variant: TyExpressionVariant) -> ResolvedExpressio
         }
         TyExpressionVariant::Struct {
             struct_name,
+            type_arguments: _,
             fields,
         } => {
             let resolved_fields = fields
@@ -46,6 +51,7 @@ fn resolve_expression_variant(variant: TyExpressionVariant) -> ResolvedExpressio
         TyExpressionVariant::MethodCall {
             parent_name,
             func_name,
+            type_arguments: _,
             arguments,
         } => {
             let resolved_arguments = arguments

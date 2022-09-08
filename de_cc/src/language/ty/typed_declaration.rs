@@ -22,7 +22,6 @@ pub(crate) enum TyDeclaration {
     Function(DeclarationId),
     Trait(DeclarationId),
     TraitImpl(DeclarationId),
-    GenericTypeForFunctionScope { type_id: TypeId },
     Struct(DeclarationId),
 }
 
@@ -34,7 +33,6 @@ impl fmt::Display for TyDeclaration {
             TyDeclaration::Trait(decl) => write!(f, "\n{}", decl),
             TyDeclaration::TraitImpl(decl) => write!(f, "\n{}", decl),
             TyDeclaration::Struct(decl) => write!(f, "\n{}", decl),
-            TyDeclaration::GenericTypeForFunctionScope { type_id } => write!(f, "{}", type_id),
         }
     }
 }
@@ -47,7 +45,6 @@ impl CopyTypes for TyDeclaration {
             TyDeclaration::Trait(decl_id) => decl_id.copy_types(type_mapping),
             TyDeclaration::TraitImpl(decl_id) => decl_id.copy_types(type_mapping),
             TyDeclaration::Struct(decl_id) => decl_id.copy_types(type_mapping),
-            TyDeclaration::GenericTypeForFunctionScope { .. } => {}
         }
     }
 }
