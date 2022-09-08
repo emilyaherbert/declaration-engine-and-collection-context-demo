@@ -169,15 +169,14 @@ impl TypeEngine {
 
     fn eval_type(&self, id: TypeId, namespace: &mut Namespace) -> Result<TypeId, String> {
         match self.slab.get(*id) {
-            TypeInfo::Ref(id) => Ok(id),
             TypeInfo::Custom { name } => {
                 match namespace.get_symbol(&name)? {
                     TyDeclaration::Struct(decl_id) => {
                         // get the original struct declaration
-                        let mut struct_decl = de_get_struct(decl_id).unwrap();
+                        let mut struct_decl = de_get_struct(decl_id)?;
 
                         // monomorphize the struct declaration into a new copy
-                        monomorphize(&mut struct_decl, &[]).unwrap();
+                        monomorphize(&mut struct_decl, &[])?;
 
                         // add the new copy to the declaration engine
                         de_add_monomorphized_struct_copy(decl_id, struct_decl.clone());
@@ -187,7 +186,40 @@ impl TypeEngine {
                     got => Err(format!("err, found: {}", got)),
                 }
             }
-            o => Ok(insert_type(o)),
+            _ => Ok(id),
+        }
+    }
+
+    fn resolve_custom_types(&self, id: TypeId, namespace: &mut Namespace) -> Result<(), String> {
+        match self.slab.get(*id) {
+            TypeInfo::Ref(inner_id) => resolve_custom_types(inner_id, namespace),
+            TypeInfo::Custom { name } => {
+                match namespace.get_symbol(&name)? {
+                    TyDeclaration::Struct(decl_id) => {
+                        // get the original struct declaration
+                        let mut struct_decl = de_get_struct(decl_id)?;
+
+                        // monomorphize the struct declaration into a new copy
+                        monomorphize(&mut struct_decl, &[])?;
+
+                        // add the new copy to the declaration engine
+                        de_add_monomorphized_struct_copy(decl_id, struct_decl.clone());
+
+                        // recreate the previous type info
+                        let prev_info = TypeInfo::Custom { name };
+
+                        // get the new type info
+                        let new_info = self.look_up_type_id(struct_decl.create_type_id());
+
+                        // replace the id with the new type info
+                        self.slab.replace(*id, &prev_info, new_info);
+
+                        Ok(())
+                    }
+                    got => Err(format!("err, found: {}", got)),
+                }
+            }
+            _ => Ok(()),
         }
     }
 
@@ -245,6 +277,10 @@ pub(crate) fn resolve_type(type_id: TypeId) -> Result<ResolvedType, String> {
 
 pub(crate) fn eval_type(id: TypeId, namespace: &mut Namespace) -> Result<TypeId, String> {
     TYPE_ENGINE.eval_type(id, namespace)
+}
+
+pub(crate) fn resolve_custom_types(id: TypeId, namespace: &mut Namespace) -> Result<(), String> {
+    TYPE_ENGINE.resolve_custom_types(id, namespace)
 }
 
 pub(crate) fn monomorphize<T>(value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>

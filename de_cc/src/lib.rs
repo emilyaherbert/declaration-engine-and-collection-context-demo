@@ -1,7 +1,8 @@
 use language::{parsed::Application, resolved::ResolvedApplication};
 use namespace::namespace::Namespace;
 use semantic_analysis::{
-    inference::analyze, parsed_to_ty::to_ty, resolution::resolve, type_collection::collect_types,
+    inference::analyze, parsed_to_ty::to_ty, ty_to_resolved::to_resolved,
+    type_collection::collect_types,
 };
 
 mod concurrent_slab;
@@ -32,7 +33,7 @@ pub fn compile(application: Application) -> ResolvedApplication {
     analyze(&mut namespace, &ty_application);
 
     // 5. resolve all types
-    let resolved_application = resolve(ty_application);
+    let resolved_application = to_resolved(ty_application);
 
     // 6. ir generation happens here
 

@@ -10,7 +10,7 @@ use super::type_mapping::TypeMapping;
 use super::type_parameter::TypeParameter;
 use super::{type_id::*, IntegerBits};
 
-#[derive(Clone, Eq, Debug)]
+#[derive(Clone, Eq)]
 pub enum TypeInfo {
     ErrorRecovery,
     Unknown,
@@ -42,9 +42,46 @@ impl fmt::Display for TypeInfo {
             TypeInfo::ErrorRecovery => write!(f, "ERR"),
             TypeInfo::Unknown => write!(f, "UNK"),
             TypeInfo::UnknownGeneric { name } => write!(f, "{}", name),
-            TypeInfo::Custom { name } => write!(f, "{}", name),
+            TypeInfo::Custom { name } => write!(f, "{{{}}}", name),
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
-            TypeInfo::Ref(_) => todo!(),
+            TypeInfo::Ref(id) => write!(f, "{}", look_up_type_id(*id)),
+            TypeInfo::Unit => write!(f, "()"),
+            TypeInfo::Struct {
+                name,
+                type_parameters,
+                ..
+            } => {
+                write!(
+                    f,
+                    "{}{}",
+                    name,
+                    if type_parameters.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "<{}>",
+                            type_parameters
+                                .iter()
+                                .map(|x| x.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    },
+                )
+            }
+        }
+    }
+}
+
+impl fmt::Debug for TypeInfo {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TypeInfo::ErrorRecovery => write!(f, "ERR"),
+            TypeInfo::Unknown => write!(f, "UNK"),
+            TypeInfo::UnknownGeneric { name } => write!(f, "{}", name),
+            TypeInfo::Custom { name } => write!(f, "{{{}}}", name),
+            TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
+            TypeInfo::Ref(id) => write!(f, "ref..{}", look_up_type_id(*id)),
             TypeInfo::Unit => write!(f, "()"),
             TypeInfo::Struct {
                 name,

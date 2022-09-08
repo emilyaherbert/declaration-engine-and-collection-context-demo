@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::declaration_engine::declaration_engine::*;
+use crate::type_system::type_engine::resolve_custom_types;
 use crate::{
     language::ty::typed_expression::{TyExpression, TyExpressionVariant},
     namespace::namespace::Namespace,
@@ -144,6 +145,11 @@ pub(super) fn analyze_expression(namespace: &mut Namespace, expression: &TyExpre
             let typed_method_declaration = namespace
                 .get_method(parent.type_ascription, func_name)
                 .unwrap();
+
+            // do type inference on the type arguments
+            type_arguments
+                .iter()
+                .for_each(|type_arg| resolve_custom_types(type_arg.type_id, namespace).unwrap());
 
             // do type inference on the arguments
             arguments

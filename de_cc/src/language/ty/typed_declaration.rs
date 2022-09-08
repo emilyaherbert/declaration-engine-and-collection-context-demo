@@ -16,7 +16,7 @@ use crate::{
     types::{copy_types::CopyTypes, create_type_id::CreateTypeId},
 };
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) enum TyDeclaration {
     Variable(TyVariableDeclaration),
     Function(DeclarationId),

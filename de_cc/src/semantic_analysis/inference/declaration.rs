@@ -2,13 +2,14 @@ use crate::{
     declaration_engine::declaration_engine::*,
     language::ty::{
         typed_declaration::{
-            TyDeclaration, TyFunctionDeclaration, TyTraitImpl, TyVariableDeclaration,
+            TyDeclaration, TyFunctionDeclaration, TyStructDeclaration, TyTraitDeclaration,
+            TyTraitFn, TyTraitImpl, TyVariableDeclaration,
         },
         TyNode,
     },
     namespace::namespace::Namespace,
     type_system::{
-        type_engine::{insert_type, unify_types},
+        type_engine::{insert_type, resolve_custom_types, unify_types},
         type_id::TypeId,
         type_info::TypeInfo,
     },
@@ -30,8 +31,9 @@ pub(super) fn analyze_declaration(namespace: &mut Namespace, declaration: &TyDec
             namespace.insert_symbol(name, decl.clone());
         }
         decl @ TyDeclaration::Trait(decl_id) => {
-            let typed_trait_declaration = de_get_trait(*decl_id).unwrap();
-            let name = typed_trait_declaration.name;
+            let trait_declaration = de_get_trait(*decl_id).unwrap();
+            analyze_trait(namespace, &trait_declaration);
+            let name = trait_declaration.name;
             namespace.insert_symbol(name, decl.clone());
         }
         TyDeclaration::TraitImpl(decl_id) => {
@@ -44,15 +46,22 @@ pub(super) fn analyze_declaration(namespace: &mut Namespace, declaration: &TyDec
             );
         }
         decl @ TyDeclaration::Struct(decl_id) => {
-            let typed_struct_declaration = de_get_struct(*decl_id).unwrap();
-            let name = typed_struct_declaration.name;
+            let struct_declaration = de_get_struct(*decl_id).unwrap();
+            analyze_struct(&mut namespace.scoped(), &struct_declaration);
+            let name = struct_declaration.name;
             namespace.insert_symbol(name, decl.clone());
         }
     }
 }
 
 fn analyze_variable(namespace: &mut Namespace, variable_declaration: &TyVariableDeclaration) {
+    // do type inference on the value
     analyze_expression(namespace, &variable_declaration.body);
+
+    // resolve any custom types in the type ascription
+    resolve_custom_types(variable_declaration.type_ascription, namespace).unwrap();
+
+    // unify the type of the value and the type ascription
     unify_types(
         variable_declaration.body.type_id,
         variable_declaration.type_ascription,
@@ -61,8 +70,18 @@ fn analyze_variable(namespace: &mut Namespace, variable_declaration: &TyVariable
 }
 
 fn analyze_function(namespace: &mut Namespace, function_declaration: &TyFunctionDeclaration) {
+    // resolve any custom types in the parameters and
+    // insert the type parameters into the namespace
+    for parameter in function_declaration.parameters.iter() {
+        resolve_custom_types(parameter.type_id, namespace).unwrap();
+        namespace.insert_symbol(parameter.name.clone(), parameter.into());
+    }
+
     // do type inference on the function body
     let typed_body_return_type = analyze_code_block(namespace, &function_declaration.body);
+
+    // resolve any custom types in the function return type
+    resolve_custom_types(function_declaration.return_type, namespace).unwrap();
 
     // unify the function return type and body return type
     unify_types(typed_body_return_type, function_declaration.return_type).unwrap();
@@ -91,6 +110,9 @@ fn analyze_trait_impl(namespace: &mut Namespace, trait_impl: &TyTraitImpl) {
         .unwrap();
     let _trait_decl = de_get_trait(trait_id).unwrap();
 
+    // resolve any custom types in the type we are implementing for
+    resolve_custom_types(trait_impl.type_implementing_for, namespace).unwrap();
+
     // TODO: check to see if all of the methods are implementing, no new methods implementing,
     // when generic traits are implemented add the monomorphized copies to the declaration
     // engine
@@ -100,4 +122,32 @@ fn analyze_trait_impl(namespace: &mut Namespace, trait_impl: &TyTraitImpl) {
         let method = de_get_function(*method_id).unwrap();
         analyze_function(namespace, &method);
     });
+}
+
+fn analyze_struct(namespace: &mut Namespace, struct_declaration: &TyStructDeclaration) {
+    // do type inference on the fields
+    struct_declaration.fields.iter().for_each(|field| {
+        resolve_custom_types(field.type_id, namespace).unwrap();
+    });
+}
+
+fn analyze_trait(namespace: &mut Namespace, trait_declaration: &TyTraitDeclaration) {
+    // do type inference on the interface
+    trait_declaration
+        .interface_surface
+        .iter()
+        .for_each(|trait_fn_id| {
+            let trait_fn = de_get_trait_fn(*trait_fn_id).unwrap();
+            analyze_trait_fn(namespace, &trait_fn)
+        });
+}
+
+fn analyze_trait_fn(namespace: &mut Namespace, trait_fn: &TyTraitFn) {
+    // resolve any custom types in the parameters
+    for parameter in trait_fn.parameters.iter() {
+        resolve_custom_types(parameter.type_id, namespace).unwrap();
+    }
+
+    // resolve any custom types in the return type
+    resolve_custom_types(trait_fn.return_type, namespace).unwrap();
 }

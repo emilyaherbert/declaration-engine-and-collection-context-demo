@@ -8,7 +8,7 @@ use crate::{
     type_system::type_engine::resolve_type,
 };
 
-pub(super) fn resolve_expression(expression: TyExpression) -> ResolvedExpression {
+pub(super) fn to_resolved_expression(expression: TyExpression) -> ResolvedExpression {
     let variant = resolve_expression_variant(expression.variant);
     ResolvedExpression {
         variant,
@@ -27,7 +27,7 @@ fn resolve_expression_variant(variant: TyExpressionVariant) -> ResolvedExpressio
         } => {
             let resolved_arguments = arguments
                 .into_iter()
-                .map(resolve_expression)
+                .map(to_resolved_expression)
                 .collect::<Vec<_>>();
             ResolvedExpressionVariant::FunctionApplication {
                 name,
@@ -56,7 +56,7 @@ fn resolve_expression_variant(variant: TyExpressionVariant) -> ResolvedExpressio
         } => {
             let resolved_arguments = arguments
                 .into_iter()
-                .map(resolve_expression)
+                .map(to_resolved_expression)
                 .collect::<Vec<_>>();
             ResolvedExpressionVariant::MethodCall {
                 parent_name,
@@ -73,7 +73,7 @@ fn resolve_expression_variant(variant: TyExpressionVariant) -> ResolvedExpressio
 fn resolve_struct_expression_field(
     struct_expression_field: TyStructExpressionField,
 ) -> ResolvedStructExpressionField {
-    let new_value = resolve_expression(struct_expression_field.value);
+    let new_value = to_resolved_expression(struct_expression_field.value);
     ResolvedStructExpressionField {
         name: struct_expression_field.name,
         value: new_value,

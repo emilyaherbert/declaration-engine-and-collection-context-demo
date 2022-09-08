@@ -223,7 +223,7 @@ fn analyze_trait(
         .interface_surface
         .into_iter()
         .map(|trait_fn| {
-            let trait_fn = analyze_trait_fn(namespace, declaration_engine, trait_fn);
+            let trait_fn = analyze_trait_fn(&mut namespace.scoped(), declaration_engine, trait_fn);
             declaration_engine.insert_trait_fn(trait_fn)
         })
         .collect::<Vec<_>>();
@@ -241,12 +241,7 @@ fn analyze_trait_fn(
     let new_parameters = trait_fn
         .parameters
         .into_iter()
-        .map(|parameter| {
-            let typed_parameter =
-                analyze_function_parameter(namespace, declaration_engine, parameter);
-            namespace.insert_symbol(typed_parameter.name.clone(), (&typed_parameter).into());
-            typed_parameter
-        })
+        .map(|parameter| analyze_function_parameter(namespace, declaration_engine, parameter))
         .collect::<Vec<_>>();
     let return_type = eval_type(
         insert_type(trait_fn.return_type),
