@@ -2,10 +2,9 @@ use crate::{
     concurrent_slab::ConcurrentSlab,
     declaration_engine::declaration_engine::*,
     language::{
-        partial::partial_declaration::PartialDeclaration,
         resolved::resolved_declaration::ResolvedStructField, ty::typed_declaration::TyDeclaration,
     },
-    namespace::{collection_namespace::CollectionNamespace, namespace::Namespace},
+    namespace::namespace::Namespace,
     types::{copy_types::CopyTypes, create_type_id::CreateTypeId},
 };
 
@@ -201,44 +200,6 @@ impl TypeEngine {
         }
     }
 
-    // TODO: figure out a better way to do this
-    fn eval_type2(
-        &self,
-        id: TypeId,
-        namespace: &mut CollectionNamespace,
-    ) -> Result<TypeId, String> {
-        match self.slab.get(*id) {
-            TypeInfo::UnknownGeneric { name } => match namespace.get_symbol(&name)? {
-                PartialDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
-                    Ok(insert_type(TypeInfo::Ref(type_id)))
-                }
-                _ => Err("could not find generic declaration".to_string()),
-            },
-            TypeInfo::Ref(id) => Ok(id),
-            TypeInfo::Custom { name } => {
-                match namespace.get_symbol(&name)? {
-                    PartialDeclaration::Struct(decl_id) => {
-                        // get the original struct declaration
-                        let mut struct_decl = de_get_struct(decl_id).unwrap();
-
-                        // monomorphize the struct declaration into a new copy
-                        monomorphize(&mut struct_decl, &[]).unwrap();
-
-                        // add the new copy to the declaration engine
-                        de_add_monomorphized_struct_copy(decl_id, struct_decl.clone());
-
-                        Ok(struct_decl.create_type_id())
-                    }
-                    PartialDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
-                        Ok(insert_type(TypeInfo::Ref(type_id)))
-                    }
-                    got => Err(format!("err, found: {}", got)),
-                }
-            }
-            o => Ok(insert_type(o)),
-        }
-    }
-
     fn monomorphize<T>(&self, value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>
     where
         T: MonomorphizeHelper + CopyTypes,
@@ -293,13 +254,6 @@ pub(crate) fn resolve_type(type_id: TypeId) -> Result<ResolvedType, String> {
 
 pub(crate) fn eval_type(id: TypeId, namespace: &mut Namespace) -> Result<TypeId, String> {
     TYPE_ENGINE.eval_type(id, namespace)
-}
-
-pub(crate) fn eval_type2(
-    id: TypeId,
-    namespace: &mut CollectionNamespace,
-) -> Result<TypeId, String> {
-    TYPE_ENGINE.eval_type2(id, namespace)
 }
 
 pub(crate) fn monomorphize<T>(value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>

@@ -43,11 +43,11 @@ impl CopyTypes for TyDeclaration {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         match self {
             TyDeclaration::Variable(decl) => decl.copy_types(type_mapping),
-            TyDeclaration::Function(_)
-            | TyDeclaration::Trait(_)
-            | TyDeclaration::TraitImpl(_)
-            | TyDeclaration::Struct(_)
-            | TyDeclaration::GenericTypeForFunctionScope { .. } => {}
+            TyDeclaration::Function(decl_id) => decl_id.copy_types(type_mapping),
+            TyDeclaration::Trait(decl_id) => decl_id.copy_types(type_mapping),
+            TyDeclaration::TraitImpl(decl_id) => decl_id.copy_types(type_mapping),
+            TyDeclaration::Struct(decl_id) => decl_id.copy_types(type_mapping),
+            TyDeclaration::GenericTypeForFunctionScope { .. } => {}
         }
     }
 }
