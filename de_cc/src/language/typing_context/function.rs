@@ -3,7 +3,7 @@ use either::Either;
 use crate::{
     language::{
         partial::partial_declaration::PartialFunctionDeclaration,
-        typed::typed_declaration::TypedFunctionDeclaration,
+        typed::typed_declaration::TyFunctionDeclaration,
     },
     type_system::type_mapping::TypeMapping,
     types::copy_types::CopyTypes,
@@ -11,7 +11,7 @@ use crate::{
 
 #[derive(Clone)]
 pub(crate) struct TyFunctionContext {
-    pub(crate) inner: Either<PartialFunctionDeclaration, TypedFunctionDeclaration>,
+    pub(crate) inner: Either<PartialFunctionDeclaration, TyFunctionDeclaration>,
 }
 
 impl CopyTypes for TyFunctionContext {
@@ -43,13 +43,13 @@ impl TyFunctionContext {
         }
     }
 
-    pub(crate) fn typed(inner: TypedFunctionDeclaration) -> TyFunctionContext {
+    pub(crate) fn typed(inner: TyFunctionDeclaration) -> TyFunctionContext {
         TyFunctionContext {
             inner: Either::Right(inner),
         }
     }
 
-    pub(crate) fn expect_typed(self) -> Result<TypedFunctionDeclaration, String> {
+    pub(crate) fn expect_typed(self) -> Result<TyFunctionDeclaration, String> {
         match self.inner {
             Either::Left(_) => Err("did not expect to find partial function".to_string()),
             Either::Right(typed) => Ok(typed),

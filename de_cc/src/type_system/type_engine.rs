@@ -4,7 +4,7 @@ use crate::{
     language::{
         partial::partial_declaration::PartialDeclaration,
         resolved::resolved_declaration::ResolvedStructField,
-        typed::typed_declaration::TypedDeclaration,
+        typed::typed_declaration::TyDeclaration,
     },
     namespace::{collection_namespace::CollectionNamespace, namespace::Namespace},
     types::{copy_types::CopyTypes, create_type_id::CreateTypeId},
@@ -172,7 +172,7 @@ impl TypeEngine {
     fn eval_type(&self, id: TypeId, namespace: &mut Namespace) -> Result<TypeId, String> {
         match self.slab.get(*id) {
             TypeInfo::UnknownGeneric { name } => match namespace.get_symbol(&name)? {
-                TypedDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
+                TyDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
                     Ok(insert_type(TypeInfo::Ref(type_id)))
                 }
                 _ => Err("could not find generic declaration".to_string()),
@@ -180,7 +180,7 @@ impl TypeEngine {
             TypeInfo::Ref(id) => Ok(id),
             TypeInfo::Custom { name } => {
                 match namespace.get_symbol(&name)? {
-                    TypedDeclaration::Struct(decl_id) => {
+                    TyDeclaration::Struct(decl_id) => {
                         // get the original struct declaration
                         let mut struct_decl = de_get_struct(decl_id).unwrap();
 
@@ -192,7 +192,7 @@ impl TypeEngine {
 
                         Ok(struct_decl.create_type_id())
                     }
-                    TypedDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
+                    TyDeclaration::GenericTypeForFunctionScope { type_id, .. } => {
                         Ok(insert_type(TypeInfo::Ref(type_id)))
                     }
                     got => Err(format!("err, found: {}", got)),

@@ -4,9 +4,7 @@ use crate::declaration_engine::declaration_engine::*;
 use crate::type_system::type_engine::eval_type;
 use crate::{
     language::{
-        typed::typed_expression::{
-            TypedExpression, TypedExpressionVariant, TypedStructExpressionField,
-        },
+        typed::typed_expression::{TyExpression, TyExpressionVariant, TyStructExpressionField},
         untyped::expression::Expression,
     },
     namespace::namespace::Namespace,
@@ -17,28 +15,28 @@ use crate::{
     types::create_type_id::CreateTypeId,
 };
 
-pub(super) fn analyze_expression(namespace: &mut Namespace, expression: &TypedExpression) {
+pub(super) fn analyze_expression(namespace: &mut Namespace, expression: &TyExpression) {
     unimplemented!()
 }
 
-fn analyze_expression_variant(namespace: &mut Namespace, expression: &TypedExpressionVariant) {
+fn analyze_expression_variant(namespace: &mut Namespace, expression: &TyExpressionVariant) {
     match expression {
-        TypedExpressionVariant::Literal { value } => {
+        TyExpressionVariant::Literal { value } => {
             let type_id = insert_type(value.to_type());
-            let variant = TypedExpressionVariant::Literal { value };
-            TypedExpression { variant, type_id }
+            let variant = TyExpressionVariant::Literal { value };
+            TyExpression { variant, type_id }
         }
-        TypedExpressionVariant::Variable { name } => {
+        TyExpressionVariant::Variable { name } => {
             let variable_decl = namespace
                 .get_symbol(&name)
                 .unwrap()
                 .expect_variable()
                 .unwrap();
             let type_id = variable_decl.type_ascription;
-            let variant = TypedExpressionVariant::Variable { name };
-            TypedExpression { variant, type_id }
+            let variant = TyExpressionVariant::Variable { name };
+            TyExpression { variant, type_id }
         }
-        TypedExpressionVariant::FunctionApplication {
+        TyExpressionVariant::FunctionApplication {
             name,
             mut type_arguments,
             arguments,
@@ -87,13 +85,13 @@ fn analyze_expression_variant(namespace: &mut Namespace, expression: &TypedExpre
             // the type id is the functions return type id
             let type_id = insert_type(TypeInfo::Ref(typed_function_declaration.return_type));
 
-            let variant = TypedExpressionVariant::FunctionApplication {
+            let variant = TyExpressionVariant::FunctionApplication {
                 name,
                 arguments: new_arguments,
             };
-            TypedExpression { variant, type_id }
+            TyExpression { variant, type_id }
         }
-        TypedExpressionVariant::Struct {
+        TyExpressionVariant::Struct {
             struct_name,
             mut type_arguments,
             fields,
@@ -146,23 +144,23 @@ fn analyze_expression_variant(namespace: &mut Namespace, expression: &TypedExpre
                     let typed_value = analyze_expression(namespace, value);
                     let oracle_field = oracle_fields_map.get(&name).unwrap();
                     unify_types(typed_value.type_id, *oracle_field).unwrap();
-                    TypedStructExpressionField {
+                    TyStructExpressionField {
                         name,
                         value: typed_value,
                     }
                 })
                 .collect::<Vec<_>>();
 
-            let variant = TypedExpressionVariant::Struct {
+            let variant = TyExpressionVariant::Struct {
                 struct_name,
                 fields: typed_fields,
             };
-            TypedExpression {
+            TyExpression {
                 variant,
                 type_id: typed_struct_declaration.create_type_id(),
             }
         }
-        TypedExpressionVariant::MethodCall {
+        TyExpressionVariant::MethodCall {
             parent_name,
             func_name,
             type_arguments,
@@ -198,12 +196,12 @@ fn analyze_expression_variant(namespace: &mut Namespace, expression: &TypedExpre
             // the type id is the functions return type id
             let type_id = insert_type(TypeInfo::Ref(typed_function_declaration.return_type));
 
-            let variant = TypedExpressionVariant::MethodCall {
+            let variant = TyExpressionVariant::MethodCall {
                 parent_name,
                 func_name,
                 arguments: new_arguments,
             };
-            TypedExpression { variant, type_id }
+            TyExpression { variant, type_id }
         }
     }
 }

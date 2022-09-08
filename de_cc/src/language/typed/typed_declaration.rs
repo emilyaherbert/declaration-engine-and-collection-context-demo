@@ -2,7 +2,7 @@ use indent_write::fmt::IndentWriter;
 use std::fmt;
 use std::fmt::Write;
 
-use super::{typed_expression::*, TypedNode};
+use super::{typed_expression::*, TyNode};
 
 use crate::{
     declaration_engine::declaration_id::DeclarationId,
@@ -17,8 +17,8 @@ use crate::{
 };
 
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) enum TypedDeclaration {
-    Variable(TypedVariableDeclaration),
+pub(crate) enum TyDeclaration {
+    Variable(TyVariableDeclaration),
     Function(DeclarationId),
     Trait(DeclarationId),
     TraitImpl(DeclarationId),
@@ -26,48 +26,48 @@ pub(crate) enum TypedDeclaration {
     Struct(DeclarationId),
 }
 
-impl fmt::Display for TypedDeclaration {
+impl fmt::Display for TyDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TypedDeclaration::Variable(decl) => write!(f, "{}", decl),
-            TypedDeclaration::Function(decl) => write!(f, "\n{}", decl),
-            TypedDeclaration::Trait(decl) => write!(f, "\n{}", decl),
-            TypedDeclaration::TraitImpl(decl) => write!(f, "\n{}", decl),
-            TypedDeclaration::Struct(decl) => write!(f, "\n{}", decl),
-            TypedDeclaration::GenericTypeForFunctionScope { type_id } => write!(f, "{}", type_id),
+            TyDeclaration::Variable(decl) => write!(f, "{}", decl),
+            TyDeclaration::Function(decl) => write!(f, "\n{}", decl),
+            TyDeclaration::Trait(decl) => write!(f, "\n{}", decl),
+            TyDeclaration::TraitImpl(decl) => write!(f, "\n{}", decl),
+            TyDeclaration::Struct(decl) => write!(f, "\n{}", decl),
+            TyDeclaration::GenericTypeForFunctionScope { type_id } => write!(f, "{}", type_id),
         }
     }
 }
 
-impl CopyTypes for TypedDeclaration {
+impl CopyTypes for TyDeclaration {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         match self {
-            TypedDeclaration::Variable(decl) => decl.copy_types(type_mapping),
-            TypedDeclaration::Function(_)
-            | TypedDeclaration::Trait(_)
-            | TypedDeclaration::TraitImpl(_)
-            | TypedDeclaration::Struct(_)
-            | TypedDeclaration::GenericTypeForFunctionScope { .. } => {}
+            TyDeclaration::Variable(decl) => decl.copy_types(type_mapping),
+            TyDeclaration::Function(_)
+            | TyDeclaration::Trait(_)
+            | TyDeclaration::TraitImpl(_)
+            | TyDeclaration::Struct(_)
+            | TyDeclaration::GenericTypeForFunctionScope { .. } => {}
         }
     }
 }
 
-impl From<&TypedFunctionParameter> for TypedDeclaration {
-    fn from(param: &TypedFunctionParameter) -> Self {
-        TypedDeclaration::Variable(TypedVariableDeclaration {
+impl From<&TyFunctionParameter> for TyDeclaration {
+    fn from(param: &TyFunctionParameter) -> Self {
+        TyDeclaration::Variable(TyVariableDeclaration {
             name: param.name.clone(),
             type_ascription: param.type_id,
-            body: TypedExpression {
-                variant: TypedExpressionVariant::FunctionParameter,
+            body: TyExpression {
+                variant: TyExpressionVariant::FunctionParameter,
                 type_id: param.type_id,
             },
         })
     }
 }
 
-impl TypedDeclaration {
-    pub(crate) fn expect_variable(self) -> Result<TypedVariableDeclaration, String> {
-        if let TypedDeclaration::Variable(variable_declaration) = self {
+impl TyDeclaration {
+    pub(crate) fn expect_variable(self) -> Result<TyVariableDeclaration, String> {
+        if let TyDeclaration::Variable(variable_declaration) = self {
             Ok(variable_declaration)
         } else {
             Err("not a variable declaration".to_string())
@@ -75,7 +75,7 @@ impl TypedDeclaration {
     }
 
     pub(crate) fn expect_function(self) -> Result<DeclarationId, String> {
-        if let TypedDeclaration::Function(decl_id) = self {
+        if let TyDeclaration::Function(decl_id) = self {
             Ok(decl_id)
         } else {
             Err("not a function declaration".to_string())
@@ -83,7 +83,7 @@ impl TypedDeclaration {
     }
 
     pub(crate) fn expect_trait(self) -> Result<DeclarationId, String> {
-        if let TypedDeclaration::Trait(decl_id) = self {
+        if let TyDeclaration::Trait(decl_id) = self {
             Ok(decl_id)
         } else {
             Err("not a trait declaration".to_string())
@@ -91,7 +91,7 @@ impl TypedDeclaration {
     }
 
     pub(crate) fn expect_struct(self) -> Result<DeclarationId, String> {
-        if let TypedDeclaration::Struct(decl_id) = self {
+        if let TyDeclaration::Struct(decl_id) = self {
             Ok(decl_id)
         } else {
             Err("not a struct declaration".to_string())
@@ -100,13 +100,13 @@ impl TypedDeclaration {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct TypedVariableDeclaration {
+pub(crate) struct TyVariableDeclaration {
     pub(crate) name: String,
     pub(crate) type_ascription: TypeId,
-    pub(crate) body: TypedExpression,
+    pub(crate) body: TyExpression,
 }
 
-impl fmt::Display for TypedVariableDeclaration {
+impl fmt::Display for TyVariableDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -116,7 +116,7 @@ impl fmt::Display for TypedVariableDeclaration {
     }
 }
 
-impl CopyTypes for TypedVariableDeclaration {
+impl CopyTypes for TyVariableDeclaration {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.type_ascription.copy_types(type_mapping);
         self.body.copy_types(type_mapping);
@@ -124,15 +124,15 @@ impl CopyTypes for TypedVariableDeclaration {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct TypedFunctionDeclaration {
+pub(crate) struct TyFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
-    pub(crate) parameters: Vec<TypedFunctionParameter>,
-    pub(crate) body: Vec<TypedNode>,
+    pub(crate) parameters: Vec<TyFunctionParameter>,
+    pub(crate) body: Vec<TyNode>,
     pub(crate) return_type: TypeId,
 }
 
-impl CopyTypes for TypedFunctionDeclaration {
+impl CopyTypes for TyFunctionDeclaration {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.type_parameters
             .iter_mut()
@@ -147,7 +147,7 @@ impl CopyTypes for TypedFunctionDeclaration {
     }
 }
 
-impl fmt::Display for TypedFunctionDeclaration {
+impl fmt::Display for TyFunctionDeclaration {
     fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
@@ -200,7 +200,7 @@ impl fmt::Display for TypedFunctionDeclaration {
     }
 }
 
-impl MonomorphizeHelper for TypedFunctionDeclaration {
+impl MonomorphizeHelper for TyFunctionDeclaration {
     fn name(&self) -> &str {
         &self.name
     }
@@ -211,30 +211,30 @@ impl MonomorphizeHelper for TypedFunctionDeclaration {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub(crate) struct TypedFunctionParameter {
+pub(crate) struct TyFunctionParameter {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
 }
 
-impl CopyTypes for TypedFunctionParameter {
+impl CopyTypes for TyFunctionParameter {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.type_id.copy_types(type_mapping);
     }
 }
 
-impl fmt::Display for TypedFunctionParameter {
+impl fmt::Display for TyFunctionParameter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.name, self.type_id)
     }
 }
 
 #[derive(Clone, PartialEq)]
-pub(crate) struct TypedTraitDeclaration {
+pub(crate) struct TyTraitDeclaration {
     pub(crate) name: String,
     pub(crate) interface_surface: Vec<DeclarationId>,
 }
 
-impl CopyTypes for TypedTraitDeclaration {
+impl CopyTypes for TyTraitDeclaration {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.interface_surface
             .iter_mut()
@@ -243,19 +243,19 @@ impl CopyTypes for TypedTraitDeclaration {
 }
 
 #[derive(Clone, PartialEq)]
-pub(crate) struct TypedTraitFn {
+pub(crate) struct TyTraitFn {
     pub(crate) name: String,
-    pub(crate) parameters: Vec<TypedFunctionParameter>,
+    pub(crate) parameters: Vec<TyFunctionParameter>,
     pub(crate) return_type: TypeId,
 }
 
-impl CopyTypes for TypedTraitFn {
+impl CopyTypes for TyTraitFn {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.return_type.copy_types(type_mapping);
     }
 }
 
-impl fmt::Display for TypedTraitFn {
+impl fmt::Display for TyTraitFn {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
@@ -272,14 +272,14 @@ impl fmt::Display for TypedTraitFn {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(crate) struct TypedTraitImpl {
+pub(crate) struct TyTraitImpl {
     pub(crate) trait_name: String,
     pub(crate) type_implementing_for: TypeId,
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) methods: Vec<DeclarationId>,
 }
 
-impl CopyTypes for TypedTraitImpl {
+impl CopyTypes for TyTraitImpl {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.methods
             .iter_mut()
@@ -288,13 +288,13 @@ impl CopyTypes for TypedTraitImpl {
 }
 
 #[derive(Clone, PartialEq)]
-pub(crate) struct TypedStructDeclaration {
+pub(crate) struct TyStructDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
-    pub(crate) fields: Vec<TypedStructField>,
+    pub(crate) fields: Vec<TyStructField>,
 }
 
-impl CreateTypeId for TypedStructDeclaration {
+impl CreateTypeId for TyStructDeclaration {
     fn create_type_id(&self) -> TypeId {
         insert_type(TypeInfo::Struct {
             name: self.name.clone(),
@@ -304,7 +304,7 @@ impl CreateTypeId for TypedStructDeclaration {
     }
 }
 
-impl CopyTypes for TypedStructDeclaration {
+impl CopyTypes for TyStructDeclaration {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.type_parameters
             .iter_mut()
@@ -315,7 +315,7 @@ impl CopyTypes for TypedStructDeclaration {
     }
 }
 
-impl MonomorphizeHelper for TypedStructDeclaration {
+impl MonomorphizeHelper for TyStructDeclaration {
     fn name(&self) -> &str {
         &self.name
     }
@@ -325,7 +325,7 @@ impl MonomorphizeHelper for TypedStructDeclaration {
     }
 }
 
-impl fmt::Display for TypedStructDeclaration {
+impl fmt::Display for TyStructDeclaration {
     fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
             f,
@@ -356,18 +356,18 @@ impl fmt::Display for TypedStructDeclaration {
 }
 
 #[derive(Clone, Hash, PartialEq, Eq, Debug)]
-pub struct TypedStructField {
+pub struct TyStructField {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
 }
 
-impl CopyTypes for TypedStructField {
+impl CopyTypes for TyStructField {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.type_id.copy_types(type_mapping);
     }
 }
 
-impl fmt::Display for TypedStructField {
+impl fmt::Display for TyStructField {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}({})", self.name, self.type_id)
     }

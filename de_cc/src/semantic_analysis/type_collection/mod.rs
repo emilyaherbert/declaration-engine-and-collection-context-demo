@@ -6,7 +6,7 @@ use expression::*;
 
 use crate::{
     language::{
-        typed::{TypedApplication, TypedFile, TypedNode},
+        typed::{TyApplication, TyFile, TyNode},
         untyped::{Application, File, Node},
     },
     namespace::namespace::Namespace,
@@ -25,41 +25,36 @@ use crate::{
 /// 2. no type inference
 /// 3. no unification of types
 ///
-pub(crate) fn type_collect(
-    namespace: &mut Namespace,
-    application: Application,
-) -> TypedApplication {
+pub(crate) fn type_collect(namespace: &mut Namespace, application: Application) -> TyApplication {
     let files = application
         .files
         .into_iter()
         .map(|file| type_collect_file(namespace, file))
         .collect();
-    TypedApplication { files }
+    TyApplication { files }
 }
 
-fn type_collect_file(namespace: &mut Namespace, file: File) -> TypedFile {
+fn type_collect_file(namespace: &mut Namespace, file: File) -> TyFile {
     let nodes = file
         .nodes
         .into_iter()
         .map(|node| type_collect_node(namespace, node))
         .collect::<Vec<_>>();
-    TypedFile {
+    TyFile {
         name: file.name,
         nodes,
     }
 }
 
-fn type_collect_node(namespace: &mut Namespace, node: Node) -> TypedNode {
+fn type_collect_node(namespace: &mut Namespace, node: Node) -> TyNode {
     match node {
         Node::StarImport(_) => todo!(),
-        Node::Declaration(decl) => {
-            TypedNode::Declaration(type_collect_declaration(namespace, decl))
-        }
+        Node::Declaration(decl) => TyNode::Declaration(type_collect_declaration(namespace, decl)),
         Node::Expression(expression) => {
-            TypedNode::Expression(type_collect_expression(namespace, expression))
+            TyNode::Expression(type_collect_expression(namespace, expression))
         }
         Node::ReturnStatement(expression) => {
-            TypedNode::Expression(type_collect_expression(namespace, expression))
+            TyNode::Expression(type_collect_expression(namespace, expression))
         }
     }
 }

@@ -7,8 +7,8 @@ use crate::{
             ResolvedTraitFn, ResolvedTraitImpl, ResolvedVariableDeclaration,
         },
         typed::typed_declaration::{
-            TypedDeclaration, TypedFunctionDeclaration, TypedFunctionParameter,
-            TypedStructDeclaration, TypedStructField, TypedVariableDeclaration,
+            TyDeclaration, TyFunctionDeclaration, TyFunctionParameter, TyStructDeclaration,
+            TyStructField, TyVariableDeclaration,
         },
     },
     type_system::{
@@ -19,29 +19,29 @@ use crate::{
 
 use super::{expression::resolve_expression, resolve_nodes};
 
-pub(super) fn resolve_declaration(declaration: TypedDeclaration) -> Vec<ResolvedDeclaration> {
+pub(super) fn resolve_declaration(declaration: TyDeclaration) -> Vec<ResolvedDeclaration> {
     match declaration {
-        TypedDeclaration::Variable(variable_declaration) => {
+        TyDeclaration::Variable(variable_declaration) => {
             let variable_declaration = resolve_variable_declaration(variable_declaration);
             vec![ResolvedDeclaration::Variable(variable_declaration)]
         }
-        TypedDeclaration::Function(id) => {
+        TyDeclaration::Function(id) => {
             let function_declarations = resolve_function_declaration(id);
             function_declarations
                 .into_iter()
                 .map(ResolvedDeclaration::Function)
                 .collect()
         }
-        TypedDeclaration::GenericTypeForFunctionScope { .. } => panic!("should not see this here"),
-        TypedDeclaration::Trait(id) => {
+        TyDeclaration::GenericTypeForFunctionScope { .. } => panic!("should not see this here"),
+        TyDeclaration::Trait(id) => {
             let trait_declaration = resolve_trait_declaration(id);
             vec![ResolvedDeclaration::Trait(trait_declaration)]
         }
-        TypedDeclaration::TraitImpl(id) => {
+        TyDeclaration::TraitImpl(id) => {
             let trait_impl = resolve_trait_impl(id);
             vec![ResolvedDeclaration::TraitImpl(trait_impl)]
         }
-        TypedDeclaration::Struct(id) => {
+        TyDeclaration::Struct(id) => {
             let struct_declarations = resolve_struct_declaration(id);
             struct_declarations
                 .into_iter()
@@ -52,7 +52,7 @@ pub(super) fn resolve_declaration(declaration: TypedDeclaration) -> Vec<Resolved
 }
 
 fn resolve_variable_declaration(
-    variable_declaration: TypedVariableDeclaration,
+    variable_declaration: TyVariableDeclaration,
 ) -> ResolvedVariableDeclaration {
     let type_ascription = resolve_type(variable_declaration.type_ascription).unwrap();
     let body = resolve_expression(variable_declaration.body);
@@ -74,7 +74,7 @@ fn resolve_function_declaration(function_id: DeclarationId) -> Vec<ResolvedFunct
 }
 
 fn resolve_function_declaration_inner(
-    function_declarations: Vec<TypedFunctionDeclaration>,
+    function_declarations: Vec<TyFunctionDeclaration>,
 ) -> Vec<ResolvedFunctionDeclaration> {
     function_declarations
         .into_iter()
@@ -109,7 +109,7 @@ fn resolve_type_parameter(type_parameter: TypeParameter) -> ResolvedTypeParamete
 }
 
 fn resolve_function_parameter(
-    function_parameter: TypedFunctionParameter,
+    function_parameter: TyFunctionParameter,
 ) -> ResolvedFunctionParameter {
     ResolvedFunctionParameter {
         name: function_parameter.name,
@@ -171,7 +171,7 @@ fn resolve_struct_declaration(struct_id: DeclarationId) -> Vec<ResolvedStructDec
 }
 
 fn resolve_struct_declaration_inner(
-    struct_declarations: Vec<TypedStructDeclaration>,
+    struct_declarations: Vec<TyStructDeclaration>,
 ) -> Vec<ResolvedStructDeclaration> {
     struct_declarations
         .into_iter()
@@ -195,7 +195,7 @@ fn resolve_struct_declaration_inner(
         .collect()
 }
 
-fn resolve_struct_field(field: TypedStructField) -> ResolvedStructField {
+fn resolve_struct_field(field: TyStructField) -> ResolvedStructField {
     ResolvedStructField {
         name: field.name,
         type_info: resolve_type(field.type_id).unwrap(),

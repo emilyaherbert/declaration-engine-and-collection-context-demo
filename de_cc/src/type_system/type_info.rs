@@ -2,7 +2,7 @@ use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
 
-use crate::language::typed::typed_declaration::TypedStructField;
+use crate::language::typed::typed_declaration::TyStructField;
 
 use super::type_engine::insert_type;
 use super::type_engine::look_up_type_id;
@@ -26,7 +26,7 @@ pub enum TypeInfo {
     Struct {
         name: String,
         type_parameters: Vec<TypeParameter>,
-        fields: Vec<TypedStructField>,
+        fields: Vec<TyStructField>,
     },
 }
 

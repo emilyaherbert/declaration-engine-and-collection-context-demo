@@ -7,7 +7,7 @@ use crate::{
         declaration_engine::*, declaration_id::DeclarationId,
         declaration_wrapper::DeclarationWrapper,
     },
-    language::typed::typed_declaration::TypedDeclaration,
+    language::typed::typed_declaration::TyDeclaration,
     type_system::{type_engine::look_up_type_id, type_id::TypeId},
 };
 use linked_hash_map::LinkedHashMap;
@@ -16,7 +16,7 @@ use super::function_signature::TypedFunctionSignature;
 
 #[derive(Default)]
 pub(crate) struct Namespace {
-    symbols: LinkedHashMap<String, TypedDeclaration>,
+    symbols: LinkedHashMap<String, TyDeclaration>,
     // this should be (type info, trait name) -> declaration id
     methods: Vec<(TypeId, Vec<DeclarationId>)>,
 }
@@ -54,11 +54,11 @@ impl Namespace {
         println!("\n\n~~~~~~~~~~\n\nNamespace:\n{}\n\n~~~~~~~~~~", self);
     }
 
-    pub(crate) fn insert_symbol(&mut self, name: String, symbol: TypedDeclaration) {
+    pub(crate) fn insert_symbol(&mut self, name: String, symbol: TyDeclaration) {
         self.symbols.insert(name, symbol);
     }
 
-    pub(crate) fn get_symbol(&self, name: &str) -> Result<TypedDeclaration, String> {
+    pub(crate) fn get_symbol(&self, name: &str) -> Result<TyDeclaration, String> {
         self.symbols
             .get(name)
             .cloned()

@@ -3,14 +3,12 @@ use crate::{
         resolved::resolved_expression::{
             ResolvedExpression, ResolvedExpressionVariant, ResolvedStructExpressionField,
         },
-        typed::typed_expression::{
-            TypedExpression, TypedExpressionVariant, TypedStructExpressionField,
-        },
+        typed::typed_expression::{TyExpression, TyExpressionVariant, TyStructExpressionField},
     },
     type_system::type_engine::resolve_type,
 };
 
-pub(super) fn resolve_expression(expression: TypedExpression) -> ResolvedExpression {
+pub(super) fn resolve_expression(expression: TyExpression) -> ResolvedExpression {
     let variant = resolve_expression_variant(expression.variant);
     ResolvedExpression {
         variant,
@@ -18,11 +16,11 @@ pub(super) fn resolve_expression(expression: TypedExpression) -> ResolvedExpress
     }
 }
 
-fn resolve_expression_variant(variant: TypedExpressionVariant) -> ResolvedExpressionVariant {
+fn resolve_expression_variant(variant: TyExpressionVariant) -> ResolvedExpressionVariant {
     match variant {
-        TypedExpressionVariant::Literal { value } => ResolvedExpressionVariant::Literal { value },
-        TypedExpressionVariant::Variable { name } => ResolvedExpressionVariant::Variable { name },
-        TypedExpressionVariant::FunctionApplication { name, arguments } => {
+        TyExpressionVariant::Literal { value } => ResolvedExpressionVariant::Literal { value },
+        TyExpressionVariant::Variable { name } => ResolvedExpressionVariant::Variable { name },
+        TyExpressionVariant::FunctionApplication { name, arguments } => {
             let resolved_arguments = arguments
                 .into_iter()
                 .map(resolve_expression)
@@ -32,7 +30,7 @@ fn resolve_expression_variant(variant: TypedExpressionVariant) -> ResolvedExpres
                 arguments: resolved_arguments,
             }
         }
-        TypedExpressionVariant::Struct {
+        TyExpressionVariant::Struct {
             struct_name,
             fields,
         } => {
@@ -45,7 +43,7 @@ fn resolve_expression_variant(variant: TypedExpressionVariant) -> ResolvedExpres
                 fields: resolved_fields,
             }
         }
-        TypedExpressionVariant::MethodCall {
+        TyExpressionVariant::MethodCall {
             parent_name,
             func_name,
             arguments,
@@ -60,14 +58,14 @@ fn resolve_expression_variant(variant: TypedExpressionVariant) -> ResolvedExpres
                 arguments: resolved_arguments,
             }
         }
-        TypedExpressionVariant::FunctionParameter => {
+        TyExpressionVariant::FunctionParameter => {
             panic!("did not expect to find function param here")
         }
     }
 }
 
 fn resolve_struct_expression_field(
-    struct_expression_field: TypedStructExpressionField,
+    struct_expression_field: TyStructExpressionField,
 ) -> ResolvedStructExpressionField {
     let new_value = resolve_expression(struct_expression_field.value);
     ResolvedStructExpressionField {

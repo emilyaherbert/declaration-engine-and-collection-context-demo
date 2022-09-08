@@ -1,8 +1,6 @@
 use crate::{
     language::{
-        typed::typed_expression::{
-            TypedExpression, TypedExpressionVariant, TypedStructExpressionField,
-        },
+        typed::typed_expression::{TyExpression, TyExpressionVariant, TyStructExpressionField},
         untyped::expression::Expression,
     },
     namespace::namespace::Namespace,
@@ -12,17 +10,17 @@ use crate::{
 pub(super) fn type_collect_expression(
     namespace: &mut Namespace,
     expression: Expression,
-) -> TypedExpression {
+) -> TyExpression {
     match expression {
         Expression::Literal { value } => {
             let type_id = insert_type(value.to_type());
-            let variant = TypedExpressionVariant::Literal { value };
-            TypedExpression { variant, type_id }
+            let variant = TyExpressionVariant::Literal { value };
+            TyExpression { variant, type_id }
         }
         Expression::Variable { name } => {
             let type_id = insert_type(TypeInfo::Unknown);
-            let variant = TypedExpressionVariant::Variable { name };
-            TypedExpression { variant, type_id }
+            let variant = TyExpressionVariant::Variable { name };
+            TyExpression { variant, type_id }
         }
         Expression::FunctionApplication {
             name,
@@ -37,11 +35,11 @@ pub(super) fn type_collect_expression(
                 .map(|argument| type_collect_expression(namespace, argument))
                 .collect::<Vec<_>>();
             let type_id = insert_type(TypeInfo::Unknown);
-            let variant = TypedExpressionVariant::FunctionApplication {
+            let variant = TyExpressionVariant::FunctionApplication {
                 name,
                 arguments: new_arguments,
             };
-            TypedExpression { variant, type_id }
+            TyExpression { variant, type_id }
         }
         Expression::MethodCall {
             parent_name,
@@ -57,12 +55,12 @@ pub(super) fn type_collect_expression(
                 .map(|argument| type_collect_expression(namespace, argument))
                 .collect::<Vec<_>>();
             let type_id = insert_type(TypeInfo::Unknown);
-            let variant = TypedExpressionVariant::MethodCall {
+            let variant = TyExpressionVariant::MethodCall {
                 parent_name,
                 func_name,
                 arguments: new_arguments,
             };
-            TypedExpression { variant, type_id }
+            TyExpression { variant, type_id }
         }
         Expression::Struct {
             struct_name,
@@ -74,16 +72,16 @@ pub(super) fn type_collect_expression(
             }
             let typed_fields = fields
                 .into_iter()
-                .map(|field| TypedStructExpressionField {
+                .map(|field| TyStructExpressionField {
                     name: field.name,
                     value: type_collect_expression(namespace, field.value),
                 })
                 .collect::<Vec<_>>();
-            let variant = TypedExpressionVariant::Struct {
+            let variant = TyExpressionVariant::Struct {
                 struct_name,
                 fields: typed_fields,
             };
-            TypedExpression {
+            TyExpression {
                 variant,
                 type_id: insert_type(TypeInfo::Unknown),
             }

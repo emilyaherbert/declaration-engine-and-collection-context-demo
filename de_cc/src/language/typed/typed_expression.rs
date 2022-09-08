@@ -9,18 +9,18 @@ use crate::{
 };
 
 #[derive(Clone, PartialEq, Debug)]
-pub(crate) struct TypedExpression {
-    pub(crate) variant: TypedExpressionVariant,
+pub(crate) struct TyExpression {
+    pub(crate) variant: TyExpressionVariant,
     pub(crate) type_id: TypeId,
 }
 
-impl fmt::Display for TypedExpression {
+impl fmt::Display for TyExpression {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.variant)
     }
 }
 
-impl CopyTypes for TypedExpression {
+impl CopyTypes for TyExpression {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.variant.copy_types(type_mapping);
         self.type_id.copy_types(type_mapping);
@@ -28,7 +28,7 @@ impl CopyTypes for TypedExpression {
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub(crate) enum TypedExpressionVariant {
+pub(crate) enum TyExpressionVariant {
     Literal {
         value: Literal,
     },
@@ -37,28 +37,28 @@ pub(crate) enum TypedExpressionVariant {
     },
     FunctionApplication {
         name: String,
-        arguments: Vec<TypedExpression>,
+        arguments: Vec<TyExpression>,
     },
     // a no-op variant used to indicate that a variable is in scope
     // as a result of a function parameter
     FunctionParameter,
     Struct {
         struct_name: String,
-        fields: Vec<TypedStructExpressionField>,
+        fields: Vec<TyStructExpressionField>,
     },
     MethodCall {
         parent_name: String,
         func_name: String,
-        arguments: Vec<TypedExpression>,
+        arguments: Vec<TyExpression>,
     },
 }
 
-impl fmt::Display for TypedExpressionVariant {
+impl fmt::Display for TyExpressionVariant {
     fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TypedExpressionVariant::Literal { value } => write!(f, "{}", value),
-            TypedExpressionVariant::Variable { name } => write!(f, "{}", name),
-            TypedExpressionVariant::FunctionApplication { name, arguments } => {
+            TyExpressionVariant::Literal { value } => write!(f, "{}", value),
+            TyExpressionVariant::Variable { name } => write!(f, "{}", name),
+            TyExpressionVariant::FunctionApplication { name, arguments } => {
                 write!(
                     f,
                     "{}({})",
@@ -70,7 +70,7 @@ impl fmt::Display for TypedExpressionVariant {
                         .join(", ")
                 )
             }
-            TypedExpressionVariant::MethodCall {
+            TyExpressionVariant::MethodCall {
                 parent_name: parent,
                 func_name: name,
                 arguments,
@@ -87,7 +87,7 @@ impl fmt::Display for TypedExpressionVariant {
                         .join(", ")
                 )
             }
-            TypedExpressionVariant::Struct {
+            TyExpressionVariant::Struct {
                 struct_name,
                 fields,
             } => {
@@ -100,47 +100,47 @@ impl fmt::Display for TypedExpressionVariant {
                 }
                 write!(f, "}}")
             }
-            TypedExpressionVariant::FunctionParameter => write!(f, "function param"),
+            TyExpressionVariant::FunctionParameter => write!(f, "function param"),
         }
     }
 }
 
-impl CopyTypes for TypedExpressionVariant {
+impl CopyTypes for TyExpressionVariant {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         match self {
-            TypedExpressionVariant::FunctionApplication { arguments, .. } => {
+            TyExpressionVariant::FunctionApplication { arguments, .. } => {
                 arguments
                     .iter_mut()
                     .for_each(|argument| argument.copy_types(type_mapping));
             }
-            TypedExpressionVariant::Struct { fields, .. } => fields
+            TyExpressionVariant::Struct { fields, .. } => fields
                 .iter_mut()
                 .for_each(|field| field.copy_types(type_mapping)),
-            TypedExpressionVariant::MethodCall { arguments, .. } => {
+            TyExpressionVariant::MethodCall { arguments, .. } => {
                 arguments
                     .iter_mut()
                     .for_each(|argument| argument.copy_types(type_mapping));
             }
-            TypedExpressionVariant::Literal { .. }
-            | TypedExpressionVariant::Variable { .. }
-            | TypedExpressionVariant::FunctionParameter => {}
+            TyExpressionVariant::Literal { .. }
+            | TyExpressionVariant::Variable { .. }
+            | TyExpressionVariant::FunctionParameter => {}
         }
     }
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub(crate) struct TypedStructExpressionField {
+pub(crate) struct TyStructExpressionField {
     pub(crate) name: String,
-    pub(crate) value: TypedExpression,
+    pub(crate) value: TyExpression,
 }
 
-impl fmt::Display for TypedStructExpressionField {
+impl fmt::Display for TyStructExpressionField {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.name, self.value)
     }
 }
 
-impl CopyTypes for TypedStructExpressionField {
+impl CopyTypes for TyStructExpressionField {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.value.copy_types(type_mapping)
     }

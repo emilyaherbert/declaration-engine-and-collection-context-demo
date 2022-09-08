@@ -3,7 +3,7 @@ use std::fmt;
 use crate::{
     declaration_engine::declaration_id::DeclarationId,
     language::{
-        typed::typed_declaration::TypedFunctionParameter, untyped::declaration::VariableDeclaration,
+        typed::typed_declaration::TyFunctionParameter, untyped::declaration::VariableDeclaration,
     },
     type_system::{type_id::TypeId, type_mapping::TypeMapping, type_parameter::TypeParameter},
     types::copy_types::CopyTypes,
@@ -40,7 +40,7 @@ impl fmt::Display for PartialDeclaration {
 pub(crate) struct PartialFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
-    pub(crate) parameters: Vec<TypedFunctionParameter>,
+    pub(crate) parameters: Vec<TyFunctionParameter>,
     pub(crate) body: Vec<PartialNode>,
     pub(crate) return_type: TypeId,
 }

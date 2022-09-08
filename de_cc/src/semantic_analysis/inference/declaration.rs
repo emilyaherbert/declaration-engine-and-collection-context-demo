@@ -3,10 +3,9 @@ use crate::{
     language::{
         typed::{
             typed_declaration::{
-                TypedDeclaration, TypedFunctionDeclaration, TypedTraitImpl,
-                TypedVariableDeclaration,
+                TyDeclaration, TyFunctionDeclaration, TyTraitImpl, TyVariableDeclaration,
             },
-            TypedNode,
+            TyNode,
         },
         typing_context::function::TyFunctionContext,
     },
@@ -20,15 +19,15 @@ use crate::{
 
 use super::{analyze_expression, analyze_node};
 
-pub(super) fn analyze_declaration(namespace: &mut Namespace, declaration: &TypedDeclaration) {
+pub(super) fn analyze_declaration(namespace: &mut Namespace, declaration: &TyDeclaration) {
     match declaration {
-        TypedDeclaration::Variable(variable_declaration) => {
+        TyDeclaration::Variable(variable_declaration) => {
             analyze_variable(namespace, variable_declaration);
             let name = variable_declaration.name.clone();
-            let decl = TypedDeclaration::Variable(variable_declaration.clone());
+            let decl = TyDeclaration::Variable(variable_declaration.clone());
             namespace.insert_symbol(name, decl);
         }
-        TypedDeclaration::Function(decl_id) => {
+        TyDeclaration::Function(decl_id) => {
             let function_declaration = de_get_function_partial(decl_id).unwrap();
             let typed_function_declaration =
                 analyze_function(&mut namespace.scoped(), function_declaration.clone());
@@ -38,18 +37,18 @@ pub(super) fn analyze_declaration(namespace: &mut Namespace, declaration: &Typed
                 &DeclarationWrapper::Function(TyFunctionContext::partial(function_declaration)),
                 DeclarationWrapper::Function(TyFunctionContext::typed(typed_function_declaration)),
             );
-            let decl = TypedDeclaration::Function(decl_id);
+            let decl = TyDeclaration::Function(decl_id);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        TypedDeclaration::Trait(decl_id) => {
+        TyDeclaration::Trait(decl_id) => {
             let typed_trait_declaration = de_get_trait(decl_id).unwrap();
             let name = typed_trait_declaration.name;
-            let decl = TypedDeclaration::Trait(decl_id);
+            let decl = TyDeclaration::Trait(decl_id);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        TypedDeclaration::TraitImpl(decl_id) => {
+        TyDeclaration::TraitImpl(decl_id) => {
             let trait_impl = de_get_trait_impl(decl_id).unwrap();
             let typed_trait_impl = analyze_trait_impl(&mut namespace.scoped(), trait_impl.clone());
             namespace.insert_methods(
@@ -62,22 +61,22 @@ pub(super) fn analyze_declaration(namespace: &mut Namespace, declaration: &Typed
                 &DeclarationWrapper::TraitImpl(trait_impl),
                 DeclarationWrapper::TraitImpl(typed_trait_impl),
             );
-            TypedDeclaration::TraitImpl(decl_id)
+            TyDeclaration::TraitImpl(decl_id)
         }
-        TypedDeclaration::Struct(decl_id) => {
+        TyDeclaration::Struct(decl_id) => {
             let typed_struct_declaration = de_get_struct(decl_id).unwrap();
             let name = typed_struct_declaration.name;
-            let decl = TypedDeclaration::Struct(decl_id);
+            let decl = TyDeclaration::Struct(decl_id);
             namespace.insert_symbol(name, decl.clone());
             decl
         }
-        TypedDeclaration::GenericTypeForFunctionScope { .. } => {
+        TyDeclaration::GenericTypeForFunctionScope { .. } => {
             panic!("should not see this here")
         }
     }
 }
 
-fn analyze_variable(namespace: &mut Namespace, variable_declaration: &TypedVariableDeclaration) {
+fn analyze_variable(namespace: &mut Namespace, variable_declaration: &TyVariableDeclaration) {
     analyze_expression(namespace, &variable_declaration.body);
     unify_types(
         variable_declaration.body.type_id,
@@ -86,7 +85,7 @@ fn analyze_variable(namespace: &mut Namespace, variable_declaration: &TypedVaria
     .unwrap();
 }
 
-fn analyze_function(namespace: &mut Namespace, function_declaration: &TypedFunctionDeclaration) {
+fn analyze_function(namespace: &mut Namespace, function_declaration: &TyFunctionDeclaration) {
     // insert the typed function params into the namespace
     for param in function_declaration.parameters.iter() {
         namespace.insert_symbol(param.name.clone(), param.into());
@@ -98,7 +97,7 @@ fn analyze_function(namespace: &mut Namespace, function_declaration: &TypedFunct
     // unify the function return type and body return type
     unify_types(typed_body_return_type, function_declaration.return_type).unwrap();
 
-    TypedFunctionDeclaration {
+    TyFunctionDeclaration {
         name: function_declaration.name,
         type_parameters: function_declaration.type_parameters,
         parameters: function_declaration.parameters,
@@ -107,12 +106,12 @@ fn analyze_function(namespace: &mut Namespace, function_declaration: &TypedFunct
     }
 }
 
-fn analyze_code_block(namespace: &mut Namespace, nodes: &[TypedNode]) -> TypeId {
+fn analyze_code_block(namespace: &mut Namespace, nodes: &[TyNode]) -> TypeId {
     let mut typed_nodes = vec![];
     for node in nodes.into_iter() {
         let typed_node = analyze_node(namespace, node);
         let possibly_return = match &typed_node {
-            TypedNode::ReturnStatement(exp) => Some(exp.type_id),
+            TyNode::ReturnStatement(exp) => Some(exp.type_id),
             _ => None,
         };
         typed_nodes.push(typed_node);
@@ -123,7 +122,7 @@ fn analyze_code_block(namespace: &mut Namespace, nodes: &[TypedNode]) -> TypeId 
     (typed_nodes, insert_type(TypeInfo::Unit))
 }
 
-fn analyze_trait_impl(namespace: &mut Namespace, trait_impl: &TypedTraitImpl) {
+fn analyze_trait_impl(namespace: &mut Namespace, trait_impl: &TyTraitImpl) {
     if !trait_impl.type_parameters.is_empty() {
         panic!("no type parameters yet");
     }
@@ -156,7 +155,7 @@ fn analyze_trait_impl(namespace: &mut Namespace, trait_impl: &TypedTraitImpl) {
         })
         .collect::<Vec<_>>();
 
-    TypedTraitImpl {
+    TyTraitImpl {
         trait_name: trait_impl.trait_name,
         type_implementing_for: trait_impl.type_implementing_for,
         type_parameters: trait_impl.type_parameters,

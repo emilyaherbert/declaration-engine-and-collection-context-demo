@@ -2,8 +2,7 @@ use std::fmt;
 
 use crate::{
     language::typed::typed_declaration::{
-        TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
-        TypedTraitImpl,
+        TyFunctionDeclaration, TyStructDeclaration, TyTraitDeclaration, TyTraitFn, TyTraitImpl,
     },
     namespace::function_signature::TypedFunctionSignature,
     type_system::type_mapping::TypeMapping,
@@ -16,11 +15,11 @@ use crate::{
 pub(crate) enum DeclarationWrapper {
     // no-op variant to fulfill the default trait
     Unknown,
-    Function(TypedFunctionDeclaration),
-    Trait(TypedTraitDeclaration),
-    TraitFn(TypedTraitFn),
-    TraitImpl(TypedTraitImpl),
-    Struct(TypedStructDeclaration),
+    Function(TyFunctionDeclaration),
+    Trait(TyTraitDeclaration),
+    TraitFn(TyTraitFn),
+    TraitImpl(TyTraitImpl),
+    Struct(TyStructDeclaration),
 }
 
 impl Default for DeclarationWrapper {
@@ -78,7 +77,7 @@ impl DeclarationWrapper {
         }
     }
 
-    pub(super) fn expect_function(self) -> Result<TypedFunctionDeclaration, String> {
+    pub(super) fn expect_function(self) -> Result<TyFunctionDeclaration, String> {
         match self {
             DeclarationWrapper::Function(decl) => Ok(decl),
             DeclarationWrapper::Unknown => {
@@ -130,7 +129,7 @@ impl DeclarationWrapper {
         }
     }
 
-    pub(super) fn expect_trait(self) -> Result<TypedTraitDeclaration, String> {
+    pub(super) fn expect_trait(self) -> Result<TyTraitDeclaration, String> {
         match self {
             DeclarationWrapper::Trait(decl) => Ok(decl),
             DeclarationWrapper::Unknown => {
@@ -143,7 +142,7 @@ impl DeclarationWrapper {
         }
     }
 
-    pub(super) fn expect_trait_fn(self) -> Result<TypedTraitFn, String> {
+    pub(super) fn expect_trait_fn(self) -> Result<TyTraitFn, String> {
         match self {
             DeclarationWrapper::TraitFn(decl) => Ok(decl),
             DeclarationWrapper::Unknown => {
@@ -156,7 +155,7 @@ impl DeclarationWrapper {
         }
     }
 
-    pub(super) fn expect_trait_impl(self) -> Result<TypedTraitImpl, String> {
+    pub(super) fn expect_trait_impl(self) -> Result<TyTraitImpl, String> {
         match self {
             DeclarationWrapper::TraitImpl(decl) => Ok(decl),
             DeclarationWrapper::Unknown => {
@@ -169,7 +168,7 @@ impl DeclarationWrapper {
         }
     }
 
-    pub(super) fn expect_struct(self) -> Result<TypedStructDeclaration, String> {
+    pub(super) fn expect_struct(self) -> Result<TyStructDeclaration, String> {
         match self {
             DeclarationWrapper::Struct(decl) => Ok(decl),
             DeclarationWrapper::Unknown => {

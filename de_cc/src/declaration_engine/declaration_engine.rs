@@ -6,8 +6,7 @@ use lazy_static::lazy_static;
 use crate::{
     concurrent_slab::ConcurrentSlab,
     language::typed::typed_declaration::{
-        TypedFunctionDeclaration, TypedStructDeclaration, TypedTraitDeclaration, TypedTraitFn,
-        TypedTraitImpl,
+        TyFunctionDeclaration, TyStructDeclaration, TyTraitDeclaration, TyTraitFn, TyTraitImpl,
     },
     namespace::function_signature::TypedFunctionSignature,
 };
@@ -74,11 +73,11 @@ impl DeclarationEngine {
         }
     }
 
-    fn insert_function(&self, function: TypedFunctionDeclaration) -> DeclarationId {
+    fn insert_function(&self, function: TyFunctionDeclaration) -> DeclarationId {
         DeclarationId::new(self.slab.insert(DeclarationWrapper::Function(function)))
     }
 
-    fn get_function(&self, index: DeclarationId) -> Result<TypedFunctionDeclaration, String> {
+    fn get_function(&self, index: DeclarationId) -> Result<TyFunctionDeclaration, String> {
         self.slab.get(*index).expect_function()
     }
 
@@ -103,7 +102,7 @@ impl DeclarationEngine {
     fn add_monomorphized_function_copy(
         &self,
         original_id: DeclarationId,
-        new_copy: TypedFunctionDeclaration,
+        new_copy: TyFunctionDeclaration,
     ) {
         let new_id = DeclarationId::new(self.slab.insert(DeclarationWrapper::Function(new_copy)));
         self.add_monomorphized_copy(original_id, new_id)
@@ -112,49 +111,49 @@ impl DeclarationEngine {
     fn get_monomorphized_function_copies(
         &self,
         original_id: DeclarationId,
-    ) -> Result<Vec<TypedFunctionDeclaration>, String> {
+    ) -> Result<Vec<TyFunctionDeclaration>, String> {
         self.get_monomorphized_copies(original_id)
             .into_iter()
             .map(|x| x.expect_function())
             .collect::<Result<_, _>>()
     }
 
-    fn insert_trait(&self, r#trait: TypedTraitDeclaration) -> DeclarationId {
+    fn insert_trait(&self, r#trait: TyTraitDeclaration) -> DeclarationId {
         DeclarationId::new(self.slab.insert(DeclarationWrapper::Trait(r#trait)))
     }
 
-    fn get_trait(&self, index: DeclarationId) -> Result<TypedTraitDeclaration, String> {
+    fn get_trait(&self, index: DeclarationId) -> Result<TyTraitDeclaration, String> {
         self.slab.get(*index).expect_trait()
     }
 
-    fn insert_trait_fn(&self, trait_fn: TypedTraitFn) -> DeclarationId {
+    fn insert_trait_fn(&self, trait_fn: TyTraitFn) -> DeclarationId {
         DeclarationId::new(self.slab.insert(DeclarationWrapper::TraitFn(trait_fn)))
     }
 
-    fn get_trait_fn(&self, index: DeclarationId) -> Result<TypedTraitFn, String> {
+    fn get_trait_fn(&self, index: DeclarationId) -> Result<TyTraitFn, String> {
         self.slab.get(*index).expect_trait_fn()
     }
 
-    fn insert_trait_impl(&self, trait_impl: TypedTraitImpl) -> DeclarationId {
+    fn insert_trait_impl(&self, trait_impl: TyTraitImpl) -> DeclarationId {
         DeclarationId::new(self.slab.insert(DeclarationWrapper::TraitImpl(trait_impl)))
     }
 
-    fn get_trait_impl(&self, index: DeclarationId) -> Result<TypedTraitImpl, String> {
+    fn get_trait_impl(&self, index: DeclarationId) -> Result<TyTraitImpl, String> {
         self.slab.get(*index).expect_trait_impl()
     }
 
-    fn insert_struct(&self, r#struct: TypedStructDeclaration) -> DeclarationId {
+    fn insert_struct(&self, r#struct: TyStructDeclaration) -> DeclarationId {
         DeclarationId::new(self.slab.insert(DeclarationWrapper::Struct(r#struct)))
     }
 
-    fn get_struct(&self, index: DeclarationId) -> Result<TypedStructDeclaration, String> {
+    fn get_struct(&self, index: DeclarationId) -> Result<TyStructDeclaration, String> {
         self.slab.get(*index).expect_struct()
     }
 
     fn add_monomorphized_struct_copy(
         &self,
         original_id: DeclarationId,
-        new_copy: TypedStructDeclaration,
+        new_copy: TyStructDeclaration,
     ) {
         let new_id = DeclarationId::new(self.slab.insert(DeclarationWrapper::Struct(new_copy)));
         self.add_monomorphized_copy(original_id, new_id)
@@ -163,7 +162,7 @@ impl DeclarationEngine {
     fn get_monomorphized_struct_copies(
         &self,
         original_id: DeclarationId,
-    ) -> Result<Vec<TypedStructDeclaration>, String> {
+    ) -> Result<Vec<TyStructDeclaration>, String> {
         self.get_monomorphized_copies(original_id)
             .into_iter()
             .map(|x| x.expect_struct())
@@ -191,11 +190,11 @@ pub(crate) fn de_replace(
     DECLARATION_ENGINE.replace(index, prev_value, new_value);
 }
 
-pub(crate) fn de_insert_function(function: TypedFunctionDeclaration) -> DeclarationId {
+pub(crate) fn de_insert_function(function: TyFunctionDeclaration) -> DeclarationId {
     DECLARATION_ENGINE.insert_function(function)
 }
 
-pub(crate) fn de_get_function(index: DeclarationId) -> Result<TypedFunctionDeclaration, String> {
+pub(crate) fn de_get_function(index: DeclarationId) -> Result<TyFunctionDeclaration, String> {
     DECLARATION_ENGINE.get_function(index)
 }
 
@@ -219,58 +218,58 @@ pub(crate) fn de_get_function_signature(
 
 pub(crate) fn de_add_monomorphized_function_copy(
     original_id: DeclarationId,
-    new_copy: TypedFunctionDeclaration,
+    new_copy: TyFunctionDeclaration,
 ) {
     DECLARATION_ENGINE.add_monomorphized_function_copy(original_id, new_copy);
 }
 
 pub(crate) fn de_get_monomorphized_function_copies(
     original_id: DeclarationId,
-) -> Result<Vec<TypedFunctionDeclaration>, String> {
+) -> Result<Vec<TyFunctionDeclaration>, String> {
     DECLARATION_ENGINE.get_monomorphized_function_copies(original_id)
 }
 
-pub(crate) fn de_insert_trait(r#trait: TypedTraitDeclaration) -> DeclarationId {
+pub(crate) fn de_insert_trait(r#trait: TyTraitDeclaration) -> DeclarationId {
     DECLARATION_ENGINE.insert_trait(r#trait)
 }
 
-pub(crate) fn de_get_trait(index: DeclarationId) -> Result<TypedTraitDeclaration, String> {
+pub(crate) fn de_get_trait(index: DeclarationId) -> Result<TyTraitDeclaration, String> {
     DECLARATION_ENGINE.get_trait(index)
 }
 
-pub(crate) fn de_insert_trait_fn(trait_fn: TypedTraitFn) -> DeclarationId {
+pub(crate) fn de_insert_trait_fn(trait_fn: TyTraitFn) -> DeclarationId {
     DECLARATION_ENGINE.insert_trait_fn(trait_fn)
 }
 
-pub(crate) fn de_get_trait_fn(index: DeclarationId) -> Result<TypedTraitFn, String> {
+pub(crate) fn de_get_trait_fn(index: DeclarationId) -> Result<TyTraitFn, String> {
     DECLARATION_ENGINE.get_trait_fn(index)
 }
 
-pub(crate) fn de_insert_trait_impl(trait_impl: TypedTraitImpl) -> DeclarationId {
+pub(crate) fn de_insert_trait_impl(trait_impl: TyTraitImpl) -> DeclarationId {
     DECLARATION_ENGINE.insert_trait_impl(trait_impl)
 }
 
-pub(crate) fn de_get_trait_impl(index: DeclarationId) -> Result<TypedTraitImpl, String> {
+pub(crate) fn de_get_trait_impl(index: DeclarationId) -> Result<TyTraitImpl, String> {
     DECLARATION_ENGINE.get_trait_impl(index)
 }
 
-pub(crate) fn de_insert_struct(r#struct: TypedStructDeclaration) -> DeclarationId {
+pub(crate) fn de_insert_struct(r#struct: TyStructDeclaration) -> DeclarationId {
     DECLARATION_ENGINE.insert_struct(r#struct)
 }
 
-pub(crate) fn de_get_struct(index: DeclarationId) -> Result<TypedStructDeclaration, String> {
+pub(crate) fn de_get_struct(index: DeclarationId) -> Result<TyStructDeclaration, String> {
     DECLARATION_ENGINE.get_struct(index)
 }
 
 pub(crate) fn de_add_monomorphized_struct_copy(
     original_id: DeclarationId,
-    new_copy: TypedStructDeclaration,
+    new_copy: TyStructDeclaration,
 ) {
     DECLARATION_ENGINE.add_monomorphized_struct_copy(original_id, new_copy);
 }
 
 pub(crate) fn de_get_monomorphized_struct_copies(
     original_id: DeclarationId,
-) -> Result<Vec<TypedStructDeclaration>, String> {
+) -> Result<Vec<TyStructDeclaration>, String> {
     DECLARATION_ENGINE.get_monomorphized_struct_copies(original_id)
 }

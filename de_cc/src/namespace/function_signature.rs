@@ -1,9 +1,7 @@
 use crate::{
     language::{
         partial::partial_declaration::PartialFunctionDeclaration,
-        typed::typed_declaration::{
-            TypedFunctionDeclaration, TypedFunctionParameter, TypedTraitFn,
-        },
+        typed::typed_declaration::{TyFunctionDeclaration, TyFunctionParameter, TyTraitFn},
         typing_context::function::TyFunctionContext,
     },
     type_system::{type_id::TypeId, type_parameter::TypeParameter},
@@ -14,12 +12,12 @@ pub(crate) struct TypedFunctionSignature {
     pub(crate) name: String,
     #[allow(dead_code)]
     pub(crate) type_parameters: Vec<TypeParameter>,
-    pub(crate) parameters: Vec<TypedFunctionParameter>,
+    pub(crate) parameters: Vec<TyFunctionParameter>,
     pub(crate) return_type: TypeId,
 }
 
-impl From<TypedFunctionDeclaration> for TypedFunctionSignature {
-    fn from(decl: TypedFunctionDeclaration) -> Self {
+impl From<TyFunctionDeclaration> for TypedFunctionSignature {
+    fn from(decl: TyFunctionDeclaration) -> Self {
         TypedFunctionSignature {
             name: decl.name,
             type_parameters: decl.type_parameters,
@@ -29,8 +27,8 @@ impl From<TypedFunctionDeclaration> for TypedFunctionSignature {
     }
 }
 
-impl From<TypedTraitFn> for TypedFunctionSignature {
-    fn from(decl: TypedTraitFn) -> Self {
+impl From<TyTraitFn> for TypedFunctionSignature {
+    fn from(decl: TyTraitFn) -> Self {
         TypedFunctionSignature {
             name: decl.name,
             type_parameters: vec![],
