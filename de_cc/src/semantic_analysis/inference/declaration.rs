@@ -70,6 +70,26 @@ fn analyze_variable(namespace: &mut Namespace, variable_declaration: &TyVariable
 }
 
 fn analyze_function(namespace: &mut Namespace, function_declaration: &TyFunctionDeclaration) {
+    // import the trait constraints into the namespace
+    for type_parameter in function_declaration.type_parameters.iter() {
+        // if the type param has a trait constraint, take the TypedTraitFn's from
+        // the trait it is constrained upon and insert them into the namespace
+        // under the type param
+        if let Some(constraint) = &type_parameter.trait_constraint {
+            let decl_id = namespace
+                .get_symbol(&constraint.trait_name)
+                .unwrap()
+                .expect_trait()
+                .unwrap();
+            let trait_decl = de_get_trait(decl_id).unwrap();
+            namespace.insert_methods(
+                type_parameter.type_id,
+                constraint.trait_name.clone(),
+                trait_decl.interface_surface,
+            );
+        }
+    }
+
     // resolve any custom types in the parameters and
     // insert the type parameters into the namespace
     for parameter in function_declaration.parameters.iter() {
