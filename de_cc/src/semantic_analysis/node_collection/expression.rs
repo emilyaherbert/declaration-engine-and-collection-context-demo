@@ -7,7 +7,10 @@ use crate::{
     types::copy_types::CopyTypes,
 };
 
-pub(super) fn to_ty_expression(type_mapping: &TypeMapping, expression: Expression) -> TyExpression {
+pub(super) fn collect_nodes_expression(
+    type_mapping: &TypeMapping,
+    expression: Expression,
+) -> TyExpression {
     match expression {
         Expression::Literal { value } => {
             let type_id = insert_type(value.to_type());
@@ -37,7 +40,7 @@ pub(super) fn to_ty_expression(type_mapping: &TypeMapping, expression: Expressio
             // transform the arguments into Ty AST nodes
             let new_arguments = arguments
                 .into_iter()
-                .map(|argument| to_ty_expression(type_mapping, argument))
+                .map(|argument| collect_nodes_expression(type_mapping, argument))
                 .collect::<Vec<_>>();
 
             // return!
@@ -70,7 +73,7 @@ pub(super) fn to_ty_expression(type_mapping: &TypeMapping, expression: Expressio
             // transform the arguments into Ty AST nodes
             let new_arguments = arguments
                 .into_iter()
-                .map(|argument| to_ty_expression(type_mapping, argument))
+                .map(|argument| collect_nodes_expression(type_mapping, argument))
                 .collect::<Vec<_>>();
 
             // return!
@@ -105,7 +108,7 @@ pub(super) fn to_ty_expression(type_mapping: &TypeMapping, expression: Expressio
                 .into_iter()
                 .map(|field| TyStructExpressionField {
                     name: field.name,
-                    value: to_ty_expression(type_mapping, field.value),
+                    value: collect_nodes_expression(type_mapping, field.value),
                 })
                 .collect::<Vec<_>>();
 

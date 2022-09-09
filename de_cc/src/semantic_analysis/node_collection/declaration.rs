@@ -21,46 +21,50 @@ use crate::{
     types::copy_types::CopyTypes,
 };
 
-use super::{expression::to_ty_expression, to_ty_nodes};
+use super::{collect_nodes_nodes, expression::collect_nodes_expression};
 
-pub(super) fn to_ty_declaration(
+pub(super) fn collect_nodes_declaration(
     collection_ctxt: &mut CollectionContext,
     type_mapping: &TypeMapping,
     declaration: Declaration,
 ) -> TyDeclaration {
     match declaration {
         Declaration::Variable(variable_declaration) => {
-            let variable_declaration =
-                to_ty_variable_declaration(collection_ctxt, type_mapping, variable_declaration);
+            let variable_declaration = collect_nodes_variable_declaration(
+                collection_ctxt,
+                type_mapping,
+                variable_declaration,
+            );
             TyDeclaration::Variable(variable_declaration)
         }
         Declaration::Function(function_declaration) => {
             let function_declaration =
-                to_ty_function(collection_ctxt, type_mapping, function_declaration);
+                collect_nodes_function(collection_ctxt, type_mapping, function_declaration);
             TyDeclaration::Function(de_insert_function(function_declaration))
         }
         Declaration::Trait(trait_declaration) => {
-            let trait_declaration = to_ty_trait(collection_ctxt, type_mapping, trait_declaration);
+            let trait_declaration =
+                collect_nodes_trait(collection_ctxt, type_mapping, trait_declaration);
             TyDeclaration::Trait(de_insert_trait(trait_declaration))
         }
         Declaration::TraitImpl(trait_impl) => {
-            let trait_impl = to_ty_trait_impl(collection_ctxt, type_mapping, trait_impl);
+            let trait_impl = collect_nodes_trait_impl(collection_ctxt, type_mapping, trait_impl);
             TyDeclaration::TraitImpl(de_insert_trait_impl(trait_impl))
         }
         Declaration::Struct(struct_declaration) => {
             let struct_declaration =
-                to_ty_struct(collection_ctxt, type_mapping, struct_declaration);
+                collect_nodes_struct(collection_ctxt, type_mapping, struct_declaration);
             TyDeclaration::Struct(de_insert_struct(struct_declaration))
         }
     }
 }
 
-fn to_ty_variable_declaration(
+fn collect_nodes_variable_declaration(
     collection_ctxt: &mut CollectionContext,
     type_mapping: &TypeMapping,
     variable_declaration: VariableDeclaration,
 ) -> TyVariableDeclaration {
-    let new_body = to_ty_expression(type_mapping, variable_declaration.body);
+    let new_body = collect_nodes_expression(type_mapping, variable_declaration.body);
     let mut new_type_ascription = insert_type(variable_declaration.type_ascription);
     new_type_ascription.copy_types(type_mapping);
     TyVariableDeclaration {
@@ -70,7 +74,7 @@ fn to_ty_variable_declaration(
     }
 }
 
-fn to_ty_function(
+fn collect_nodes_function(
     collection_ctxt: &mut CollectionContext,
     type_mapping: &TypeMapping,
     function_declaration: FunctionDeclaration,
@@ -82,7 +86,7 @@ fn to_ty_function(
     let parameters = function_declaration
         .parameters
         .into_iter()
-        .map(|param| to_ty_function_parameter(collection_ctxt, &type_mapping, param))
+        .map(|param| collect_nodes_function_parameter(collection_ctxt, &type_mapping, param))
         .collect::<Vec<_>>();
     let mut return_type = insert_type(function_declaration.return_type);
     return_type.copy_types(&type_mapping);
@@ -90,12 +94,12 @@ fn to_ty_function(
         name: function_declaration.name,
         type_parameters: function_declaration.type_parameters,
         parameters,
-        body: to_ty_nodes(collection_ctxt, function_declaration.body),
+        body: collect_nodes_nodes(collection_ctxt, function_declaration.body),
         return_type,
     }
 }
 
-fn to_ty_function_parameter(
+fn collect_nodes_function_parameter(
     collection_ctxt: &mut CollectionContext,
     type_mapping: &TypeMapping,
     function_parameter: FunctionParameter,
@@ -108,7 +112,7 @@ fn to_ty_function_parameter(
     }
 }
 
-fn to_ty_trait(
+fn collect_nodes_trait(
     collection_ctxt: &mut CollectionContext,
     type_mapping: &TypeMapping,
     trait_declaration: TraitDeclaration,
@@ -117,7 +121,7 @@ fn to_ty_trait(
         .interface_surface
         .into_iter()
         .map(|trait_fn| {
-            let trait_fn = to_ty_trait_fn(collection_ctxt, type_mapping, trait_fn);
+            let trait_fn = collect_nodes_trait_fn(collection_ctxt, type_mapping, trait_fn);
             de_insert_trait_fn(trait_fn)
         })
         .collect::<Vec<_>>();
@@ -127,7 +131,7 @@ fn to_ty_trait(
     }
 }
 
-fn to_ty_trait_fn(
+fn collect_nodes_trait_fn(
     collection_ctxt: &mut CollectionContext,
     type_mapping: &TypeMapping,
     trait_fn: TraitFn,
@@ -135,7 +139,7 @@ fn to_ty_trait_fn(
     let parameters = trait_fn
         .parameters
         .into_iter()
-        .map(|param| to_ty_function_parameter(collection_ctxt, type_mapping, param))
+        .map(|param| collect_nodes_function_parameter(collection_ctxt, type_mapping, param))
         .collect::<Vec<_>>();
     let mut return_type = insert_type(trait_fn.return_type);
     return_type.copy_types(type_mapping);
@@ -146,7 +150,7 @@ fn to_ty_trait_fn(
     }
 }
 
-fn to_ty_trait_impl(
+fn collect_nodes_trait_impl(
     collection_ctxt: &mut CollectionContext,
     type_mapping: &TypeMapping,
     trait_impl: TraitImpl,
@@ -157,7 +161,13 @@ fn to_ty_trait_impl(
     let methods = trait_impl
         .methods
         .into_iter()
-        .map(|method| de_insert_function(to_ty_function(collection_ctxt, type_mapping, method)))
+        .map(|method| {
+            de_insert_function(collect_nodes_function(
+                collection_ctxt,
+                type_mapping,
+                method,
+            ))
+        })
         .collect::<Vec<_>>();
     let mut type_implementing_for = insert_type(trait_impl.type_implementing_for);
     type_implementing_for.copy_types(type_mapping);
@@ -169,7 +179,7 @@ fn to_ty_trait_impl(
     }
 }
 
-fn to_ty_struct(
+fn collect_nodes_struct(
     collection_ctxt: &mut CollectionContext,
     type_mapping: &TypeMapping,
     struct_declaration: StructDeclaration,
@@ -179,7 +189,7 @@ fn to_ty_struct(
     let fields = struct_declaration
         .fields
         .into_iter()
-        .map(|field| to_ty_struct_field(collection_ctxt, &type_mapping, field))
+        .map(|field| collect_nodes_struct_field(collection_ctxt, &type_mapping, field))
         .collect::<Vec<_>>();
     TyStructDeclaration {
         name: struct_declaration.name,
@@ -188,7 +198,7 @@ fn to_ty_struct(
     }
 }
 
-fn to_ty_struct_field(
+fn collect_nodes_struct_field(
     collection_ctxt: &mut CollectionContext,
     type_mapping: &TypeMapping,
     struct_field: StructField,

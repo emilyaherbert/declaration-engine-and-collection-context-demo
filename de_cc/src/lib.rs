@@ -2,7 +2,7 @@ use collection_context::collection_context::CollectionContext;
 use language::{parsed::Application, resolved::ResolvedApplication};
 use namespace::namespace::Namespace;
 use semantic_analysis::{
-    inference::analyze, parsed_to_ty::to_ty, ty_to_resolved::to_resolved,
+    inference::analyze, node_collection::collect_nodes, ty_to_resolved::to_resolved,
     type_collection::collect_types,
 };
 
@@ -25,7 +25,7 @@ pub fn compile(application: Application) -> ResolvedApplication {
 
     // 2. transform to the Ty AST
     let mut collection_ctxt = CollectionContext::default();
-    let ty_application = to_ty(&mut collection_ctxt, application);
+    let ty_application = collect_nodes(&mut collection_ctxt, application);
 
     // 3. do node collection
     //collect_nodes(&mut collection_ctxt, ty_application);
