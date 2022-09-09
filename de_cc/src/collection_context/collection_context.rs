@@ -1,18 +1,19 @@
 use petgraph::prelude::{EdgeIndex, NodeIndex};
 
-use crate::language::ty::TyNode;
-
 use super::graph_node::GraphNode;
 
-type Graph<'n> = petgraph::Graph<GraphNode<'n>, ()>;
+type CollectionGraph<'gn> = petgraph::Graph<GraphNode<'gn>, ()>;
 
 #[derive(Default)]
-pub(crate) struct CollectionContext<'n> {
-    graph: Graph<'n>,
+pub(crate) struct CollectionContext<'gn> {
+    graph: CollectionGraph<'gn>,
 }
 
-impl<'n> CollectionContext<'n> {
-    pub(crate) fn add_node(&mut self, node: GraphNode<'n>) -> NodeIndex {
+impl<'gn> CollectionContext<'gn> {
+    pub(crate) fn add_node<'ast>(&mut self, node: GraphNode<'ast>) -> NodeIndex
+    where
+        'ast: 'gn,
+    {
         self.graph.add_node(node)
     }
 

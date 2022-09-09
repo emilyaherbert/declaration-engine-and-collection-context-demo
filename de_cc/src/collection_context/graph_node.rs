@@ -1,18 +1,18 @@
 use crate::language::ty::{TyFile, TyNode};
 
-pub(crate) enum GraphNode<'n> {
-    File(&'n TyFile),
-    Node(&'n TyNode),
+pub(crate) enum GraphNode<'gn> {
+    File(&'gn TyFile),
+    Node(&'gn TyNode),
 }
 
-impl<'n> From<&'n TyFile> for GraphNode<'n> {
-    fn from(node: &'n TyFile) -> Self {
+impl<'gn> From<&'gn TyFile> for GraphNode<'gn> {
+    fn from(node: &'gn TyFile) -> Self {
         GraphNode::File(node)
     }
 }
 
-impl<'n> From<&'n TyNode> for GraphNode<'n> {
-    fn from(node: &'n TyNode) -> Self {
+impl<'gn> From<&'gn TyNode> for GraphNode<'gn> {
+    fn from(node: &'gn TyNode) -> Self {
         GraphNode::Node(node)
     }
 }
