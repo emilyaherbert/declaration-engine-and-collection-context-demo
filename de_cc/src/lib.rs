@@ -1,3 +1,4 @@
+use collection_context::collection_context::CollectionContext;
 use language::{parsed::Application, resolved::ResolvedApplication};
 use namespace::namespace::Namespace;
 use semantic_analysis::{
@@ -5,6 +6,7 @@ use semantic_analysis::{
     type_collection::collect_types,
 };
 
+mod collection_context;
 mod concurrent_slab;
 mod declaration_engine;
 pub mod language;
@@ -24,18 +26,21 @@ pub fn compile(application: Application) -> ResolvedApplication {
     // 2. transform to the Ty AST
     let ty_application = to_ty(application);
 
-    // 3. do type collection
+    // 3. do node collection
+    let collection_context = CollectionContext::default();
+
+    // 4. do type collection
     let mut namespace = Namespace::default();
     collect_types(&mut namespace, &ty_application);
 
-    // 4. do type inference with new namespace
+    // 5. do type inference with new namespace
     let mut namespace = Namespace::default();
     analyze(&mut namespace, &ty_application);
 
-    // 5. resolve all types
+    // 6. resolve all types
     let resolved_application = to_resolved(ty_application);
 
-    // 6. ir generation happens here
+    // 7. ir generation happens here
 
     resolved_application
 }
