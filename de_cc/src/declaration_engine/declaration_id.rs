@@ -1,11 +1,15 @@
 use std::fmt;
 
-use crate::{type_system::type_mapping::TypeMapping, types::copy_types::CopyTypes};
+use crate::{
+    type_system::type_mapping::TypeMapping,
+    types::{copy_types::CopyTypes, with_collection_context::DebugWithCC},
+    CollectionContext,
+};
 
 use super::declaration_engine::de_look_up_decl_id;
 
 /// An ID used to refer to an item in the [DeclarationEngine](super::declaration_engine::DeclarationEngine)
-#[derive(Debug, Eq, Copy)]
+#[derive(Debug, Eq, Copy, DebugWithCC)]
 pub struct DeclarationId(usize);
 
 impl Clone for DeclarationId {

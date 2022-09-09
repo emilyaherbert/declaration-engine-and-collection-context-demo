@@ -13,10 +13,13 @@ use crate::{
         type_mapping::TypeMapping,
         type_parameter::TypeParameter,
     },
-    types::{copy_types::CopyTypes, create_type_id::CreateTypeId},
+    types::{
+        copy_types::CopyTypes, create_type_id::CreateTypeId, with_collection_context::DebugWithCC,
+    },
+    CollectionContext,
 };
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, PartialEq, DebugWithCC)]
 pub(crate) enum TyDeclaration {
     Variable(TyVariableDeclaration),
     Function(DeclarationId),
@@ -96,7 +99,7 @@ impl TyDeclaration {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq, DebugWithCC)]
 pub(crate) struct TyVariableDeclaration {
     pub(crate) name: String,
     pub(crate) type_ascription: TypeId,
@@ -120,7 +123,7 @@ impl CopyTypes for TyVariableDeclaration {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TyFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
@@ -207,7 +210,7 @@ impl MonomorphizeHelper for TyFunctionDeclaration {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TyFunctionParameter {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
@@ -268,7 +271,7 @@ impl fmt::Display for TyTraitFn {
     }
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TyTraitImpl {
     pub(crate) trait_name: String,
     pub(crate) type_implementing_for: TypeId,
@@ -352,7 +355,7 @@ impl fmt::Display for TyStructDeclaration {
     }
 }
 
-#[derive(Clone, Hash, PartialEq, Eq, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct TyStructField {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,

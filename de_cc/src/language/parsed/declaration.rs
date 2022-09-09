@@ -200,7 +200,7 @@ impl fmt::Display for TraitImpl {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct StructDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
@@ -237,7 +237,7 @@ impl fmt::Display for StructDeclaration {
     }
 }
 
-#[derive(Clone, Hash, PartialEq)]
+#[derive(Clone, Hash, PartialEq, Debug)]
 pub struct StructField {
     pub(crate) name: String,
     pub(crate) type_info: TypeInfo,
@@ -249,7 +249,7 @@ impl fmt::Display for StructField {
     }
 }
 
-#[derive(Clone, Hash)]
+#[derive(Clone, Hash, Debug)]
 pub struct EnumVariant {
     pub(crate) name: String,
     pub(crate) type_info: TypeInfo,

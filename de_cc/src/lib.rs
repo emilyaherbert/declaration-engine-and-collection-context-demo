@@ -2,8 +2,8 @@ use collection_context::collection_context::CollectionContext;
 use language::{parsed::Application, resolved::ResolvedApplication};
 use namespace::namespace::Namespace;
 use semantic_analysis::{
-    inference::analyze, node_collection::collect_nodes, parsed_to_ty::to_ty,
-    ty_to_resolved::to_resolved, type_collection::collect_types,
+    inference::analyze, parsed_to_ty::to_ty, ty_to_resolved::to_resolved,
+    type_collection::collect_types,
 };
 
 mod collection_context;
@@ -24,22 +24,22 @@ pub fn compile(application: Application) -> ResolvedApplication {
     // 1. parsing happens here
 
     // 2. transform to the Ty AST
-    let ty_application = to_ty(application);
+    let mut collection_ctxt = CollectionContext::default();
+    let ty_application = to_ty(&mut collection_ctxt, application);
 
     // 3. do node collection
-    let mut collection_ctxt = CollectionContext::default();
-    collect_nodes(&mut collection_ctxt, &ty_application);
+    //collect_nodes(&mut collection_ctxt, ty_application);
 
     // 4. do type collection
     let mut namespace = Namespace::default();
-    collect_types(&mut namespace, &ty_application);
+    collect_types(&mut namespace, todo!());
 
     // 5. do type inference with new namespace
     let mut namespace = Namespace::default();
-    analyze(&mut namespace, &ty_application);
+    analyze(&mut namespace, todo!());
 
     // 6. resolve all types
-    let resolved_application = to_resolved(ty_application);
+    let resolved_application = to_resolved(todo!());
 
     // 7. ir generation happens here
 

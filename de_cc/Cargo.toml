@@ -12,3 +12,4 @@ colored = "2.0.0"
 indent_write = "2.2.0"
 either = "1.8.0"
 petgraph = "0.6.2"
+de_cc_macros = { path = "../de_cc_macros" }

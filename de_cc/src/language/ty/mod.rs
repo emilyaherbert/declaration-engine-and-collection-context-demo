@@ -1,22 +1,29 @@
 use std::fmt;
 
-use crate::{type_system::type_mapping::TypeMapping, types::copy_types::CopyTypes};
+use crate::{
+    collection_context::collection_index::CollectionIndex,
+    type_system::type_mapping::TypeMapping,
+    types::{copy_types::CopyTypes, with_collection_context::DebugWithCC},
+};
 
 use self::{typed_declaration::TyDeclaration, typed_expression::TyExpression};
+use crate::CollectionContext;
 
 pub(crate) mod typed_declaration;
 pub(crate) mod typed_expression;
 
+#[derive(DebugWithCC)]
 pub(crate) struct TyApplication {
-    pub files: Vec<TyFile>,
+    pub files: Vec<CollectionIndex>,
 }
 
+#[derive(DebugWithCC)]
 pub(crate) struct TyFile {
     pub(crate) name: String,
     pub(crate) nodes: Vec<TyNode>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq, DebugWithCC)]
 pub(crate) enum TyNode {
     // StarImport(String),
     Declaration(TyDeclaration),

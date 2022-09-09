@@ -10,14 +10,12 @@ use crate::language::{
 };
 
 pub(crate) fn to_resolved(application: TyApplication) -> ResolvedApplication {
-    let to_resolvedd_programs = application
+    let files = application
         .files
         .into_iter()
         .map(to_resolved_file)
         .collect();
-    ResolvedApplication {
-        files: to_resolvedd_programs,
-    }
+    ResolvedApplication { files }
 }
 
 fn to_resolved_file(file: TyFile) -> ResolvedFile {

@@ -1,23 +1,26 @@
-use petgraph::prelude::{EdgeIndex, NodeIndex};
+use std::ops::Index;
 
-use super::graph_node::GraphNode;
+use petgraph::prelude::EdgeIndex;
 
-type CollectionGraph<'gn> = petgraph::Graph<GraphNode<'gn>, ()>;
+use super::{collection_index::CollectionIndex, graph_node::GraphNode};
+
+type CollectionGraph = petgraph::Graph<GraphNode, ()>;
 
 #[derive(Default)]
-pub(crate) struct CollectionContext<'gn> {
-    graph: CollectionGraph<'gn>,
+pub(crate) struct CollectionContext {
+    graph: CollectionGraph,
 }
 
-impl<'gn> CollectionContext<'gn> {
-    pub(crate) fn add_node<'ast>(&mut self, node: GraphNode<'ast>) -> NodeIndex
-    where
-        'ast: 'gn,
-    {
-        self.graph.add_node(node)
+impl CollectionContext {
+    pub(crate) fn add_node(&mut self, node: GraphNode) -> CollectionIndex {
+        CollectionIndex::new(self.graph.add_node(node))
     }
 
-    pub(crate) fn add_edge(&mut self, from: NodeIndex, to: NodeIndex) -> EdgeIndex {
-        self.graph.add_edge(from, to, ())
+    pub(crate) fn get_node(&self, index: &CollectionIndex) -> &GraphNode {
+        self.graph.index(**index)
+    }
+
+    pub(crate) fn add_edge(&mut self, from: CollectionIndex, to: CollectionIndex) -> EdgeIndex {
+        self.graph.add_edge(*from, *to, ())
     }
 }
