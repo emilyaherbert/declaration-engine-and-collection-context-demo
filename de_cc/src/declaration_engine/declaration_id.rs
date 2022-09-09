@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::{
     type_system::type_mapping::TypeMapping,
-    types::{copy_types::CopyTypes, with_collection_context::DebugWithCC},
+    types::{copy_types::CopyTypes, with_collection_context::*},
     CollectionContext,
 };
 

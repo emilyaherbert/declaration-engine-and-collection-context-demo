@@ -1,4 +1,4 @@
-use std::ops::Index;
+use std::ops::{Index, IndexMut};
 
 use petgraph::prelude::EdgeIndex;
 
@@ -18,6 +18,10 @@ impl CollectionContext {
 
     pub(crate) fn get_node(&self, index: &CollectionIndex) -> &GraphNode {
         self.graph.index(**index)
+    }
+
+    pub(crate) fn get_node_mut(&mut self, index: &CollectionIndex) -> &mut GraphNode {
+        self.graph.index_mut(**index)
     }
 
     pub(crate) fn add_edge(&mut self, from: CollectionIndex, to: CollectionIndex) -> EdgeIndex {

@@ -1,13 +1,19 @@
 use std::fmt;
 use std::hash::Hash;
 
-use crate::types::copy_types::CopyTypes;
+use crate::{
+    types::{
+        copy_types::CopyTypes,
+        with_collection_context::{with_cc::WithCC, *},
+    },
+    CollectionContext,
+};
 
 use super::trait_constraint::TraitConstraint;
 use super::type_id::TypeId;
 use super::type_mapping::TypeMapping;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash, DebugWithCC)]
 pub struct TypeParameter {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,

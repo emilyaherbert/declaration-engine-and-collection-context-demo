@@ -5,7 +5,7 @@ use std::fmt::Write;
 use crate::{
     language::literal::Literal,
     type_system::{type_argument::TypeArgument, type_id::TypeId, type_mapping::TypeMapping},
-    types::{copy_types::CopyTypes, with_collection_context::DebugWithCC},
+    types::{copy_types::CopyTypes, with_collection_context::*},
     CollectionContext,
 };
 

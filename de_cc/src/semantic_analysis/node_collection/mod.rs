@@ -17,51 +17,59 @@ use crate::{
     type_system::type_mapping::TypeMapping,
 };
 
-pub(crate) fn collect_nodes(collection_ctxt: &mut CollectionContext, application: Application) {
-    let application_index = collection_ctxt.add_node((TyApplication { files: vec![] }).into());
-    let files = application
+pub(crate) fn collect_nodes(cc: &mut CollectionContext, application: Application) {
+    let file_indices = application
         .files
         .into_iter()
-        .map(|file| collect_nodes_file(collection_ctxt, application_index, file))
-        .collect::<Vec<TyFile>>();
+        .map(|file| collect_nodes_file(cc, file))
+        .collect::<Vec<_>>();
+    let application = TyApplication {
+        files: file_indices,
+    };
+    let application_index = cc.add_node(application.into());
+    application.files.iter().for_each(|file_index| {
+        cc.add_edge(application_index, *file_index);
+    });
 }
 
-fn collect_nodes_file(
-    collection_ctxt: &mut CollectionContext,
-    parent_index: CollectionIndex,
-    file: File,
-) -> TyFile {
-    TyFile {
+fn collect_nodes_file(cc: &mut CollectionContext, file: File) -> CollectionIndex {
+    let file = TyFile {
         name: file.name,
-        nodes: collect_nodes_nodes(collection_ctxt, file.nodes),
-    }
+        nodes: collect_nodes_nodes(cc, file.nodes),
+    };
+    let file_index = cc.add_node(file.into());
+    file.nodes.iter().for_each(|node_index| {
+        cc.add_edge(file_index, *node_index);
+    });
+    file_index
 }
 
-fn collect_nodes_nodes(collection_ctxt: &mut CollectionContext, nodes: Vec<Node>) -> Vec<TyNode> {
+fn collect_nodes_nodes(cc: &mut CollectionContext, nodes: Vec<Node>) -> Vec<CollectionIndex> {
     let type_mapping = HashMap::new();
     nodes
         .into_iter()
-        .map(|node| collect_nodes_node(collection_ctxt, &type_mapping, node))
+        .map(|node| collect_nodes_node(cc, &type_mapping, node))
         .collect()
 }
 
 fn collect_nodes_node(
-    collection_ctxt: &mut CollectionContext,
+    cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     node: Node,
-) -> TyNode {
+) -> CollectionIndex {
     match node {
         Node::StarImport(_) => todo!(),
-        Node::Declaration(decl) => TyNode::Declaration(collect_nodes_declaration(
-            collection_ctxt,
-            type_mapping,
-            decl,
-        )),
+        Node::Declaration(decl) => {
+            let node = TyNode::Declaration(collect_nodes_declaration(cc, type_mapping, decl));
+            cc.add_node(node.into())
+        }
         Node::Expression(expression) => {
-            TyNode::Expression(collect_nodes_expression(type_mapping, expression))
+            let node = TyNode::Expression(collect_nodes_expression(type_mapping, expression));
+            cc.add_node(node.into())
         }
         Node::ReturnStatement(expression) => {
-            TyNode::ReturnStatement(collect_nodes_expression(type_mapping, expression))
+            let node = TyNode::ReturnStatement(collect_nodes_expression(type_mapping, expression));
+            cc.add_node(node.into())
         }
     }
 }

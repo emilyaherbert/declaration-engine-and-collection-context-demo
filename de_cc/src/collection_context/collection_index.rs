@@ -1,8 +1,9 @@
-use crate::types::with_collection_context::DebugWithCC;
+use crate::types::with_collection_context::*;
 use crate::CollectionContext;
 
 use petgraph::prelude::NodeIndex;
 
+#[derive(Clone, WithCC)]
 pub(crate) struct CollectionIndex(NodeIndex);
 
 impl std::ops::Deref for CollectionIndex {
@@ -14,7 +15,9 @@ impl std::ops::Deref for CollectionIndex {
 
 impl DebugWithCC for CollectionIndex {
     fn fmt_with_cc(&self, f: &mut std::fmt::Formatter, cc: &CollectionContext) -> std::fmt::Result {
-        write!(f, "{:?}", cc.get_node(self).with_cc(cc))
+        todo!()
+        // let w = cc.get_node(self).with_cc(cc);
+        // write!(f, "{:?}", w)
     }
 }
 

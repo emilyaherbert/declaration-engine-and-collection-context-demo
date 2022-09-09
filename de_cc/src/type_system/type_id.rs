@@ -1,16 +1,13 @@
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use crate::{
-    types::{copy_types::CopyTypes, with_collection_context::DebugWithCC},
-    CollectionContext,
-};
+use crate::types::copy_types::CopyTypes;
 
 use super::type_engine::{insert_type, look_up_type_id};
 use super::type_info::TypeInfo;
 use super::type_mapping::TypeMapping;
 
-#[derive(Eq, Clone, Copy, Debug, Default, DebugWithCC)]
+#[derive(Eq, Clone, Copy, Debug, Default)]
 pub struct TypeId(usize);
 
 impl std::ops::Deref for TypeId {

@@ -9,7 +9,6 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-itertools = "0.10.3"
 proc-macro2 = "1.0.43"
 quote = "1.0.21"
 syn = { version = "1.0.99", features = ["derive", "extra-traits"] }

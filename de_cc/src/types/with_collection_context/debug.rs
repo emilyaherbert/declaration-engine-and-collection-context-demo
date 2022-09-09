@@ -4,17 +4,10 @@ use crate::collection_context::collection_context::CollectionContext;
 
 pub(crate) use de_cc_macros::*;
 
-pub struct WithCC<'a, 'c, T: ?Sized> {
-    thing: &'a T,
-    cc: &'c CollectionContext,
-}
+use super::{with_cc::WithCC, WrapperCC};
 
-pub trait DebugWithCC {
+pub(crate) trait DebugWithCC {
     fn fmt_with_cc(&self, f: &mut fmt::Formatter, cc: &CollectionContext) -> fmt::Result;
-
-    fn with_cc<'a, 'c>(&'a self, cc: &'c CollectionContext) -> WithCC<'a, 'c, Self> {
-        WithCC { thing: self, cc }
-    }
 }
 
 impl<'t, T> DebugWithCC for &'t T
@@ -26,19 +19,19 @@ where
     }
 }
 
-impl<'a, 'c, T> fmt::Debug for WithCC<'a, 'c, T>
+impl<'a, 'c, T> fmt::Debug for WrapperCC<'a, 'c, T>
 where
     T: DebugWithCC,
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let WithCC { thing, cc } = self;
+        let WrapperCC { thing, cc } = self;
         (*thing).fmt_with_cc(f, cc)
     }
 }
 
 impl<T> DebugWithCC for Vec<T>
 where
-    T: DebugWithCC,
+    T: DebugWithCC + WithCC,
 {
     fn fmt_with_cc(&self, f: &mut fmt::Formatter, cc: &CollectionContext) -> fmt::Result {
         f.debug_list()
@@ -49,7 +42,7 @@ where
 
 impl<T> DebugWithCC for [T]
 where
-    T: DebugWithCC,
+    T: DebugWithCC + WithCC,
 {
     fn fmt_with_cc(&self, f: &mut fmt::Formatter, cc: &CollectionContext) -> fmt::Result {
         f.debug_list()
@@ -60,7 +53,7 @@ where
 
 impl<T> DebugWithCC for Option<T>
 where
-    T: DebugWithCC,
+    T: DebugWithCC + WithCC,
 {
     fn fmt_with_cc(&self, f: &mut fmt::Formatter, cc: &CollectionContext) -> fmt::Result {
         match self {

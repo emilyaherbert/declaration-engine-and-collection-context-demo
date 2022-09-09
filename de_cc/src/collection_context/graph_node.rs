@@ -4,7 +4,7 @@ use crate::{
         typed_declaration::TyDeclaration, typed_expression::TyExpression, TyApplication, TyFile,
         TyNode,
     },
-    types::with_collection_context::DebugWithCC,
+    types::with_collection_context::*,
 };
 
 #[derive(DebugWithCC)]

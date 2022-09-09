@@ -3,7 +3,7 @@ use std::fmt;
 use crate::{
     collection_context::collection_index::CollectionIndex,
     type_system::type_mapping::TypeMapping,
-    types::{copy_types::CopyTypes, with_collection_context::DebugWithCC},
+    types::{copy_types::CopyTypes, with_collection_context::*},
 };
 
 use self::{typed_declaration::TyDeclaration, typed_expression::TyExpression};
@@ -20,7 +20,7 @@ pub(crate) struct TyApplication {
 #[derive(DebugWithCC)]
 pub(crate) struct TyFile {
     pub(crate) name: String,
-    pub(crate) nodes: Vec<TyNode>,
+    pub(crate) nodes: Vec<CollectionIndex>,
 }
 
 #[derive(Clone, PartialEq, DebugWithCC)]

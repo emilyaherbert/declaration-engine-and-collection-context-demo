@@ -2,9 +2,10 @@ use indent_write::fmt::IndentWriter;
 use std::fmt;
 use std::fmt::Write;
 
-use super::{typed_expression::*, TyNode};
+use super::typed_expression::*;
 
 use crate::{
+    collection_context::collection_index::CollectionIndex,
     declaration_engine::declaration_id::DeclarationId,
     type_system::{
         type_engine::{insert_type, MonomorphizeHelper},
@@ -13,9 +14,7 @@ use crate::{
         type_mapping::TypeMapping,
         type_parameter::TypeParameter,
     },
-    types::{
-        copy_types::CopyTypes, create_type_id::CreateTypeId, with_collection_context::DebugWithCC,
-    },
+    types::{copy_types::CopyTypes, create_type_id::CreateTypeId, with_collection_context::*},
     CollectionContext,
 };
 
@@ -123,12 +122,12 @@ impl CopyTypes for TyVariableDeclaration {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, DebugWithCC)]
 pub(crate) struct TyFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) parameters: Vec<TyFunctionParameter>,
-    pub(crate) body: Vec<TyNode>,
+    pub(crate) body: Vec<CollectionIndex>,
     pub(crate) return_type: TypeId,
 }
 
@@ -210,7 +209,7 @@ impl MonomorphizeHelper for TyFunctionDeclaration {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, DebugWithCC)]
 pub(crate) struct TyFunctionParameter {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
@@ -355,7 +354,7 @@ impl fmt::Display for TyStructDeclaration {
     }
 }
 
-#[derive(Clone, Hash, PartialEq, Eq)]
+#[derive(Clone, Hash, PartialEq, Eq, DebugWithCC)]
 pub struct TyStructField {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
