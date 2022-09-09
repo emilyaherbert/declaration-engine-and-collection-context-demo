@@ -165,7 +165,7 @@ fn analyze_function(
     let (typed_body, typed_body_return_type) =
         analyze_code_block(namespace, declaration_engine, function_declaration.body);
 
-    // unify the funtion return type and body return type
+    // unify the function return type and body return type
     unify_types(typed_body_return_type, return_type).unwrap();
 
     TypedFunctionDeclaration {

@@ -33,10 +33,6 @@ impl TypeEngine {
         TypeId::new(self.slab.insert(ty))
     }
 
-    fn look_up_type_id_raw(&self, id: TypeId) -> TypeInfo {
-        self.slab.get(*id)
-    }
-
     fn look_up_type_id(&self, id: TypeId) -> TypeInfo {
         match self.slab.get(*id) {
             TypeInfo::Ref(other) => self.look_up_type_id(other),
@@ -167,29 +163,6 @@ impl TypeEngine {
         }
     }
 
-    fn eval_type(&self, id: TypeId, namespace: &mut Namespace) -> Result<TypeId, String> {
-        match self.slab.get(*id) {
-            TypeInfo::Custom { name } => {
-                match namespace.get_symbol(&name)? {
-                    TyDeclaration::Struct(decl_id) => {
-                        // get the original struct declaration
-                        let mut struct_decl = de_get_struct(decl_id)?;
-
-                        // monomorphize the struct declaration into a new copy
-                        monomorphize(&mut struct_decl, &[])?;
-
-                        // add the new copy to the declaration engine
-                        de_add_monomorphized_struct_copy(decl_id, struct_decl.clone());
-
-                        Ok(struct_decl.create_type_id())
-                    }
-                    got => Err(format!("err, found: {}", got)),
-                }
-            }
-            _ => Ok(id),
-        }
-    }
-
     fn resolve_custom_types(&self, id: TypeId, namespace: &mut Namespace) -> Result<(), String> {
         match self.slab.get(*id) {
             TypeInfo::Ref(inner_id) => resolve_custom_types(inner_id, namespace),
@@ -263,20 +236,12 @@ pub(crate) fn look_up_type_id(id: TypeId) -> TypeInfo {
     TYPE_ENGINE.look_up_type_id(id)
 }
 
-pub(crate) fn look_up_type_id_raw(id: TypeId) -> TypeInfo {
-    TYPE_ENGINE.look_up_type_id_raw(id)
-}
-
 pub(crate) fn unify_types(received: TypeId, expected: TypeId) -> Result<(), String> {
     TYPE_ENGINE.unify_types(received, expected)
 }
 
 pub(crate) fn resolve_type(type_id: TypeId) -> Result<ResolvedType, String> {
     TYPE_ENGINE.resolve_type(type_id)
-}
-
-pub(crate) fn eval_type(id: TypeId, namespace: &mut Namespace) -> Result<TypeId, String> {
-    TYPE_ENGINE.eval_type(id, namespace)
 }
 
 pub(crate) fn resolve_custom_types(id: TypeId, namespace: &mut Namespace) -> Result<(), String> {

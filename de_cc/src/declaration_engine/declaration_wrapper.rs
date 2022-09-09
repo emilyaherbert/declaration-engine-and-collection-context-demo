@@ -4,7 +4,6 @@ use crate::{
     language::ty::typed_declaration::{
         TyFunctionDeclaration, TyStructDeclaration, TyTraitDeclaration, TyTraitFn, TyTraitImpl,
     },
-    namespace::function_signature::TypedFunctionSignature,
     type_system::type_mapping::TypeMapping,
     types::copy_types::CopyTypes,
 };
@@ -80,45 +79,6 @@ impl DeclarationWrapper {
     pub(super) fn expect_function(self) -> Result<TyFunctionDeclaration, String> {
         match self {
             DeclarationWrapper::Function(decl) => Ok(decl),
-            DeclarationWrapper::Unknown => {
-                Err("did not expect to find unknown declaration".to_string())
-            }
-            actually => Err(format!(
-                "did not expect to find {} declaration",
-                actually.friendly_name()
-            )),
-        }
-    }
-
-    // pub(super) fn expect_function_typed(self) -> Result<TypedFunctionDeclaration, String> {
-    //     match self {
-    //         DeclarationWrapper::Function(decl) => decl.expect_typed(),
-    //         DeclarationWrapper::Unknown => {
-    //             Err("did not expect to find unknown declaration".to_string())
-    //         }
-    //         actually => Err(format!(
-    //             "did not expect to find {} declaration",
-    //             actually.friendly_name()
-    //         )),
-    //     }
-    // }
-
-    // pub(super) fn expect_function_partial(self) -> Result<PartialFunctionDeclaration, String> {
-    //     match self {
-    //         DeclarationWrapper::Function(decl) => decl.expect_partial(),
-    //         DeclarationWrapper::Unknown => {
-    //             Err("did not expect to find unknown declaration".to_string())
-    //         }
-    //         actually => Err(format!(
-    //             "did not expect to find {} declaration",
-    //             actually.friendly_name()
-    //         )),
-    //     }
-    // }
-
-    pub(super) fn expect_function_signature(self) -> Result<TypedFunctionSignature, String> {
-        match self {
-            DeclarationWrapper::Function(decl) => Ok(decl.into()),
             DeclarationWrapper::Unknown => {
                 Err("did not expect to find unknown declaration".to_string())
             }
