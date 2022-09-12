@@ -15,28 +15,30 @@ use crate::{
     type_system::type_mapping::TypeMapping,
 };
 
-pub(crate) fn collect_nodes(application: Application) {
+pub(crate) fn collect_nodes(application: Application) -> CollectionIndex {
     let file_indices = application
         .files
         .into_iter()
-        .map(|file| collect_nodes_file(file))
+        .map(collect_nodes_file)
         .collect::<Vec<_>>();
     let application = TyApplication {
-        files: file_indices,
+        files: file_indices.clone(),
     };
     let application_index = cc_add_node(application.into());
-    application.files.iter().for_each(|file_index| {
+    file_indices.iter().for_each(|file_index| {
         cc_add_edge(application_index, *file_index);
     });
+    application_index
 }
 
 fn collect_nodes_file(file: File) -> CollectionIndex {
+    let nodes = collect_nodes_nodes(file.nodes);
     let file = TyFile {
         name: file.name,
-        nodes: collect_nodes_nodes(file.nodes),
+        nodes: nodes.clone(),
     };
     let file_index = cc_add_node(file.into());
-    file.nodes.iter().for_each(|node_index| {
+    nodes.iter().for_each(|node_index| {
         cc_add_edge(file_index, *node_index);
     });
     file_index

@@ -4,7 +4,7 @@ use crate::types::copy_types::CopyTypes;
 
 use super::{type_id::TypeId, type_mapping::TypeMapping};
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TypeArgument {
     pub(crate) type_id: TypeId,
 }

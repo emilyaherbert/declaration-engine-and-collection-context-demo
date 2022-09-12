@@ -19,7 +19,7 @@ use crate::{
 
 use super::{expression::to_resolved_expression, to_resolved_nodes};
 
-pub(super) fn to_resolved_declaration(declaration: TyDeclaration) -> Vec<ResolvedDeclaration> {
+pub(super) fn to_resolved_declaration(declaration: &TyDeclaration) -> Vec<ResolvedDeclaration> {
     match declaration {
         TyDeclaration::Variable(variable_declaration) => {
             let variable_declaration = to_resolved_variable_declaration(variable_declaration);
@@ -51,25 +51,25 @@ pub(super) fn to_resolved_declaration(declaration: TyDeclaration) -> Vec<Resolve
 }
 
 fn to_resolved_variable_declaration(
-    variable_declaration: TyVariableDeclaration,
+    variable_declaration: &TyVariableDeclaration,
 ) -> ResolvedVariableDeclaration {
     let type_ascription = resolve_type(variable_declaration.type_ascription).unwrap();
-    let body = to_resolved_expression(variable_declaration.body);
+    let body = to_resolved_expression(&variable_declaration.body);
     ResolvedVariableDeclaration {
-        name: variable_declaration.name,
+        name: variable_declaration.name.to_string(),
         type_ascription,
         body,
     }
 }
 
 fn to_resolved_function_declaration(
-    function_id: DeclarationId,
+    function_id: &DeclarationId,
 ) -> Vec<ResolvedFunctionDeclaration> {
-    let original_copy = de_get_function(function_id).unwrap();
+    let original_copy = de_get_function(*function_id).unwrap();
     if original_copy.type_parameters.is_empty() {
         to_resolved_function_declaration_inner(vec![original_copy])
     } else {
-        let monomorphized_copies = de_get_monomorphized_function_copies(function_id).unwrap();
+        let monomorphized_copies = de_get_monomorphized_function_copies(*function_id).unwrap();
         to_resolved_function_declaration_inner(monomorphized_copies)
     }
 }
@@ -90,7 +90,7 @@ fn to_resolved_function_declaration_inner(
                 .into_iter()
                 .map(to_resolved_function_parameter)
                 .collect::<Vec<_>>();
-            let to_resolvedd_body = to_resolved_nodes(function_declaration.body);
+            let to_resolvedd_body = to_resolved_nodes(&function_declaration.body);
             let to_resolvedd_type = resolve_type(function_declaration.return_type).unwrap();
             ResolvedFunctionDeclaration {
                 name: function_declaration.name,
@@ -118,11 +118,11 @@ fn to_resolved_function_parameter(
     }
 }
 
-fn to_resolved_trait_declaration(trait_id: DeclarationId) -> ResolvedTraitDeclaration {
-    let trait_decl = de_get_trait(trait_id).unwrap();
+fn to_resolved_trait_declaration(trait_id: &DeclarationId) -> ResolvedTraitDeclaration {
+    let trait_decl = de_get_trait(*trait_id).unwrap();
     let new_interface_surface = trait_decl
         .interface_surface
-        .into_iter()
+        .iter()
         .map(to_resolved_trait_fn)
         .collect::<Vec<_>>();
     ResolvedTraitDeclaration {
@@ -131,8 +131,8 @@ fn to_resolved_trait_declaration(trait_id: DeclarationId) -> ResolvedTraitDeclar
     }
 }
 
-fn to_resolved_trait_fn(trait_fn_id: DeclarationId) -> ResolvedTraitFn {
-    let trait_fn = de_get_trait_fn(trait_fn_id).unwrap();
+fn to_resolved_trait_fn(trait_fn_id: &DeclarationId) -> ResolvedTraitFn {
+    let trait_fn = de_get_trait_fn(*trait_fn_id).unwrap();
     let to_resolvedd_parameters = trait_fn
         .parameters
         .into_iter()
@@ -146,12 +146,12 @@ fn to_resolved_trait_fn(trait_fn_id: DeclarationId) -> ResolvedTraitFn {
     }
 }
 
-fn to_resolved_trait_impl(impl_id: DeclarationId) -> ResolvedTraitImpl {
-    let trait_impl = de_get_trait_impl(impl_id).unwrap();
+fn to_resolved_trait_impl(impl_id: &DeclarationId) -> ResolvedTraitImpl {
+    let trait_impl = de_get_trait_impl(*impl_id).unwrap();
     let type_implementing_for = resolve_type(trait_impl.type_implementing_for).unwrap();
     let methods = trait_impl
         .methods
-        .into_iter()
+        .iter()
         .flat_map(to_resolved_function_declaration)
         .collect::<Vec<_>>();
     ResolvedTraitImpl {
@@ -161,12 +161,12 @@ fn to_resolved_trait_impl(impl_id: DeclarationId) -> ResolvedTraitImpl {
     }
 }
 
-fn to_resolved_struct_declaration(struct_id: DeclarationId) -> Vec<ResolvedStructDeclaration> {
-    let original_copy = de_get_struct(struct_id).unwrap();
+fn to_resolved_struct_declaration(struct_id: &DeclarationId) -> Vec<ResolvedStructDeclaration> {
+    let original_copy = de_get_struct(*struct_id).unwrap();
     if original_copy.type_parameters.is_empty() {
         to_resolved_struct_declaration_inner(vec![original_copy])
     } else {
-        let monomorphized_copies = de_get_monomorphized_struct_copies(struct_id).unwrap();
+        let monomorphized_copies = de_get_monomorphized_struct_copies(*struct_id).unwrap();
         to_resolved_struct_declaration_inner(monomorphized_copies)
     }
 }

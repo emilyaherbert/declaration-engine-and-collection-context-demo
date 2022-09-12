@@ -33,6 +33,14 @@ impl fmt::Display for TyApplication {
     }
 }
 
+impl CopyTypes for TyApplication {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.files
+            .iter_mut()
+            .for_each(|node_index| node_index.copy_types(type_mapping));
+    }
+}
+
 pub(crate) struct TyFile {
     pub(crate) name: String,
     pub(crate) nodes: Vec<CollectionIndex>,
@@ -56,6 +64,14 @@ impl fmt::Display for TyFile {
             nodes_str,
             format!("\n<<<").green(),
         )
+    }
+}
+
+impl CopyTypes for TyFile {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.nodes
+            .iter_mut()
+            .for_each(|node_index| node_index.copy_types(type_mapping));
     }
 }
 

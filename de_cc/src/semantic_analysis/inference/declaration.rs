@@ -1,4 +1,5 @@
 use crate::{
+    collection_context::{collection_context::cc_get_node, collection_index::CollectionIndex},
     declaration_engine::declaration_engine::*,
     language::ty::{
         typed_declaration::{
@@ -107,8 +108,10 @@ fn analyze_function(namespace: &mut Namespace, function_declaration: &TyFunction
     unify_types(typed_body_return_type, function_declaration.return_type).unwrap();
 }
 
-fn analyze_code_block(namespace: &mut Namespace, nodes: &[TyNode]) -> TypeId {
-    for node in nodes.iter() {
+fn analyze_code_block(namespace: &mut Namespace, nodes: &[CollectionIndex]) -> TypeId {
+    for node_index in nodes.iter() {
+        let node = cc_get_node(node_index);
+        let node = node.expect_node().unwrap();
         analyze_node(namespace, node);
         if let TyNode::ReturnStatement(exp) = node {
             return exp.type_id;

@@ -8,29 +8,33 @@ use crate::{
     type_system::type_engine::resolve_type,
 };
 
-pub(super) fn to_resolved_expression(expression: TyExpression) -> ResolvedExpression {
-    let variant = resolve_expression_variant(expression.variant);
+pub(super) fn to_resolved_expression(expression: &TyExpression) -> ResolvedExpression {
+    let variant = resolve_expression_variant(&expression.variant);
     ResolvedExpression {
         variant,
         type_info: resolve_type(expression.type_id).unwrap(),
     }
 }
 
-fn resolve_expression_variant(variant: TyExpressionVariant) -> ResolvedExpressionVariant {
+fn resolve_expression_variant(variant: &TyExpressionVariant) -> ResolvedExpressionVariant {
     match variant {
-        TyExpressionVariant::Literal { value } => ResolvedExpressionVariant::Literal { value },
-        TyExpressionVariant::Variable { name } => ResolvedExpressionVariant::Variable { name },
+        TyExpressionVariant::Literal { value } => ResolvedExpressionVariant::Literal {
+            value: value.clone(),
+        },
+        TyExpressionVariant::Variable { name } => {
+            ResolvedExpressionVariant::Variable { name: name.clone() }
+        }
         TyExpressionVariant::FunctionApplication {
             name,
             type_arguments: _,
             arguments,
         } => {
             let resolved_arguments = arguments
-                .into_iter()
+                .iter()
                 .map(to_resolved_expression)
                 .collect::<Vec<_>>();
             ResolvedExpressionVariant::FunctionApplication {
-                name,
+                name: name.to_string(),
                 arguments: resolved_arguments,
             }
         }
@@ -40,11 +44,11 @@ fn resolve_expression_variant(variant: TyExpressionVariant) -> ResolvedExpressio
             fields,
         } => {
             let resolved_fields = fields
-                .into_iter()
+                .iter()
                 .map(resolve_struct_expression_field)
                 .collect::<Vec<_>>();
             ResolvedExpressionVariant::Struct {
-                struct_name,
+                struct_name: struct_name.to_string(),
                 fields: resolved_fields,
             }
         }
@@ -55,12 +59,12 @@ fn resolve_expression_variant(variant: TyExpressionVariant) -> ResolvedExpressio
             arguments,
         } => {
             let resolved_arguments = arguments
-                .into_iter()
+                .iter()
                 .map(to_resolved_expression)
                 .collect::<Vec<_>>();
             ResolvedExpressionVariant::MethodCall {
-                parent_name,
-                func_name,
+                parent_name: parent_name.to_string(),
+                func_name: func_name.to_string(),
                 arguments: resolved_arguments,
             }
         }
@@ -71,11 +75,11 @@ fn resolve_expression_variant(variant: TyExpressionVariant) -> ResolvedExpressio
 }
 
 fn resolve_struct_expression_field(
-    struct_expression_field: TyStructExpressionField,
+    struct_expression_field: &TyStructExpressionField,
 ) -> ResolvedStructExpressionField {
-    let new_value = to_resolved_expression(struct_expression_field.value);
+    let new_value = to_resolved_expression(&struct_expression_field.value);
     ResolvedStructExpressionField {
-        name: struct_expression_field.name,
+        name: struct_expression_field.name.to_string(),
         value: new_value,
     }
 }

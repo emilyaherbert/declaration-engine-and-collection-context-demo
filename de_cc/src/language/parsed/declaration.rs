@@ -107,7 +107,7 @@ impl fmt::Display for FunctionDeclaration {
     }
 }
 
-#[derive(Clone, Hash, PartialEq)]
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct FunctionParameter {
     pub(crate) name: String,
     pub(crate) type_info: TypeInfo,
@@ -119,7 +119,7 @@ impl fmt::Display for FunctionParameter {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct TraitDeclaration {
     pub(crate) name: String,
     pub(crate) interface_surface: Vec<TraitFn>,
@@ -138,7 +138,7 @@ impl fmt::Display for TraitDeclaration {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Eq)]
 pub struct TraitFn {
     pub(crate) name: String,
     pub(crate) parameters: Vec<FunctionParameter>,
@@ -200,7 +200,7 @@ impl fmt::Display for TraitImpl {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct StructDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
@@ -237,7 +237,7 @@ impl fmt::Display for StructDeclaration {
     }
 }
 
-#[derive(Clone, Hash, PartialEq, Debug)]
+#[derive(Clone, Hash, PartialEq, Eq, Debug)]
 pub struct StructField {
     pub(crate) name: String,
     pub(crate) type_info: TypeInfo,

@@ -1,3 +1,4 @@
+use collection_context::collection_context::cc_get_node;
 use language::{parsed::Application, resolved::ResolvedApplication};
 use namespace::namespace::Namespace;
 use semantic_analysis::{
@@ -23,21 +24,23 @@ pub fn compile(application: Application) -> ResolvedApplication {
     // 1. parsing happens here
 
     // 2. transform to the Ty AST
-    let ty_application = collect_nodes(application);
+    let application_index = collect_nodes(application);
 
     // 3. do node collection
     //collect_nodes(&mut collection_ctxt, ty_application);
 
     // 4. do type collection
     let mut namespace = Namespace::default();
-    collect_types(&mut namespace, todo!());
+    let app = cc_get_node(&application_index);
+    let ty_application = app.expect_application().unwrap();
+    collect_types(&mut namespace, ty_application);
 
     // 5. do type inference with new namespace
     let mut namespace = Namespace::default();
-    analyze(&mut namespace, todo!());
+    analyze(&mut namespace, ty_application);
 
     // 6. resolve all types
-    let resolved_application = to_resolved(todo!());
+    let resolved_application = to_resolved(ty_application);
 
     // 7. ir generation happens here
 
