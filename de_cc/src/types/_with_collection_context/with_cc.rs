@@ -1,7 +1,4 @@
 use crate::collection_context::collection_context::CollectionContext;
-
-pub(crate) use de_cc_macros::*;
-
 use super::WrapperCC;
 
 pub(crate) trait WithCC {

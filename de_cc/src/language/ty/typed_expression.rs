@@ -5,11 +5,10 @@ use std::fmt::Write;
 use crate::{
     language::literal::Literal,
     type_system::{type_argument::TypeArgument, type_id::TypeId, type_mapping::TypeMapping},
-    types::{copy_types::CopyTypes, with_collection_context::*},
-    CollectionContext,
+    types::copy_types::CopyTypes,
 };
 
-#[derive(Clone, PartialEq, Debug, DebugWithCC)]
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) struct TyExpression {
     pub(crate) variant: TyExpressionVariant,
     pub(crate) type_id: TypeId,
@@ -28,7 +27,7 @@ impl CopyTypes for TyExpression {
     }
 }
 
-#[derive(Clone, PartialEq, Debug, DebugWithCC)]
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) enum TyExpressionVariant {
     Literal {
         value: Literal,

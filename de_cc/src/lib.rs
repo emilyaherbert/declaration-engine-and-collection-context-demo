@@ -1,4 +1,3 @@
-use collection_context::collection_context::CollectionContext;
 use language::{parsed::Application, resolved::ResolvedApplication};
 use namespace::namespace::Namespace;
 use semantic_analysis::{
@@ -24,8 +23,7 @@ pub fn compile(application: Application) -> ResolvedApplication {
     // 1. parsing happens here
 
     // 2. transform to the Ty AST
-    let mut collection_ctxt = CollectionContext::default();
-    let ty_application = collect_nodes(&mut collection_ctxt, application);
+    let ty_application = collect_nodes(application);
 
     // 3. do node collection
     //collect_nodes(&mut collection_ctxt, ty_application);

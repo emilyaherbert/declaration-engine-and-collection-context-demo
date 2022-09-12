@@ -1,9 +1,12 @@
-use crate::types::with_collection_context::*;
-use crate::CollectionContext;
+use std::fmt;
 
 use petgraph::prelude::NodeIndex;
 
-#[derive(Clone, WithCC)]
+use crate::{type_system::type_mapping::TypeMapping, types::copy_types::CopyTypes};
+
+use super::collection_context::cc_get_node;
+
+#[derive(Clone, PartialEq)]
 pub(crate) struct CollectionIndex(NodeIndex);
 
 impl std::ops::Deref for CollectionIndex {
@@ -13,11 +16,15 @@ impl std::ops::Deref for CollectionIndex {
     }
 }
 
-impl DebugWithCC for CollectionIndex {
-    fn fmt_with_cc(&self, f: &mut std::fmt::Formatter, cc: &CollectionContext) -> std::fmt::Result {
-        todo!()
-        // let w = cc.get_node(self).with_cc(cc);
-        // write!(f, "{:?}", w)
+impl CopyTypes for CollectionIndex {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        todo!();
+    }
+}
+
+impl fmt::Display for CollectionIndex {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", cc_get_node(self))
     }
 }
 
