@@ -1,4 +1,5 @@
 use crate::{
+    collection_context::collection_context::CollectionContext,
     declaration_engine::{declaration_engine::*, declaration_id::DeclarationId},
     language::{
         resolved::resolved_declaration::{
@@ -19,14 +20,17 @@ use crate::{
 
 use super::{expression::to_resolved_expression, to_resolved_nodes};
 
-pub(super) fn to_resolved_declaration(declaration: &TyDeclaration) -> Vec<ResolvedDeclaration> {
+pub(super) fn to_resolved_declaration(
+    cc: &CollectionContext,
+    declaration: &TyDeclaration,
+) -> Vec<ResolvedDeclaration> {
     match declaration {
         TyDeclaration::Variable(variable_declaration) => {
             let variable_declaration = to_resolved_variable_declaration(variable_declaration);
             vec![ResolvedDeclaration::Variable(variable_declaration)]
         }
         TyDeclaration::Function(id) => {
-            let function_declarations = to_resolved_function_declaration(id);
+            let function_declarations = to_resolved_function_declaration(cc, id);
             function_declarations
                 .into_iter()
                 .map(ResolvedDeclaration::Function)
@@ -37,7 +41,7 @@ pub(super) fn to_resolved_declaration(declaration: &TyDeclaration) -> Vec<Resolv
             vec![ResolvedDeclaration::Trait(trait_declaration)]
         }
         TyDeclaration::TraitImpl(id) => {
-            let trait_impl = to_resolved_trait_impl(id);
+            let trait_impl = to_resolved_trait_impl(cc, id);
             vec![ResolvedDeclaration::TraitImpl(trait_impl)]
         }
         TyDeclaration::Struct(id) => {
@@ -63,41 +67,43 @@ fn to_resolved_variable_declaration(
 }
 
 fn to_resolved_function_declaration(
+    cc: &CollectionContext,
     function_id: &DeclarationId,
 ) -> Vec<ResolvedFunctionDeclaration> {
     let original_copy = de_get_function(*function_id).unwrap();
     if original_copy.type_parameters.is_empty() {
-        to_resolved_function_declaration_inner(vec![original_copy])
+        to_resolved_function_declaration_inner(cc, vec![original_copy])
     } else {
         let monomorphized_copies = de_get_monomorphized_function_copies(*function_id).unwrap();
-        to_resolved_function_declaration_inner(monomorphized_copies)
+        to_resolved_function_declaration_inner(cc, monomorphized_copies)
     }
 }
 
 fn to_resolved_function_declaration_inner(
+    cc: &CollectionContext,
     function_declarations: Vec<TyFunctionDeclaration>,
 ) -> Vec<ResolvedFunctionDeclaration> {
     function_declarations
         .into_iter()
         .map(|function_declaration| {
-            let to_resolvedd_type_parameters = function_declaration
+            let resolved_type_parameters = function_declaration
                 .type_parameters
                 .into_iter()
                 .map(resolve_type_parameter)
                 .collect::<Vec<_>>();
-            let to_resolvedd_parameters = function_declaration
+            let resolved_parameters = function_declaration
                 .parameters
                 .into_iter()
                 .map(to_resolved_function_parameter)
                 .collect::<Vec<_>>();
-            let to_resolvedd_body = to_resolved_nodes(&function_declaration.body);
-            let to_resolvedd_type = resolve_type(function_declaration.return_type).unwrap();
+            let resolved_body = to_resolved_nodes(cc, &function_declaration.body);
+            let resolved_type = resolve_type(function_declaration.return_type).unwrap();
             ResolvedFunctionDeclaration {
                 name: function_declaration.name,
-                type_parameters: to_resolvedd_type_parameters,
-                parameters: to_resolvedd_parameters,
-                body: to_resolvedd_body,
-                return_type: to_resolvedd_type,
+                type_parameters: resolved_type_parameters,
+                parameters: resolved_parameters,
+                body: resolved_body,
+                return_type: resolved_type,
             }
         })
         .collect()
@@ -133,26 +139,26 @@ fn to_resolved_trait_declaration(trait_id: &DeclarationId) -> ResolvedTraitDecla
 
 fn to_resolved_trait_fn(trait_fn_id: &DeclarationId) -> ResolvedTraitFn {
     let trait_fn = de_get_trait_fn(*trait_fn_id).unwrap();
-    let to_resolvedd_parameters = trait_fn
+    let resolved_parameters = trait_fn
         .parameters
         .into_iter()
         .map(to_resolved_function_parameter)
         .collect::<Vec<_>>();
-    let to_resolvedd_type = resolve_type(trait_fn.return_type).unwrap();
+    let resolved_type = resolve_type(trait_fn.return_type).unwrap();
     ResolvedTraitFn {
         name: trait_fn.name,
-        parameters: to_resolvedd_parameters,
-        return_type: to_resolvedd_type,
+        parameters: resolved_parameters,
+        return_type: resolved_type,
     }
 }
 
-fn to_resolved_trait_impl(impl_id: &DeclarationId) -> ResolvedTraitImpl {
+fn to_resolved_trait_impl(cc: &CollectionContext, impl_id: &DeclarationId) -> ResolvedTraitImpl {
     let trait_impl = de_get_trait_impl(*impl_id).unwrap();
     let type_implementing_for = resolve_type(trait_impl.type_implementing_for).unwrap();
     let methods = trait_impl
         .methods
         .iter()
-        .flat_map(to_resolved_function_declaration)
+        .flat_map(|method| to_resolved_function_declaration(cc, method))
         .collect::<Vec<_>>();
     ResolvedTraitImpl {
         trait_name: trait_impl.trait_name,
@@ -177,20 +183,20 @@ fn to_resolved_struct_declaration_inner(
     struct_declarations
         .into_iter()
         .map(|struct_declaration| {
-            let to_resolvedd_type_parameters = struct_declaration
+            let resolved_type_parameters = struct_declaration
                 .type_parameters
                 .into_iter()
                 .map(resolve_type_parameter)
                 .collect::<Vec<_>>();
-            let to_resolvedd_fields = struct_declaration
+            let resolved_fields = struct_declaration
                 .fields
                 .into_iter()
                 .map(to_resolved_struct_field)
                 .collect::<Vec<_>>();
             ResolvedStructDeclaration {
                 name: struct_declaration.name,
-                type_parameters: to_resolvedd_type_parameters,
-                fields: to_resolvedd_fields,
+                type_parameters: resolved_type_parameters,
+                fields: resolved_fields,
             }
         })
         .collect()

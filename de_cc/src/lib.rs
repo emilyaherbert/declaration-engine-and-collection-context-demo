@@ -1,9 +1,9 @@
-use collection_context::collection_context::cc_get_node;
+use collection_context::collection_context::CollectionContext;
 use language::{parsed::Application, resolved::ResolvedApplication};
 use namespace::namespace::Namespace;
 use semantic_analysis::{
-    inference::analyze, node_collection::collect_nodes, ty_to_resolved::to_resolved,
-    type_collection::collect_types,
+    node_collection::collect_nodes, ty_to_resolved::to_resolved, type_collection::collect_types,
+    type_inference::analyze,
 };
 
 mod collection_context;
@@ -23,26 +23,22 @@ pub fn compile(application: Application) -> ResolvedApplication {
 
     // 1. parsing happens here
 
-    // 2. transform to the Ty AST
-    let application_index = collect_nodes(application);
+    // 2. transform to the Ty AST and do node collection
+    let mut collection_context = CollectionContext::default();
+    let application_index = collect_nodes(&mut collection_context, application);
 
-    // 3. do node collection
-    //collect_nodes(&mut collection_ctxt, ty_application);
-
-    // 4. do type collection
+    // 3. do type collection
     let mut namespace = Namespace::default();
-    let app = cc_get_node(&application_index);
-    let ty_application = app.expect_application().unwrap();
-    collect_types(&mut namespace, ty_application);
+    collect_types(&collection_context, &mut namespace, &application_index);
 
-    // 5. do type inference with new namespace
+    // 4. do type inference with new namespace
     let mut namespace = Namespace::default();
-    analyze(&mut namespace, ty_application);
+    analyze(&mut collection_context, &mut namespace, &application_index);
 
-    // 6. resolve all types
-    let resolved_application = to_resolved(ty_application);
+    // 5. resolve all types
+    let resolved_application = to_resolved(&collection_context, &application_index);
 
-    // 7. ir generation happens here
+    // 6. ir generation happens here
 
     resolved_application
 }

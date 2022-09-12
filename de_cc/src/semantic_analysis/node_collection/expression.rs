@@ -1,4 +1,5 @@
 use crate::{
+    collection_context::collection_context::CollectionContext,
     language::{
         parsed::expression::Expression,
         ty::typed_expression::{TyExpression, TyExpressionVariant, TyStructExpressionField},
@@ -8,6 +9,7 @@ use crate::{
 };
 
 pub(super) fn collect_nodes_expression(
+    cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     expression: Expression,
 ) -> TyExpression {
@@ -35,12 +37,12 @@ pub(super) fn collect_nodes_expression(
             // apply the type mapping to the type arguments
             type_arguments
                 .iter_mut()
-                .for_each(|type_arg| type_arg.copy_types(type_mapping));
+                .for_each(|type_arg| type_arg.copy_types(cc, type_mapping));
 
             // transform the arguments into Ty AST nodes
             let new_arguments = arguments
                 .into_iter()
-                .map(|argument| collect_nodes_expression(type_mapping, argument))
+                .map(|argument| collect_nodes_expression(cc, type_mapping, argument))
                 .collect::<Vec<_>>();
 
             // return!
@@ -68,12 +70,12 @@ pub(super) fn collect_nodes_expression(
             // apply the type mapping to the type arguments
             type_arguments
                 .iter_mut()
-                .for_each(|type_arg| type_arg.copy_types(type_mapping));
+                .for_each(|type_arg| type_arg.copy_types(cc, type_mapping));
 
             // transform the arguments into Ty AST nodes
             let new_arguments = arguments
                 .into_iter()
-                .map(|argument| collect_nodes_expression(type_mapping, argument))
+                .map(|argument| collect_nodes_expression(cc, type_mapping, argument))
                 .collect::<Vec<_>>();
 
             // return!
@@ -101,14 +103,14 @@ pub(super) fn collect_nodes_expression(
             // apply the type mapping to the type arguments
             type_arguments
                 .iter_mut()
-                .for_each(|type_arg| type_arg.copy_types(type_mapping));
+                .for_each(|type_arg| type_arg.copy_types(cc, type_mapping));
 
             // transform the fields into Ty AST nodes
             let typed_fields = fields
                 .into_iter()
                 .map(|field| TyStructExpressionField {
                     name: field.name,
-                    value: collect_nodes_expression(type_mapping, field.value),
+                    value: collect_nodes_expression(cc, type_mapping, field.value),
                 })
                 .collect::<Vec<_>>();
 

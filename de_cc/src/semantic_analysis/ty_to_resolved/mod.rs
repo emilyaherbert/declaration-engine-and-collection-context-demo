@@ -5,49 +5,49 @@ use declaration::*;
 use expression::*;
 
 use crate::{
-    collection_context::{collection_context::cc_get_node, collection_index::CollectionIndex},
+    collection_context::{
+        collection_context::CollectionContext, collection_index::CollectionIndex,
+    },
     language::{
         resolved::{ResolvedApplication, ResolvedFile, ResolvedNode},
-        ty::{TyApplication, TyFile, TyNode},
+        ty::TyNode,
     },
 };
 
-pub(crate) fn to_resolved(application: &TyApplication) -> ResolvedApplication {
+pub(crate) fn to_resolved(
+    cc: &CollectionContext,
+    node_index: &CollectionIndex,
+) -> ResolvedApplication {
+    let application = cc.get_node(node_index).expect_application().unwrap();
     let files = application
         .files
         .iter()
-        .map(|node_index| {
-            let node = cc_get_node(node_index);
-            let file = node.expect_file().unwrap();
-            to_resolved_file(file)
-        })
+        .map(|node_index| to_resolved_file(cc, node_index))
         .collect();
     ResolvedApplication { files }
 }
 
-fn to_resolved_file(file: &TyFile) -> ResolvedFile {
-    let new_nodes = to_resolved_nodes(&file.nodes);
+fn to_resolved_file(cc: &CollectionContext, node_index: &CollectionIndex) -> ResolvedFile {
+    let file = cc.get_node(node_index).expect_file().unwrap();
+    let new_nodes = to_resolved_nodes(cc, &file.nodes);
     ResolvedFile {
         name: file.name.clone(),
         nodes: new_nodes,
     }
 }
 
-fn to_resolved_nodes(nodes: &[CollectionIndex]) -> Vec<ResolvedNode> {
+fn to_resolved_nodes(cc: &CollectionContext, nodes: &[CollectionIndex]) -> Vec<ResolvedNode> {
     nodes
         .iter()
-        .flat_map(|node_index| {
-            let node = cc_get_node(node_index);
-            let node = node.expect_node().unwrap();
-            to_resolved_node(node)
-        })
+        .flat_map(|node_index| to_resolved_node(cc, node_index))
         .collect()
 }
 
-fn to_resolved_node(node: &TyNode) -> Vec<ResolvedNode> {
+fn to_resolved_node(cc: &CollectionContext, node_index: &CollectionIndex) -> Vec<ResolvedNode> {
+    let node = cc.get_node(node_index).expect_node().unwrap();
     match node {
         TyNode::Declaration(declaration) => {
-            let declarations = to_resolved_declaration(declaration);
+            let declarations = to_resolved_declaration(cc, declaration);
             declarations
                 .into_iter()
                 .map(ResolvedNode::Declaration)
@@ -60,6 +60,6 @@ fn to_resolved_node(node: &TyNode) -> Vec<ResolvedNode> {
             vec![ResolvedNode::ReturnStatement(to_resolved_expression(
                 expression,
             ))]
-        } // TypedNode::StarImport(_) => todo!(),
+        }
     }
 }

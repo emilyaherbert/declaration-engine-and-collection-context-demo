@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet};
 
+use crate::collection_context::collection_context::CollectionContext;
 use crate::declaration_engine::declaration_engine::*;
 use crate::type_system::type_engine::resolve_custom_types;
 use crate::{
@@ -9,7 +10,11 @@ use crate::{
     types::create_type_id::CreateTypeId,
 };
 
-pub(super) fn analyze_expression(namespace: &mut Namespace, expression: &TyExpression) {
+pub(super) fn analyze_expression(
+    cc: &mut CollectionContext,
+    namespace: &mut Namespace,
+    expression: &TyExpression,
+) {
     match &expression.variant {
         TyExpressionVariant::Literal { .. } => {}
         TyExpressionVariant::Variable { name } => {
@@ -46,7 +51,7 @@ pub(super) fn analyze_expression(namespace: &mut Namespace, expression: &TyExpre
             }
 
             // monomorphize the function declaration into a new copy, in place
-            monomorphize(&mut typed_function_declaration, type_arguments).unwrap();
+            monomorphize(&mut typed_function_declaration, type_arguments, cc).unwrap();
 
             // add the new copy to the declaration engine
             de_add_monomorphized_function_copy(decl_id, typed_function_declaration.clone());
@@ -56,7 +61,7 @@ pub(super) fn analyze_expression(namespace: &mut Namespace, expression: &TyExpre
                 .iter()
                 .zip(typed_function_declaration.parameters.iter())
                 .for_each(|(argument, parameter)| {
-                    analyze_expression(namespace, argument);
+                    analyze_expression(cc, namespace, argument);
                     unify_types(argument.type_id, parameter.type_id).unwrap();
                 });
 
@@ -84,7 +89,7 @@ pub(super) fn analyze_expression(namespace: &mut Namespace, expression: &TyExpre
             let mut typed_struct_declaration = de_get_struct(decl_id).unwrap();
 
             // monomorphize the struct declaration into a new copy, in place
-            monomorphize(&mut typed_struct_declaration, type_arguments).unwrap();
+            monomorphize(&mut typed_struct_declaration, type_arguments, cc).unwrap();
 
             // add the new copy to the declaration engine
             de_add_monomorphized_struct_copy(decl_id, typed_struct_declaration.clone());
@@ -111,7 +116,7 @@ pub(super) fn analyze_expression(namespace: &mut Namespace, expression: &TyExpre
 
             // do type inference on the fields
             given_fields_map.iter().for_each(|(name, value)| {
-                analyze_expression(namespace, value);
+                analyze_expression(cc, namespace, value);
                 let oracle_field = oracle_fields_map.get(name).unwrap();
                 unify_types(value.type_id, *oracle_field).unwrap();
             });
@@ -147,16 +152,16 @@ pub(super) fn analyze_expression(namespace: &mut Namespace, expression: &TyExpre
                 .unwrap();
 
             // do type inference on the type arguments
-            type_arguments
-                .iter()
-                .for_each(|type_arg| resolve_custom_types(type_arg.type_id, namespace).unwrap());
+            type_arguments.iter().for_each(|type_arg| {
+                resolve_custom_types(type_arg.type_id, namespace, cc).unwrap()
+            });
 
             // do type inference on the arguments
             arguments
                 .iter()
                 .zip(typed_method_declaration.parameters.iter())
                 .for_each(|(argument, parameter)| {
-                    analyze_expression(namespace, argument);
+                    analyze_expression(cc, namespace, argument);
                     unify_types(argument.type_id, parameter.type_id).unwrap();
                 });
 

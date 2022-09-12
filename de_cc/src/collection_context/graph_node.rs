@@ -1,42 +1,37 @@
-use std::fmt;
-
 use crate::{
-    language::ty::{
-        typed_declaration::TyDeclaration, typed_expression::TyExpression, TyApplication, TyFile,
-        TyNode,
-    },
+    language::ty::{typed_declaration::TyDeclaration, TyApplication, TyFile, TyNode},
     type_system::type_mapping::TypeMapping,
-    types::copy_types::CopyTypes,
+    types::{copy_types::CopyTypes, pretty_print::PrettyPrint},
 };
 
+use super::collection_context::CollectionContext;
+
+#[derive(Clone)]
 pub(crate) enum GraphNode {
     Application(TyApplication),
     File(TyFile),
     Node(TyNode),
     Declaration(TyDeclaration),
-    Expression(TyExpression),
 }
 
-impl fmt::Display for GraphNode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl PrettyPrint for GraphNode {
+    fn pretty_print(&self, cc: &CollectionContext) -> String {
         match self {
-            GraphNode::Application(node) => write!(f, "{}", node),
-            GraphNode::File(node) => write!(f, "{}", node),
-            GraphNode::Node(node) => write!(f, "{}", node),
-            GraphNode::Declaration(node) => write!(f, "{}", node),
-            GraphNode::Expression(node) => write!(f, "{}", node),
+            GraphNode::Application(node) => node.pretty_print(cc),
+            GraphNode::File(node) => node.pretty_print(cc),
+            GraphNode::Node(node) => node.to_string(),
+            GraphNode::Declaration(node) => node.to_string(),
         }
     }
 }
 
 impl CopyTypes for GraphNode {
-    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
         match self {
-            GraphNode::Application(node) => node.copy_types(type_mapping),
-            GraphNode::File(node) => node.copy_types(type_mapping),
-            GraphNode::Node(node) => node.copy_types(type_mapping),
-            GraphNode::Declaration(node) => node.copy_types(type_mapping),
-            GraphNode::Expression(node) => node.copy_types(type_mapping),
+            GraphNode::Application(node) => node.copy_types(cc, type_mapping),
+            GraphNode::File(node) => node.copy_types(cc, type_mapping),
+            GraphNode::Node(node) => node.copy_types(cc, type_mapping),
+            GraphNode::Declaration(node) => node.copy_types(cc, type_mapping),
         }
     }
 }
@@ -65,12 +60,6 @@ impl From<TyDeclaration> for GraphNode {
     }
 }
 
-impl From<TyExpression> for GraphNode {
-    fn from(node: TyExpression) -> Self {
-        GraphNode::Expression(node)
-    }
-}
-
 impl GraphNode {
     pub(crate) fn expect_application(&self) -> Result<&TyApplication, String> {
         match self {
@@ -96,13 +85,6 @@ impl GraphNode {
     pub(crate) fn expect_declaration(&self) -> Result<&TyDeclaration, String> {
         match self {
             GraphNode::Declaration(node) => Ok(node),
-            _ => Err("did not expect to find this declaration".to_string()),
-        }
-    }
-
-    pub(crate) fn expect_expression(&self) -> Result<&TyExpression, String> {
-        match self {
-            GraphNode::Expression(node) => Ok(node),
             _ => Err("did not expect to find this declaration".to_string()),
         }
     }

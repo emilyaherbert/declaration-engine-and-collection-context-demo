@@ -1,6 +1,7 @@
 use std::fmt;
 use std::hash::Hash;
 
+use crate::collection_context::collection_context::CollectionContext;
 use crate::types::copy_types::CopyTypes;
 
 use super::trait_constraint::TraitConstraint;
@@ -15,8 +16,8 @@ pub struct TypeParameter {
 }
 
 impl CopyTypes for TypeParameter {
-    fn copy_types(&mut self, type_mapping: &TypeMapping) {
-        self.type_id.copy_types(type_mapping);
+    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
+        self.type_id.copy_types(cc, type_mapping);
     }
 }
 

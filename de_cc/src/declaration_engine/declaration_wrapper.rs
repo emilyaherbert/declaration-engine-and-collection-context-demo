@@ -1,6 +1,7 @@
 use std::fmt;
 
 use crate::{
+    collection_context::collection_context::CollectionContext,
     language::ty::typed_declaration::{
         TyFunctionDeclaration, TyStructDeclaration, TyTraitDeclaration, TyTraitFn, TyTraitImpl,
     },
@@ -51,14 +52,14 @@ impl fmt::Display for DeclarationWrapper {
 }
 
 impl CopyTypes for DeclarationWrapper {
-    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
         match self {
             DeclarationWrapper::Unknown => {}
-            DeclarationWrapper::Function(decl) => decl.copy_types(type_mapping),
-            DeclarationWrapper::Trait(decl) => decl.copy_types(type_mapping),
-            DeclarationWrapper::TraitFn(decl) => decl.copy_types(type_mapping),
-            DeclarationWrapper::TraitImpl(decl) => decl.copy_types(type_mapping),
-            DeclarationWrapper::Struct(decl) => decl.copy_types(type_mapping),
+            DeclarationWrapper::Function(decl) => decl.copy_types(cc, type_mapping),
+            DeclarationWrapper::Trait(decl) => decl.copy_types(cc, type_mapping),
+            DeclarationWrapper::TraitFn(decl) => decl.copy_types(cc, type_mapping),
+            DeclarationWrapper::TraitImpl(decl) => decl.copy_types(cc, type_mapping),
+            DeclarationWrapper::Struct(decl) => decl.copy_types(cc, type_mapping),
         }
     }
 }

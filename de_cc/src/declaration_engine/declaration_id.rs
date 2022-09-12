@@ -1,6 +1,9 @@
 use std::fmt;
 
-use crate::{type_system::type_mapping::TypeMapping, types::copy_types::CopyTypes};
+use crate::{
+    collection_context::collection_context::CollectionContext,
+    type_system::type_mapping::TypeMapping, types::copy_types::CopyTypes,
+};
 
 use super::declaration_engine::de_look_up_decl_id;
 
@@ -44,8 +47,8 @@ impl Into<usize> for DeclarationId {
 }
 
 impl CopyTypes for DeclarationId {
-    fn copy_types(&mut self, type_mapping: &TypeMapping) {
-        de_look_up_decl_id(*self).copy_types(type_mapping)
+    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
+        de_look_up_decl_id(*self).copy_types(cc, type_mapping)
     }
 }
 
