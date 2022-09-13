@@ -38,6 +38,24 @@ impl PrettyPrint for TyApplication {
         .unwrap();
         builder
     }
+
+    #[allow(clippy::useless_format)]
+    fn pretty_print_debug(&self, cc: &CollectionContext) -> String {
+        let mut builder = String::new();
+        write!(
+            builder,
+            "{}{}\n{}",
+            format!("\n++++++++ RESOLVED").blue(),
+            self.files
+                .iter()
+                .map(|file| file.pretty_print_debug(cc))
+                .collect::<Vec<_>>()
+                .join("\n"),
+            format!("++++++++").blue(),
+        )
+        .unwrap();
+        builder
+    }
 }
 
 impl CopyTypes for TyApplication {
@@ -76,6 +94,28 @@ impl PrettyPrint for TyFile {
         .unwrap();
         builder
     }
+
+    #[allow(clippy::useless_format)]
+    fn pretty_print_debug(&self, cc: &CollectionContext) -> String {
+        let mut builder = String::new();
+        let mut nodes_str = self
+            .nodes
+            .iter()
+            .map(|node| node.pretty_print_debug(cc))
+            .collect::<Vec<_>>()
+            .join(";\n");
+        nodes_str.insert(0, '\n');
+        nodes_str.push(';');
+        write!(
+            builder,
+            "{}{}{}",
+            format!("\n>>> {}", self.name).green(),
+            nodes_str,
+            format!("\n<<<").green(),
+        )
+        .unwrap();
+        builder
+    }
 }
 
 impl CopyTypes for TyFile {
@@ -99,6 +139,14 @@ impl PrettyPrint for TyNode {
             TyNode::Declaration(declaration) => declaration.pretty_print(cc),
             TyNode::Expression(expression) => expression.to_string(),
             TyNode::ReturnStatement(expression) => format!("return {}", expression),
+        }
+    }
+
+    fn pretty_print_debug(&self, cc: &CollectionContext) -> String {
+        match self {
+            TyNode::Declaration(declaration) => declaration.pretty_print_debug(cc),
+            TyNode::Expression(expression) => format!("{:?}", expression),
+            TyNode::ReturnStatement(expression) => format!("return {:?}", expression),
         }
     }
 }

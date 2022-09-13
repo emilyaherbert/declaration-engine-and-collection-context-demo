@@ -19,7 +19,7 @@ use crate::{
     types::{copy_types::CopyTypes, create_type_id::CreateTypeId, pretty_print::PrettyPrint},
 };
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq)]
 pub(crate) enum TyDeclaration {
     Variable(TyVariableDeclaration),
     Function(DeclarationId),
@@ -36,6 +36,18 @@ impl fmt::Display for TyDeclaration {
             TyDeclaration::Trait(decl) => write!(f, "\n{}", decl),
             TyDeclaration::TraitImpl(decl) => write!(f, "\n{}", decl),
             TyDeclaration::Struct(decl) => write!(f, "\n{}", decl),
+        }
+    }
+}
+
+impl fmt::Debug for TyDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TyDeclaration::Variable(decl) => write!(f, "{:?}", decl),
+            TyDeclaration::Function(decl) => write!(f, "\n{:?}", decl),
+            TyDeclaration::Trait(decl) => write!(f, "\n{:?}", decl),
+            TyDeclaration::TraitImpl(decl) => write!(f, "\n{:?}", decl),
+            TyDeclaration::Struct(decl) => write!(f, "\n{:?}", decl),
         }
     }
 }
@@ -99,7 +111,7 @@ impl TyDeclaration {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TyVariableDeclaration {
     pub(crate) name: String,
     pub(crate) type_ascription: TypeId,
@@ -111,6 +123,16 @@ impl fmt::Display for TyVariableDeclaration {
         write!(
             f,
             "let {}: {} = {}",
+            self.name, self.type_ascription, self.body
+        )
+    }
+}
+
+impl fmt::Debug for TyVariableDeclaration {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "let {}: {:?} = {:?}",
             self.name, self.type_ascription, self.body
         )
     }
@@ -195,6 +217,59 @@ impl PrettyPrint for TyFunctionDeclaration {
             let mut indent = IndentWriter::new("  ", &mut builder);
             for node in self.body.iter() {
                 writeln!(indent, "{};", node.pretty_print(cc)).unwrap();
+            }
+        }
+        write!(builder, "}}").unwrap();
+        builder
+    }
+
+    fn pretty_print_debug(&self, cc: &CollectionContext) -> String {
+        let mut builder = String::new();
+        writeln!(
+            builder,
+            "fn {}{}({}) -> {:?}{} {{",
+            self.name,
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    "<{}>",
+                    self.type_parameters
+                        .iter()
+                        .map(|x| format!("{:?}", x))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            },
+            self.parameters
+                .iter()
+                .map(|parameter| format!("{:?}", parameter))
+                .collect::<Vec<_>>()
+                .join(", "),
+            self.return_type,
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    " where {}",
+                    self.type_parameters
+                        .iter()
+                        .filter(|x| x.trait_constraint.is_some())
+                        .map(|x| format!(
+                            "{:?}: {}",
+                            x.type_id,
+                            x.trait_constraint.clone().unwrap().trait_name
+                        ))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            },
+        )
+        .unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut builder);
+            for node in self.body.iter() {
+                writeln!(indent, "{};", node.pretty_print_debug(cc)).unwrap();
             }
         }
         write!(builder, "}}").unwrap();

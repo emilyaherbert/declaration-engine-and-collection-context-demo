@@ -12,7 +12,7 @@ use super::{
     CollectionGraph,
 };
 
-#[derive(Default)]
+#[derive(Default, Clone)]
 pub(crate) struct CollectionContext {
     pub(crate) graph: CollectionGraph,
 }

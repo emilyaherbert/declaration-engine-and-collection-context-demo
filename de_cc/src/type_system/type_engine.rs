@@ -1,4 +1,5 @@
 use crate::{
+    collection_context::collection_context::CollectionContext,
     concurrent_slab::ConcurrentSlab,
     declaration_engine::declaration_engine::*,
     language::{
@@ -167,9 +168,14 @@ impl TypeEngine {
         }
     }
 
-    fn resolve_custom_types(&self, id: TypeId, namespace: &mut Namespace) -> Result<(), String> {
+    fn resolve_custom_types(
+        &self,
+        id: TypeId,
+        namespace: &mut Namespace,
+        cc: &CollectionContext,
+    ) -> Result<(), String> {
         match self.slab.get(*id) {
-            TypeInfo::Ref(inner_id) => resolve_custom_types(inner_id, namespace),
+            TypeInfo::Ref(inner_id) => resolve_custom_types(inner_id, namespace, cc),
             TypeInfo::Custom { name } => {
                 match namespace.get_symbol(&name)? {
                     TyDeclaration::Struct(decl_id) => {
@@ -177,7 +183,7 @@ impl TypeEngine {
                         let mut struct_decl = de_get_struct(decl_id)?;
 
                         // monomorphize the struct declaration into a new copy
-                        monomorphize(&mut struct_decl, &[])?;
+                        self.monomorphize(&mut struct_decl, &[], cc)?;
 
                         // add the new copy to the declaration engine
                         de_add_monomorphized_struct_copy(decl_id, struct_decl.clone());
@@ -200,24 +206,25 @@ impl TypeEngine {
         }
     }
 
-    fn monomorphize<T>(&self, value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>
+    fn monomorphize<T>(
+        &self,
+        value: &mut T,
+        type_arguments: &[TypeArgument],
+        cc: &CollectionContext,
+    ) -> Result<(), String>
     where
         T: MonomorphizeHelper + CopyTypes,
     {
+        let mut new_cc = cc.clone();
+
         match (
             value.type_parameters().is_empty(),
             type_arguments.is_empty(),
         ) {
             (true, true) => Ok(()),
             (false, true) => {
-                value
-                    .type_parameters_mut()
-                    .iter_mut()
-                    .for_each(|type_param| {
-                        type_param.type_id = insert_type(TypeInfo::UnknownGeneric {
-                            name: type_param.name.clone(),
-                        });
-                    });
+                let type_mapping = insert_type_parameters(value.type_parameters());
+                value.copy_types(&mut new_cc, &type_mapping);
                 Ok(())
             }
             (true, false) => Err("does not take type arguments".to_string()),
@@ -230,14 +237,7 @@ impl TypeEngine {
                 {
                     self.unify_types(*interim_type, type_arg.type_id)?;
                 }
-                value
-                    .type_parameters_mut()
-                    .iter_mut()
-                    .for_each(|type_param| {
-                        type_param.type_id = insert_type(TypeInfo::UnknownGeneric {
-                            name: type_param.name.clone(),
-                        });
-                    });
+                value.copy_types(&mut new_cc, &type_mapping);
                 Ok(())
             }
         }
@@ -264,15 +264,23 @@ pub(crate) fn resolve_type(type_id: TypeId) -> Result<ResolvedType, String> {
     TYPE_ENGINE.resolve_type(type_id)
 }
 
-pub(crate) fn resolve_custom_types(id: TypeId, namespace: &mut Namespace) -> Result<(), String> {
-    TYPE_ENGINE.resolve_custom_types(id, namespace)
+pub(crate) fn resolve_custom_types(
+    id: TypeId,
+    namespace: &mut Namespace,
+    cc: &CollectionContext,
+) -> Result<(), String> {
+    TYPE_ENGINE.resolve_custom_types(id, namespace, cc)
 }
 
-pub(crate) fn monomorphize<T>(value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>
+pub(crate) fn monomorphize<T>(
+    value: &mut T,
+    type_arguments: &[TypeArgument],
+    cc: &CollectionContext,
+) -> Result<(), String>
 where
     T: MonomorphizeHelper + CopyTypes,
 {
-    TYPE_ENGINE.monomorphize(value, type_arguments)
+    TYPE_ENGINE.monomorphize(value, type_arguments, cc)
 }
 
 pub(crate) trait MonomorphizeHelper {

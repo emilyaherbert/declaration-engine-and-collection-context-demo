@@ -26,6 +26,15 @@ impl PrettyPrint for GraphNode {
             GraphNode::Declaration(_, node) => node.to_string(),
         }
     }
+
+    fn pretty_print_debug(&self, cc: &CollectionContext) -> String {
+        match self {
+            GraphNode::Application(node) => node.pretty_print_debug(cc),
+            GraphNode::File(node) => node.pretty_print_debug(cc),
+            GraphNode::Node(node) => node.pretty_print_debug(cc),
+            GraphNode::Declaration(_, node) => format!("{:?}", node),
+        }
+    }
 }
 
 impl CopyTypes for GraphNode {

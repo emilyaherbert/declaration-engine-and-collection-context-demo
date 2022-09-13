@@ -1,3 +1,5 @@
+use itertools::Itertools;
+
 use crate::{
     collection_context::{
         collection_context::CollectionContext, collection_index::CollectionIndex,
@@ -8,9 +10,12 @@ use crate::{
         de_insert_trait_impl,
     },
     language::{
-        parsed::declaration::{
-            Declaration, FunctionDeclaration, FunctionParameter, StructDeclaration, StructField,
-            TraitDeclaration, TraitFn, TraitImpl, VariableDeclaration,
+        parsed::{
+            declaration::{
+                Declaration, FunctionDeclaration, FunctionParameter, StructDeclaration,
+                StructField, TraitDeclaration, TraitFn, TraitImpl, VariableDeclaration,
+            },
+            Node,
         },
         ty::typed_declaration::{
             TyDeclaration, TyFunctionDeclaration, TyFunctionParameter, TyStructDeclaration,
@@ -24,7 +29,7 @@ use crate::{
     types::copy_types::CopyTypes,
 };
 
-use super::{collect_nodes_nodes, expression::collect_nodes_expression};
+use super::{collect_nodes_node, expression::collect_nodes_expression};
 
 pub(super) fn collect_nodes_declaration(
     cc: &mut CollectionContext,
@@ -92,7 +97,6 @@ fn collect_nodes_function(
     type_mapping.extend(insert_type_parameters(
         &function_declaration.type_parameters,
     ));
-    println!("{:#?}", type_mapping.iter().collect::<Vec<_>>());
     let parameters = function_declaration
         .parameters
         .into_iter()
@@ -100,7 +104,7 @@ fn collect_nodes_function(
         .collect::<Vec<_>>();
     let mut return_type = insert_type(function_declaration.return_type);
     return_type.copy_types(cc, &type_mapping);
-    let body = collect_nodes_nodes(cc, function_declaration.body);
+    let body = collect_nodes_code_block(cc, &type_mapping, function_declaration.body);
     TyFunctionDeclaration {
         name: function_declaration.name,
         type_parameters: function_declaration.type_parameters,
@@ -110,15 +114,36 @@ fn collect_nodes_function(
     }
 }
 
+fn collect_nodes_code_block(
+    cc: &mut CollectionContext,
+    type_mapping: &TypeMapping,
+    nodes: Vec<Node>,
+) -> Vec<CollectionIndex> {
+    let nodes = nodes
+        .into_iter()
+        .map(|node| collect_nodes_node(cc, type_mapping, node))
+        .collect::<Vec<_>>();
+
+    // for every node in this scope, connect them under the same shared scope
+    nodes
+        .clone()
+        .into_iter()
+        .permutations(2)
+        .for_each(|inner_nodes| {
+            let a = inner_nodes[0];
+            let b = inner_nodes[1];
+            cc.add_edge(a, b, GraphEdge::SharedScope);
+        });
+    nodes
+}
+
 fn collect_nodes_function_parameter(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     function_parameter: FunctionParameter,
 ) -> TyFunctionParameter {
     let mut type_id = insert_type(function_parameter.type_info);
-    println!("before: {:#?}", type_id);
     type_id.copy_types(cc, type_mapping);
-    println!("after: {:#?}", type_id);
     TyFunctionParameter {
         name: function_parameter.name,
         type_id,

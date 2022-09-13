@@ -9,7 +9,7 @@ use crate::{
     types::copy_types::CopyTypes,
 };
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TyExpression {
     pub(crate) variant: TyExpressionVariant,
     pub(crate) type_id: TypeId,
@@ -21,6 +21,12 @@ impl fmt::Display for TyExpression {
     }
 }
 
+impl fmt::Debug for TyExpression {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.variant)
+    }
+}
+
 impl CopyTypes for TyExpression {
     fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
         self.variant.copy_types(cc, type_mapping);
@@ -28,7 +34,7 @@ impl CopyTypes for TyExpression {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq)]
 pub(crate) enum TyExpressionVariant {
     Literal {
         value: Literal,
@@ -156,6 +162,105 @@ impl fmt::Display for TyExpressionVariant {
     }
 }
 
+impl fmt::Debug for TyExpressionVariant {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            TyExpressionVariant::Literal { value } => write!(f, "{}", value),
+            TyExpressionVariant::Variable { name } => write!(f, "{}", name),
+            TyExpressionVariant::FunctionApplication {
+                name,
+                type_arguments,
+                arguments,
+            } => {
+                write!(
+                    f,
+                    "{}{}({})",
+                    name,
+                    if type_arguments.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "::<{}>",
+                            type_arguments
+                                .iter()
+                                .map(|type_argument| format!("{:?}", type_argument))
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    },
+                    &arguments
+                        .iter()
+                        .map(|argument| format!("{:?}", argument))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            TyExpressionVariant::MethodCall {
+                parent_name: parent,
+                func_name: name,
+                type_arguments,
+                arguments,
+            } => {
+                write!(
+                    f,
+                    "{}.{}{}({})",
+                    parent,
+                    name,
+                    if type_arguments.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "::<{}>",
+                            type_arguments
+                                .iter()
+                                .map(|type_argument| format!("{:?}", type_argument))
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    },
+                    &arguments
+                        .iter()
+                        .map(|argument| format!("{:?}", argument))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            TyExpressionVariant::Struct {
+                struct_name,
+                type_arguments,
+                fields,
+            } => {
+                writeln!(
+                    f,
+                    "{}{} {{",
+                    struct_name,
+                    if type_arguments.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "::<{}>",
+                            type_arguments
+                                .iter()
+                                .map(|type_argument| format!("{:?}", type_argument))
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    }
+                )
+                .unwrap();
+                {
+                    let mut indent = IndentWriter::new("  ", &mut f);
+                    for field in fields.iter() {
+                        writeln!(indent, "{:?},", field).unwrap();
+                    }
+                }
+                write!(f, "}}")
+            }
+            TyExpressionVariant::FunctionParameter => write!(f, "function param"),
+        }
+    }
+}
+
 impl CopyTypes for TyExpressionVariant {
     fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
         match self {
@@ -179,7 +284,7 @@ impl CopyTypes for TyExpressionVariant {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq)]
 pub(crate) struct TyStructExpressionField {
     pub(crate) name: String,
     pub(crate) value: TyExpression,
@@ -188,6 +293,12 @@ pub(crate) struct TyStructExpressionField {
 impl fmt::Display for TyStructExpressionField {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.name, self.value)
+    }
+}
+
+impl fmt::Debug for TyStructExpressionField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {:?}", self.name, self.value)
     }
 }
 

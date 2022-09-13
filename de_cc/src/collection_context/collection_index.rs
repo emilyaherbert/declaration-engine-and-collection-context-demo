@@ -21,14 +21,20 @@ impl CopyTypes for CollectionIndex {
     fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
         let mut new_node = cc.get_node_mut(*self).clone();
         new_node.copy_types(cc, type_mapping);
+        println!("{}", new_node.pretty_print_debug(cc));
         let old_node = cc.get_node_mut(*self);
         *old_node = new_node;
+        cc.get_node_mut(*self).copy_types(cc, type_mapping);
     }
 }
 
 impl PrettyPrint for CollectionIndex {
     fn pretty_print(&self, cc: &CollectionContext) -> String {
         cc.get_node(*self).pretty_print(cc)
+    }
+
+    fn pretty_print_debug(&self, cc: &CollectionContext) -> String {
+        cc.get_node(*self).pretty_print_debug(cc)
     }
 }
 
