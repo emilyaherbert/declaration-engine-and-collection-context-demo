@@ -50,10 +50,10 @@ impl CollectionContext {
     // https://docs.rs/petgraph/latest/src/petgraph/visit/traversal.rs.html#253
     pub(crate) fn get_symbol(
         &self,
-        index: &CollectionIndex,
+        index: CollectionIndex,
         symbol: String,
     ) -> Result<DeclarationId, String> {
-        bfs::search_shared_scope_for_declaration(&self.graph, *index, symbol)?
+        bfs::search_shared_scope_for_declaration(&self.graph, index, symbol)?
             .ok_or_else(|| "could not find symbol in the collection context".to_string())
     }
 }

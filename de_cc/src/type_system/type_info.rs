@@ -81,7 +81,7 @@ impl fmt::Debug for TypeInfo {
             TypeInfo::UnknownGeneric { name } => write!(f, "{}", name),
             TypeInfo::Custom { name } => write!(f, "{{{}}}", name),
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
-            TypeInfo::Ref(id) => write!(f, "ref..{}", look_up_type_id(*id)),
+            TypeInfo::Ref(id) => write!(f, "ref..{}..{}", **id, look_up_type_id(*id)),
             TypeInfo::Unit => write!(f, "()"),
             TypeInfo::Struct {
                 name,

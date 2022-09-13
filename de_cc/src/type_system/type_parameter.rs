@@ -8,7 +8,7 @@ use super::trait_constraint::TraitConstraint;
 use super::type_id::TypeId;
 use super::type_mapping::TypeMapping;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Clone, PartialEq, Eq, Hash)]
 pub struct TypeParameter {
     pub(crate) name: String,
     pub(crate) type_id: TypeId,
@@ -24,5 +24,11 @@ impl CopyTypes for TypeParameter {
 impl fmt::Display for TypeParameter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.type_id)
+    }
+}
+
+impl fmt::Debug for TypeParameter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.type_id)
     }
 }

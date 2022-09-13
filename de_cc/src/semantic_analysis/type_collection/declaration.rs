@@ -8,10 +8,10 @@ use crate::{
 
 pub(super) fn collect_types_declaration(
     cc: &CollectionContext,
-    _namespace: &mut Namespace,
-    node_index: &CollectionIndex,
+    _ns: &mut Namespace,
+    node_index: CollectionIndex,
 ) {
-    let declaration = cc.get_node(*node_index).expect_declaration().unwrap();
+    let declaration = cc.get_node(node_index).expect_declaration().unwrap();
     match declaration {
         TyDeclaration::Variable(_) => {}
         TyDeclaration::Function(_) => {}

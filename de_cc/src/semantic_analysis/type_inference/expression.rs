@@ -13,18 +13,14 @@ use crate::{
 
 pub(super) fn analyze_expression(
     cc: &CollectionContext,
-    current_index: &CollectionIndex,
-    namespace: &mut Namespace,
+    current_index: CollectionIndex,
+    ns: &mut Namespace,
     expression: &TyExpression,
 ) {
     match &expression.variant {
         TyExpressionVariant::Literal { .. } => {}
         TyExpressionVariant::Variable { name } => {
-            let variable_decl = namespace
-                .get_symbol(name)
-                .unwrap()
-                .expect_variable()
-                .unwrap();
+            let variable_decl = ns.get_symbol(name).unwrap().expect_variable().unwrap();
             unify_types(variable_decl.type_ascription, expression.type_id).unwrap();
         }
         TyExpressionVariant::FunctionApplication {
@@ -51,6 +47,8 @@ pub(super) fn analyze_expression(
             // monomorphize the function declaration into a new copy, in place
             monomorphize(&mut typed_function_declaration, type_arguments).unwrap();
 
+            println!("\n{:#?}\n", typed_function_declaration);
+
             // add the new copy to the declaration engine
             de_add_monomorphized_function_copy(decl_id, typed_function_declaration.clone());
 
@@ -59,7 +57,7 @@ pub(super) fn analyze_expression(
                 .iter()
                 .zip(typed_function_declaration.parameters.iter())
                 .for_each(|(argument, parameter)| {
-                    analyze_expression(cc, current_index, namespace, argument);
+                    analyze_expression(cc, current_index, ns, argument);
                     unify_types(argument.type_id, parameter.type_id).unwrap();
                 });
 
@@ -76,12 +74,8 @@ pub(super) fn analyze_expression(
                 panic!()
             }
 
-            // get the original decl id for the struct from the namespace
-            let decl_id = namespace
-                .get_symbol(struct_name)
-                .unwrap()
-                .expect_struct()
-                .unwrap();
+            // get the original decl id for the struct from the ns
+            let decl_id = ns.get_symbol(struct_name).unwrap().expect_struct().unwrap();
 
             // get the original struct declaration
             let mut typed_struct_declaration = de_get_struct(decl_id).unwrap();
@@ -114,7 +108,7 @@ pub(super) fn analyze_expression(
 
             // do type inference on the fields
             given_fields_map.iter().for_each(|(name, value)| {
-                analyze_expression(cc, current_index, namespace, value);
+                analyze_expression(cc, current_index, ns, value);
                 let oracle_field = oracle_fields_map.get(name).unwrap();
                 unify_types(value.type_id, *oracle_field).unwrap();
             });
@@ -138,28 +132,27 @@ pub(super) fn analyze_expression(
             }
 
             // get the variable decl for this method call
-            let parent = namespace
+            let parent = ns
                 .get_symbol(parent_name)
                 .unwrap()
                 .expect_variable()
                 .unwrap();
 
             // get the method declaration
-            let typed_method_declaration = namespace
-                .get_method(parent.type_ascription, func_name)
-                .unwrap();
+            let typed_method_declaration =
+                ns.get_method(parent.type_ascription, func_name).unwrap();
 
             // do type inference on the type arguments
             type_arguments
                 .iter()
-                .for_each(|type_arg| resolve_custom_types(type_arg.type_id, namespace).unwrap());
+                .for_each(|type_arg| resolve_custom_types(type_arg.type_id, ns).unwrap());
 
             // do type inference on the arguments
             arguments
                 .iter()
                 .zip(typed_method_declaration.parameters.iter())
                 .for_each(|(argument, parameter)| {
-                    analyze_expression(cc, current_index, namespace, argument);
+                    analyze_expression(cc, current_index, ns, argument);
                     unify_types(argument.type_id, parameter.type_id).unwrap();
                 });
 

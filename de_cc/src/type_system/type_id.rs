@@ -8,7 +8,7 @@ use super::type_engine::{insert_type, look_up_type_id};
 use super::type_info::TypeInfo;
 use super::type_mapping::TypeMapping;
 
-#[derive(Eq, Clone, Copy, Debug, Default)]
+#[derive(Eq, Clone, Copy, Default)]
 pub struct TypeId(usize);
 
 impl std::ops::Deref for TypeId {
@@ -21,6 +21,12 @@ impl std::ops::Deref for TypeId {
 impl From<usize> for TypeId {
     fn from(o: usize) -> Self {
         TypeId(o)
+    }
+}
+
+impl fmt::Debug for TypeId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}-{:?}", self.0, look_up_type_id(*self))
     }
 }
 

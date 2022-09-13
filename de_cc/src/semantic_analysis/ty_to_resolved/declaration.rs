@@ -24,9 +24,9 @@ use super::{expression::to_resolved_expression, to_resolved_nodes};
 
 pub(super) fn to_resolved_declaration(
     cc: &CollectionContext,
-    node_index: &CollectionIndex,
+    node_index: CollectionIndex,
 ) -> Vec<ResolvedDeclaration> {
-    let declaration = cc.get_node(*node_index).expect_declaration().unwrap();
+    let declaration = cc.get_node(node_index).expect_declaration().unwrap();
     match declaration {
         TyDeclaration::Variable(variable_declaration) => {
             let variable_declaration = to_resolved_variable_declaration(variable_declaration);

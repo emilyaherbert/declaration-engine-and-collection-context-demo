@@ -16,6 +16,7 @@ pub mod type_system;
 mod types;
 
 use declaration_engine::declaration_engine as de;
+use type_system::type_engine::te_debug_print;
 
 #[allow(clippy::let_and_return)]
 pub fn compile(application: Application) -> ResolvedApplication {
@@ -29,14 +30,16 @@ pub fn compile(application: Application) -> ResolvedApplication {
 
     // 3. do type collection
     let mut namespace = Namespace::default();
-    collect_types(&collection_context, &mut namespace, &application_index);
+    collect_types(&collection_context, &mut namespace, application_index);
+
+    te_debug_print();
 
     // 4. do type inference with new namespace
     let mut namespace = Namespace::default();
-    analyze(&collection_context, &mut namespace, &application_index);
+    analyze(&mut collection_context, &mut namespace, application_index);
 
     // 5. resolve all types
-    let resolved_application = to_resolved(&collection_context, &application_index);
+    let resolved_application = to_resolved(&collection_context, application_index);
 
     // 6. ir generation happens here
 

@@ -123,7 +123,7 @@ impl CopyTypes for TyVariableDeclaration {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) struct TyFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
@@ -210,6 +210,10 @@ impl MonomorphizeHelper for TyFunctionDeclaration {
     fn type_parameters(&self) -> &[TypeParameter] {
         &self.type_parameters
     }
+
+    fn type_parameters_mut(&mut self) -> &mut [TypeParameter] {
+        &mut self.type_parameters
+    }
 }
 
 #[derive(Clone, PartialEq)]
@@ -227,6 +231,12 @@ impl CopyTypes for TyFunctionParameter {
 impl fmt::Display for TyFunctionParameter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}: {}", self.name, self.type_id)
+    }
+}
+
+impl fmt::Debug for TyFunctionParameter {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}: {:?}", self.name, self.type_id)
     }
 }
 
@@ -324,6 +334,10 @@ impl MonomorphizeHelper for TyStructDeclaration {
 
     fn type_parameters(&self) -> &[TypeParameter] {
         &self.type_parameters
+    }
+
+    fn type_parameters_mut(&mut self) -> &mut [TypeParameter] {
+        &mut self.type_parameters
     }
 }
 

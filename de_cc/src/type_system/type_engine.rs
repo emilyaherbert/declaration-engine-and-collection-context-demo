@@ -29,7 +29,11 @@ struct TypeEngine {
 }
 
 impl TypeEngine {
-    pub fn insert_type(&self, ty: TypeInfo) -> TypeId {
+    fn debug_print(&self) {
+        self.slab.debug_print();
+    }
+
+    fn insert_type(&self, ty: TypeInfo) -> TypeId {
         TypeId::new(self.slab.insert(ty))
     }
 
@@ -206,10 +210,14 @@ impl TypeEngine {
         ) {
             (true, true) => Ok(()),
             (false, true) => {
-                let type_mapping = insert_type_parameters(value.type_parameters());
-                for (old_type_id, new_type_id) in type_mapping.into_iter() {
-                    self.unify_types(old_type_id, new_type_id)?;
-                }
+                value
+                    .type_parameters_mut()
+                    .iter_mut()
+                    .for_each(|type_param| {
+                        type_param.type_id = insert_type(TypeInfo::UnknownGeneric {
+                            name: type_param.name.clone(),
+                        });
+                    });
                 Ok(())
             }
             (true, false) => Err("does not take type arguments".to_string()),
@@ -218,18 +226,26 @@ impl TypeEngine {
                     return Err("incorrect number of type arguments".to_string());
                 }
                 let type_mapping = insert_type_parameters(value.type_parameters());
-                for ((_, interim_type), type_argument) in
-                    type_mapping.iter().zip(type_arguments.iter())
+                for ((_, interim_type), type_arg) in type_mapping.iter().zip(type_arguments.iter())
                 {
-                    self.unify_types(*interim_type, type_argument.type_id)?;
+                    self.unify_types(*interim_type, type_arg.type_id)?;
                 }
-                for (old_type_id, new_type_id) in type_mapping.into_iter() {
-                    self.unify_types(old_type_id, new_type_id)?;
-                }
+                value
+                    .type_parameters_mut()
+                    .iter_mut()
+                    .for_each(|type_param| {
+                        type_param.type_id = insert_type(TypeInfo::UnknownGeneric {
+                            name: type_param.name.clone(),
+                        });
+                    });
                 Ok(())
             }
         }
     }
+}
+
+pub(crate) fn te_debug_print() {
+    TYPE_ENGINE.debug_print()
 }
 
 pub(crate) fn insert_type(ty: TypeInfo) -> TypeId {
@@ -262,4 +278,5 @@ where
 pub(crate) trait MonomorphizeHelper {
     fn name(&self) -> &str;
     fn type_parameters(&self) -> &[TypeParameter];
+    fn type_parameters_mut(&mut self) -> &mut [TypeParameter];
 }

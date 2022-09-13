@@ -16,19 +16,19 @@ use crate::{
 
 pub(crate) fn to_resolved(
     cc: &CollectionContext,
-    node_index: &CollectionIndex,
+    node_index: CollectionIndex,
 ) -> ResolvedApplication {
-    let application = cc.get_node(*node_index).expect_application().unwrap();
+    let application = cc.get_node(node_index).expect_application().unwrap();
     let files = application
         .files
         .iter()
-        .map(|node_index| to_resolved_file(cc, node_index))
+        .map(|node_index| to_resolved_file(cc, *node_index))
         .collect();
     ResolvedApplication { files }
 }
 
-fn to_resolved_file(cc: &CollectionContext, node_index: &CollectionIndex) -> ResolvedFile {
-    let file = cc.get_node(*node_index).expect_file().unwrap();
+fn to_resolved_file(cc: &CollectionContext, node_index: CollectionIndex) -> ResolvedFile {
+    let file = cc.get_node(node_index).expect_file().unwrap();
     let new_nodes = to_resolved_nodes(cc, &file.nodes);
     ResolvedFile {
         name: file.name.clone(),
@@ -39,15 +39,15 @@ fn to_resolved_file(cc: &CollectionContext, node_index: &CollectionIndex) -> Res
 fn to_resolved_nodes(cc: &CollectionContext, nodes: &[CollectionIndex]) -> Vec<ResolvedNode> {
     nodes
         .iter()
-        .flat_map(|node_index| to_resolved_node(cc, node_index))
+        .flat_map(|node_index| to_resolved_node(cc, *node_index))
         .collect()
 }
 
-fn to_resolved_node(cc: &CollectionContext, node_index: &CollectionIndex) -> Vec<ResolvedNode> {
-    let node = cc.get_node(*node_index).expect_node().unwrap();
+fn to_resolved_node(cc: &CollectionContext, node_index: CollectionIndex) -> Vec<ResolvedNode> {
+    let node = cc.get_node(node_index).expect_node().unwrap();
     match node {
         TyNode::Declaration(declaration) => {
-            let declarations = to_resolved_declaration(cc, declaration);
+            let declarations = to_resolved_declaration(cc, *declaration);
             declarations
                 .into_iter()
                 .map(ResolvedNode::Declaration)

@@ -28,7 +28,6 @@ use super::{collect_nodes_nodes, expression::collect_nodes_expression};
 
 pub(super) fn collect_nodes_declaration(
     cc: &mut CollectionContext,
-
     type_mapping: &TypeMapping,
     declaration: Declaration,
 ) -> CollectionIndex {
@@ -93,6 +92,7 @@ fn collect_nodes_function(
     type_mapping.extend(insert_type_parameters(
         &function_declaration.type_parameters,
     ));
+    println!("{:#?}", type_mapping.iter().collect::<Vec<_>>());
     let parameters = function_declaration
         .parameters
         .into_iter()
@@ -116,7 +116,9 @@ fn collect_nodes_function_parameter(
     function_parameter: FunctionParameter,
 ) -> TyFunctionParameter {
     let mut type_id = insert_type(function_parameter.type_info);
+    println!("before: {:#?}", type_id);
     type_id.copy_types(cc, type_mapping);
+    println!("after: {:#?}", type_id);
     TyFunctionParameter {
         name: function_parameter.name,
         type_id,
