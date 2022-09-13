@@ -7,7 +7,7 @@ use crate::{
 
 use super::collection_context::CollectionContext;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub(crate) struct CollectionIndex(NodeIndex);
 
 impl std::ops::Deref for CollectionIndex {
@@ -19,16 +19,16 @@ impl std::ops::Deref for CollectionIndex {
 
 impl CopyTypes for CollectionIndex {
     fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
-        let mut new_node = cc.get_node_mut(self).clone();
+        let mut new_node = cc.get_node_mut(*self).clone();
         new_node.copy_types(cc, type_mapping);
-        let old_node = cc.get_node_mut(self);
+        let old_node = cc.get_node_mut(*self);
         *old_node = new_node;
     }
 }
 
 impl PrettyPrint for CollectionIndex {
     fn pretty_print(&self, cc: &CollectionContext) -> String {
-        cc.get_node(self).pretty_print(cc)
+        cc.get_node(*self).pretty_print(cc)
     }
 }
 

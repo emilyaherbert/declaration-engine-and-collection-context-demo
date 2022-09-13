@@ -33,7 +33,7 @@ pub fn compile(application: Application) -> ResolvedApplication {
 
     // 4. do type inference with new namespace
     let mut namespace = Namespace::default();
-    analyze(&mut collection_context, &mut namespace, &application_index);
+    analyze(&collection_context, &mut namespace, &application_index);
 
     // 5. resolve all types
     let resolved_application = to_resolved(&collection_context, &application_index);

@@ -19,7 +19,7 @@ use crate::{
     types::{copy_types::CopyTypes, create_type_id::CreateTypeId, pretty_print::PrettyPrint},
 };
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) enum TyDeclaration {
     Variable(TyVariableDeclaration),
     Function(DeclarationId),
@@ -99,7 +99,7 @@ impl TyDeclaration {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) struct TyVariableDeclaration {
     pub(crate) name: String,
     pub(crate) type_ascription: TypeId,

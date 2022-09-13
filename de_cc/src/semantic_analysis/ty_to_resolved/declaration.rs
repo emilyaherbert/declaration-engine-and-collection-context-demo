@@ -1,5 +1,7 @@
 use crate::{
-    collection_context::collection_context::CollectionContext,
+    collection_context::{
+        collection_context::CollectionContext, collection_index::CollectionIndex,
+    },
     declaration_engine::{declaration_engine::*, declaration_id::DeclarationId},
     language::{
         resolved::resolved_declaration::{
@@ -22,8 +24,9 @@ use super::{expression::to_resolved_expression, to_resolved_nodes};
 
 pub(super) fn to_resolved_declaration(
     cc: &CollectionContext,
-    declaration: &TyDeclaration,
+    node_index: &CollectionIndex,
 ) -> Vec<ResolvedDeclaration> {
+    let declaration = cc.get_node(*node_index).expect_declaration().unwrap();
     match declaration {
         TyDeclaration::Variable(variable_declaration) => {
             let variable_declaration = to_resolved_variable_declaration(variable_declaration);

@@ -4,6 +4,7 @@ use super::{
     type_engine::insert_type, type_id::TypeId, type_info::TypeInfo, type_parameter::TypeParameter,
 };
 
+/// old type id -> new type id
 pub(crate) type TypeMapping = HashMap<TypeId, TypeId>;
 
 pub(crate) fn insert_type_parameters(type_parameters: &[TypeParameter]) -> TypeMapping {

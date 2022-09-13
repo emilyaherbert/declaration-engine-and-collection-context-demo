@@ -1,5 +1,8 @@
 use crate::{
-    collection_context::collection_context::CollectionContext,
+    collection_context::{
+        collection_context::CollectionContext, collection_index::CollectionIndex,
+        graph_edge::GraphEdge,
+    },
     declaration_engine::declaration_engine::{
         de_insert_function, de_insert_struct, de_insert_trait, de_insert_trait_fn,
         de_insert_trait_impl,
@@ -25,31 +28,43 @@ use super::{collect_nodes_nodes, expression::collect_nodes_expression};
 
 pub(super) fn collect_nodes_declaration(
     cc: &mut CollectionContext,
+
     type_mapping: &TypeMapping,
     declaration: Declaration,
-) -> TyDeclaration {
+) -> CollectionIndex {
     match declaration {
         Declaration::Variable(variable_declaration) => {
             let variable_declaration =
                 collect_nodes_variable_declaration(cc, type_mapping, variable_declaration);
-            TyDeclaration::Variable(variable_declaration)
+            let decl = TyDeclaration::Variable(variable_declaration);
+            cc.add_node(decl.into())
         }
         Declaration::Function(function_declaration) => {
             let function_declaration =
                 collect_nodes_function(cc, type_mapping, function_declaration);
-            TyDeclaration::Function(de_insert_function(function_declaration))
+            let decl = TyDeclaration::Function(de_insert_function(function_declaration.clone()));
+            let func_index = cc.add_node(decl.into());
+
+            // add an edge to every node in the function body
+            function_declaration.body.iter().for_each(|node_index| {
+                cc.add_edge(*node_index, func_index, GraphEdge::DeclarationContents);
+            });
+            func_index
         }
         Declaration::Trait(trait_declaration) => {
             let trait_declaration = collect_nodes_trait(cc, type_mapping, trait_declaration);
-            TyDeclaration::Trait(de_insert_trait(trait_declaration))
+            let decl = TyDeclaration::Trait(de_insert_trait(trait_declaration));
+            cc.add_node(decl.into())
         }
         Declaration::TraitImpl(trait_impl) => {
             let trait_impl = collect_nodes_trait_impl(cc, type_mapping, trait_impl);
-            TyDeclaration::TraitImpl(de_insert_trait_impl(trait_impl))
+            let decl = TyDeclaration::TraitImpl(de_insert_trait_impl(trait_impl));
+            cc.add_node(decl.into())
         }
         Declaration::Struct(struct_declaration) => {
             let struct_declaration = collect_nodes_struct(cc, type_mapping, struct_declaration);
-            TyDeclaration::Struct(de_insert_struct(struct_declaration))
+            let decl = TyDeclaration::Struct(de_insert_struct(struct_declaration));
+            cc.add_node(decl.into())
         }
     }
 }
@@ -85,11 +100,12 @@ fn collect_nodes_function(
         .collect::<Vec<_>>();
     let mut return_type = insert_type(function_declaration.return_type);
     return_type.copy_types(cc, &type_mapping);
+    let body = collect_nodes_nodes(cc, function_declaration.body);
     TyFunctionDeclaration {
         name: function_declaration.name,
         type_parameters: function_declaration.type_parameters,
         parameters,
-        body: collect_nodes_nodes(cc, function_declaration.body),
+        body,
         return_type,
     }
 }

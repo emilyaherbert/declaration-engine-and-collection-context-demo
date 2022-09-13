@@ -13,11 +13,11 @@ use crate::{
 };
 
 pub(crate) fn analyze(
-    cc: &mut CollectionContext,
+    cc: &CollectionContext,
     namespace: &mut Namespace,
     node_index: &CollectionIndex,
 ) {
-    let application = cc.get_node(node_index).expect_application().unwrap();
+    let application = cc.get_node(*node_index).expect_application().unwrap();
     application
         .files
         .clone()
@@ -25,27 +25,21 @@ pub(crate) fn analyze(
         .for_each(|node_index| analyze_file(cc, namespace, &node_index));
 }
 
-fn analyze_file(
-    cc: &mut CollectionContext,
-    namespace: &mut Namespace,
-    node_index: &CollectionIndex,
-) {
-    let file = cc.get_node(node_index).expect_file().unwrap();
+fn analyze_file(cc: &CollectionContext, namespace: &mut Namespace, node_index: &CollectionIndex) {
+    let file = cc.get_node(*node_index).expect_file().unwrap();
     file.nodes
         .clone()
         .into_iter()
         .for_each(|node_index| analyze_node(cc, namespace, &node_index));
 }
 
-fn analyze_node(
-    cc: &mut CollectionContext,
-    namespace: &mut Namespace,
-    node_index: &CollectionIndex,
-) {
-    let node = cc.get_node(node_index).expect_node().unwrap();
-    match node.clone() {
-        TyNode::Declaration(declaration) => analyze_declaration(cc, namespace, &declaration),
-        TyNode::Expression(expression) => analyze_expression(cc, namespace, &expression),
-        TyNode::ReturnStatement(expression) => analyze_expression(cc, namespace, &expression),
+fn analyze_node(cc: &CollectionContext, namespace: &mut Namespace, node_index: &CollectionIndex) {
+    let node = cc.get_node(*node_index).expect_node().unwrap();
+    match node {
+        TyNode::Declaration(node_index) => analyze_declaration(cc, namespace, node_index),
+        TyNode::Expression(expression) => analyze_expression(cc, node_index, namespace, expression),
+        TyNode::ReturnStatement(expression) => {
+            analyze_expression(cc, node_index, namespace, expression)
+        }
     }
 }

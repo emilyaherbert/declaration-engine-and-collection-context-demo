@@ -15,7 +15,7 @@ pub(crate) fn collect_types(
     namespace: &mut Namespace,
     node_index: &CollectionIndex,
 ) {
-    let application = cc.get_node(node_index).expect_application().unwrap();
+    let application = cc.get_node(*node_index).expect_application().unwrap();
     application
         .files
         .iter()
@@ -27,7 +27,7 @@ fn collect_types_file(
     namespace: &mut Namespace,
     node_index: &CollectionIndex,
 ) {
-    let file = cc.get_node(node_index).expect_file().unwrap();
+    let file = cc.get_node(*node_index).expect_file().unwrap();
     file.nodes
         .iter()
         .for_each(|node_index| collect_types_node(cc, namespace, node_index));
@@ -38,9 +38,9 @@ fn collect_types_node(
     namespace: &mut Namespace,
     node_index: &CollectionIndex,
 ) {
-    let node = cc.get_node(node_index).expect_node().unwrap();
+    let node = cc.get_node(*node_index).expect_node().unwrap();
     match node {
-        TyNode::Declaration(decl) => collect_types_declaration(namespace, decl),
+        TyNode::Declaration(node_index) => collect_types_declaration(cc, namespace, node_index),
         TyNode::Expression(_) => {}
         TyNode::ReturnStatement(_) => {}
     }

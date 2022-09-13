@@ -18,7 +18,7 @@ pub(crate) fn to_resolved(
     cc: &CollectionContext,
     node_index: &CollectionIndex,
 ) -> ResolvedApplication {
-    let application = cc.get_node(node_index).expect_application().unwrap();
+    let application = cc.get_node(*node_index).expect_application().unwrap();
     let files = application
         .files
         .iter()
@@ -28,7 +28,7 @@ pub(crate) fn to_resolved(
 }
 
 fn to_resolved_file(cc: &CollectionContext, node_index: &CollectionIndex) -> ResolvedFile {
-    let file = cc.get_node(node_index).expect_file().unwrap();
+    let file = cc.get_node(*node_index).expect_file().unwrap();
     let new_nodes = to_resolved_nodes(cc, &file.nodes);
     ResolvedFile {
         name: file.name.clone(),
@@ -44,7 +44,7 @@ fn to_resolved_nodes(cc: &CollectionContext, nodes: &[CollectionIndex]) -> Vec<R
 }
 
 fn to_resolved_node(cc: &CollectionContext, node_index: &CollectionIndex) -> Vec<ResolvedNode> {
-    let node = cc.get_node(node_index).expect_node().unwrap();
+    let node = cc.get_node(*node_index).expect_node().unwrap();
     match node {
         TyNode::Declaration(declaration) => {
             let declarations = to_resolved_declaration(cc, declaration);

@@ -1,4 +1,3 @@
-use std::fmt;
 use std::fmt::Write;
 
 use colored::Colorize;
@@ -11,12 +10,12 @@ use crate::{
     types::{copy_types::CopyTypes, pretty_print::PrettyPrint},
 };
 
-use self::{typed_declaration::TyDeclaration, typed_expression::TyExpression};
+use self::typed_expression::TyExpression;
 
 pub(crate) mod typed_declaration;
 pub(crate) mod typed_expression;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct TyApplication {
     pub files: Vec<CollectionIndex>,
 }
@@ -49,7 +48,7 @@ impl CopyTypes for TyApplication {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub(crate) struct TyFile {
     pub(crate) name: String,
     pub(crate) nodes: Vec<CollectionIndex>,
@@ -87,19 +86,19 @@ impl CopyTypes for TyFile {
     }
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub(crate) enum TyNode {
-    Declaration(TyDeclaration),
+    Declaration(CollectionIndex),
     Expression(TyExpression),
     ReturnStatement(TyExpression),
 }
 
-impl fmt::Display for TyNode {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+impl PrettyPrint for TyNode {
+    fn pretty_print(&self, cc: &CollectionContext) -> String {
         match self {
-            TyNode::Declaration(declaration) => write!(f, "{}", declaration),
-            TyNode::Expression(expression) => write!(f, "{}", expression),
-            TyNode::ReturnStatement(expression) => write!(f, "return {}", expression),
+            TyNode::Declaration(declaration) => declaration.pretty_print(cc),
+            TyNode::Expression(expression) => expression.to_string(),
+            TyNode::ReturnStatement(expression) => format!("return {}", expression),
         }
     }
 }
