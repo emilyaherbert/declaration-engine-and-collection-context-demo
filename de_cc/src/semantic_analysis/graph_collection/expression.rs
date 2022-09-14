@@ -8,7 +8,7 @@ use crate::{
     types::copy_types::CopyTypes,
 };
 
-pub(super) fn collect_nodes_expression(
+pub(super) fn collect_graph_expression(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     expression: Expression,
@@ -42,7 +42,7 @@ pub(super) fn collect_nodes_expression(
             // transform the arguments into Ty AST nodes
             let new_arguments = arguments
                 .into_iter()
-                .map(|argument| collect_nodes_expression(cc, type_mapping, argument))
+                .map(|argument| collect_graph_expression(cc, type_mapping, argument))
                 .collect::<Vec<_>>();
 
             // return!
@@ -75,7 +75,7 @@ pub(super) fn collect_nodes_expression(
             // transform the arguments into Ty AST nodes
             let new_arguments = arguments
                 .into_iter()
-                .map(|argument| collect_nodes_expression(cc, type_mapping, argument))
+                .map(|argument| collect_graph_expression(cc, type_mapping, argument))
                 .collect::<Vec<_>>();
 
             // return!
@@ -110,7 +110,7 @@ pub(super) fn collect_nodes_expression(
                 .into_iter()
                 .map(|field| TyStructExpressionField {
                     name: field.name,
-                    value: collect_nodes_expression(cc, type_mapping, field.value),
+                    value: collect_graph_expression(cc, type_mapping, field.value),
                 })
                 .collect::<Vec<_>>();
 
