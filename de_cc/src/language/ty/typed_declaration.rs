@@ -416,6 +416,16 @@ impl MonomorphizeHelper for TyStructDeclaration {
     }
 }
 
+impl PrettyPrint for TyStructDeclaration {
+    fn pretty_print(&self, _cc: &CollectionContext) -> String {
+        self.to_string()
+    }
+
+    fn pretty_print_debug(&self, cc: &CollectionContext) -> String {
+        self.pretty_print(cc)
+    }
+}
+
 impl fmt::Display for TyStructDeclaration {
     fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(

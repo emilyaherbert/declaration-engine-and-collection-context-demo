@@ -1,5 +1,5 @@
 pub(super) mod direction;
-mod edge;
+pub(super) mod edge;
 #[allow(clippy::module_inception)]
 pub(super) mod graph;
 pub(super) mod neighbors;

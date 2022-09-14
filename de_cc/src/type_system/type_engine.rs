@@ -6,7 +6,7 @@ use crate::{
         resolved::resolved_declaration::ResolvedStructField, ty::typed_declaration::TyDeclaration,
     },
     namespace::namespace::Namespace,
-    types::{copy_types::CopyTypes, create_type_id::CreateTypeId},
+    types::{copy_types::CopyTypes, create_type_id::CreateTypeId, pretty_print::PrettyPrint},
 };
 
 use super::{
@@ -76,6 +76,29 @@ impl TypeEngine {
             (TypeInfo::Ref(received), _) => self.unify_types(received, expected),
             (_, TypeInfo::Ref(expected)) => self.unify_types(received, expected),
 
+            (TypeInfo::TypeRef(l_name, _), TypeInfo::TypeRef(r_name, _))
+                if l_name.as_str() == r_name.as_str() =>
+            {
+                Ok(())
+            }
+            (TypeInfo::TypeRef(_, l), TypeInfo::TypeRef(_, r)) => {
+                let l = *l.read().unwrap();
+                let r = *r.read().unwrap();
+                if l == r {
+                    Ok(())
+                } else {
+                    self.unify_types(l, r)
+                }
+            }
+            (TypeInfo::TypeRef(_, received), _) => {
+                let received = *received.read().unwrap();
+                self.unify_types(received, expected)
+            }
+            (_, TypeInfo::TypeRef(_, expected)) => {
+                let expected = *expected.read().unwrap();
+                self.unify_types(received, expected)
+            }
+
             (
                 TypeInfo::UnknownGeneric { name: l_name },
                 TypeInfo::UnknownGeneric { name: r_name },
@@ -85,7 +108,6 @@ impl TypeEngine {
                     .replace(*received, received_info, TypeInfo::Ref(expected));
                 Ok(())
             }
-
             (_, ref expected_info @ TypeInfo::UnknownGeneric { .. }) => {
                 self.slab
                     .replace(*expected, expected_info, TypeInfo::Ref(received));
@@ -130,6 +152,10 @@ impl TypeEngine {
         match self.slab.get(*type_id) {
             TypeInfo::UnsignedInteger(bits) => Ok(ResolvedType::UnsignedInteger(bits)),
             TypeInfo::Ref(id) => self.resolve_type(id),
+            TypeInfo::TypeRef(_, id) => {
+                let id = id.read().unwrap();
+                self.resolve_type(*id)
+            }
             TypeInfo::Unit => Ok(ResolvedType::Unit),
             TypeInfo::Struct {
                 name,
@@ -213,18 +239,16 @@ impl TypeEngine {
         cc: &CollectionContext,
     ) -> Result<(), String>
     where
-        T: MonomorphizeHelper + CopyTypes,
+        T: MonomorphizeHelper + CopyTypes + PrettyPrint,
     {
-        let mut new_cc = cc.clone();
-
         match (
             value.type_parameters().is_empty(),
             type_arguments.is_empty(),
         ) {
             (true, true) => Ok(()),
             (false, true) => {
-                let type_mapping = insert_type_parameters(value.type_parameters());
-                value.copy_types(&mut new_cc, &type_mapping);
+                refresh_type_parameters(value.type_parameters_mut());
+                println!("{}", value.pretty_print_debug(cc));
                 Ok(())
             }
             (true, false) => Err("does not take type arguments".to_string()),
@@ -232,16 +256,25 @@ impl TypeEngine {
                 if value.type_parameters().len() != type_arguments.len() {
                     return Err("incorrect number of type arguments".to_string());
                 }
-                let type_mapping = insert_type_parameters(value.type_parameters());
+                refresh_type_parameters(value.type_parameters_mut());
+                let type_mapping = insert_type_parameters(value.type_parameters().to_vec());
                 for ((_, interim_type), type_arg) in type_mapping.iter().zip(type_arguments.iter())
                 {
                     self.unify_types(*interim_type, type_arg.type_id)?;
                 }
-                value.copy_types(&mut new_cc, &type_mapping);
                 Ok(())
             }
         }
     }
+}
+
+fn refresh_type_parameters(type_parameters: &mut [TypeParameter]) {
+    type_parameters.iter_mut().for_each(|type_param| {
+        if let TypeInfo::TypeRef(name, id) = look_up_type_id(type_param.type_id) {
+            let mut id = id.write().unwrap();
+            *id = insert_type(TypeInfo::UnknownGeneric { name });
+        }
+    });
 }
 
 pub(crate) fn te_debug_print() {
@@ -278,7 +311,7 @@ pub(crate) fn monomorphize<T>(
     cc: &CollectionContext,
 ) -> Result<(), String>
 where
-    T: MonomorphizeHelper + CopyTypes,
+    T: MonomorphizeHelper + CopyTypes + PrettyPrint,
 {
     TYPE_ENGINE.monomorphize(value, type_arguments, cc)
 }

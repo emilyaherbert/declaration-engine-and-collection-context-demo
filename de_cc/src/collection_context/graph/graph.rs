@@ -1,6 +1,7 @@
 use super::{
     direction::Direction,
     edge::{Edge, EdgeIndex, Edges},
+    neighbors::Neighbors,
     node::{Node, NodeIndex},
     visit_map::VisitMap,
 };
@@ -52,9 +53,9 @@ where
     }
 
     pub(crate) fn replace_node(&mut self, index: NodeIndex, new_weight: N) {
-        self.nodes
-            .get_mut(*index)
-            .map(|old_node| old_node.weight = new_weight);
+        if let Some(old_node) = self.nodes.get_mut(*index) {
+            old_node.weight = new_weight;
+        }
     }
 
     pub(crate) fn add_edge(
@@ -103,6 +104,26 @@ where
     // https://docs.rs/petgraph/0.6.2/src/petgraph/graph_impl/mod.rs.html#2144
     pub(crate) fn visit_map(&self) -> VisitMap {
         VisitMap::new(self.nodes.len())
+    }
+
+    fn neighbors_undirected(&self, a: NodeIndex) -> Neighbors<E> {
+        Neighbors {
+            skip_start: a,
+            edges: &self.edges,
+            next: match self.nodes.get(*a) {
+                None => [EdgeIndex::end(), EdgeIndex::end()],
+                Some(n) => n.next,
+            },
+        }
+    }
+
+    // https://docs.rs/petgraph/0.6.2/src/petgraph/graph_impl/mod.rs.html#802
+    pub(crate) fn neighbors_directed(&self, a: NodeIndex, dir: Direction) -> Neighbors<E> {
+        let mut iter = self.neighbors_undirected(a);
+        let k = dir.index();
+        iter.next[1 - k] = EdgeIndex::end();
+        iter.skip_start = NodeIndex::end();
+        iter
     }
 
     // https://docs.rs/petgraph/0.6.2/src/petgraph/graph_impl/mod.rs.html#859

@@ -8,4 +8,4 @@ mod graph;
 
 use self::{collection_edge::CollectionEdge, collection_node::CollectionNode, graph::graph::Graph};
 
-type CollectionGraph = petgraph::Graph<CollectionNode, CollectionEdge>;
+type CollectionGraph = Graph<CollectionNode, CollectionEdge>;

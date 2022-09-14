@@ -19,9 +19,7 @@ impl CopyTypes for CollectionIndex {
     fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
         let mut new_node = cc.get_node_mut(*self).clone();
         new_node.copy_types(cc, type_mapping);
-        println!("{}", new_node.pretty_print_debug(cc));
-        let old_node = cc.get_node_mut(*self);
-        *old_node = new_node;
+        cc.replace_node(*self, new_node);
     }
 }
 

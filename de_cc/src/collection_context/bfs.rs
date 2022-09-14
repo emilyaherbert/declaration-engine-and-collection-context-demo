@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, ops::Index};
+use std::collections::VecDeque;
 
 use crate::{
     declaration_engine::{
@@ -13,15 +13,11 @@ use super::{
     collection_node::CollectionNode, graph::direction::Direction, CollectionGraph,
 };
 
-pub(super) fn search_shared_scope_for_declaration<N, E>(
+pub(super) fn search_shared_scope_for_declaration(
     graph: &CollectionGraph,
     index: CollectionIndex,
     symbol: String,
-) -> Result<Option<DeclarationId>, String>
-where
-    N: Clone,
-    E: Clone,
-{
+) -> Result<Option<DeclarationId>, String> {
     let mut discovered = graph.visit_map();
     discovered.visit(**index);
     let mut stack = VecDeque::new();
@@ -72,7 +68,7 @@ where
                     .into_iter()
                     .rev()
                 {
-                    if discovered.visit(next_node) {
+                    if discovered.visit(*next_node) {
                         stack.push_back(next_node);
                     }
                 }

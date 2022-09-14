@@ -4,7 +4,7 @@ use std::ops::Deref;
 
 // https://docs.rs/petgraph/0.6.2/src/petgraph/graph_impl/mod.rs.html#161
 #[derive(PartialEq, Clone, Copy)]
-pub(super) struct EdgeIndex(usize);
+pub(crate) struct EdgeIndex(usize);
 
 impl Deref for EdgeIndex {
     type Target = usize;
@@ -33,18 +33,20 @@ pub(super) struct Edge<E> {
     pub(super) node: [NodeIndex; 2],
 }
 
-struct EdgeReference<'a, E: 'a> {
+pub(crate) struct EdgeReference<'a, E: 'a> {
+    #[allow(dead_code)]
     index: EdgeIndex,
+    #[allow(dead_code)]
     node: [NodeIndex; 2],
-    weight: &'a E,
+    pub(crate) weight: &'a E,
 }
 
 // https://docs.rs/petgraph/0.6.2/src/petgraph/graph_impl/mod.rs.html#1633
-pub(super) struct Edges<'a, E: 'a> {
-    skip_start: NodeIndex,
-    edges: &'a [Edge<E>],
-    next: [EdgeIndex; 2],
-    direction: Direction,
+pub(crate) struct Edges<'a, E: 'a> {
+    pub(super) skip_start: NodeIndex,
+    pub(super) edges: &'a [Edge<E>],
+    pub(super) next: [EdgeIndex; 2],
+    pub(super) direction: Direction,
 }
 
 // https://docs.rs/petgraph/0.6.2/src/petgraph/graph_impl/mod.rs.html#1651

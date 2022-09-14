@@ -41,34 +41,35 @@ pub(super) fn collect_nodes_declaration(
             let variable_declaration =
                 collect_nodes_variable_declaration(cc, type_mapping, variable_declaration);
             let decl = TyDeclaration::Variable(variable_declaration);
-            cc.add_node(decl.into())
+            cc.add_node(decl.into()).unwrap()
         }
         Declaration::Function(function_declaration) => {
             let function_declaration =
                 collect_nodes_function(cc, type_mapping, function_declaration);
             let decl = TyDeclaration::Function(de_insert_function(function_declaration.clone()));
-            let func_index = cc.add_node(decl.into());
+            let func_index = cc.add_node(decl.into()).unwrap();
 
             // add an edge to every node in the function body
             function_declaration.body.iter().for_each(|node_index| {
-                cc.add_edge(*node_index, func_index, CollectionEdge::DeclarationContents);
+                cc.add_edge(*node_index, func_index, CollectionEdge::DeclarationContents)
+                    .unwrap();
             });
             func_index
         }
         Declaration::Trait(trait_declaration) => {
             let trait_declaration = collect_nodes_trait(cc, type_mapping, trait_declaration);
             let decl = TyDeclaration::Trait(de_insert_trait(trait_declaration));
-            cc.add_node(decl.into())
+            cc.add_node(decl.into()).unwrap()
         }
         Declaration::TraitImpl(trait_impl) => {
             let trait_impl = collect_nodes_trait_impl(cc, type_mapping, trait_impl);
             let decl = TyDeclaration::TraitImpl(de_insert_trait_impl(trait_impl));
-            cc.add_node(decl.into())
+            cc.add_node(decl.into()).unwrap()
         }
         Declaration::Struct(struct_declaration) => {
             let struct_declaration = collect_nodes_struct(cc, type_mapping, struct_declaration);
             let decl = TyDeclaration::Struct(de_insert_struct(struct_declaration));
-            cc.add_node(decl.into())
+            cc.add_node(decl.into()).unwrap()
         }
     }
 }
@@ -95,8 +96,16 @@ fn collect_nodes_function(
 ) -> TyFunctionDeclaration {
     let mut type_mapping = type_mapping.clone();
     type_mapping.extend(insert_type_parameters(
-        &function_declaration.type_parameters,
+        function_declaration.type_parameters.clone(),
     ));
+    let type_parameters = function_declaration
+        .type_parameters
+        .into_iter()
+        .map(|mut type_param| {
+            type_param.copy_types(cc, &type_mapping);
+            type_param
+        })
+        .collect::<Vec<_>>();
     let parameters = function_declaration
         .parameters
         .into_iter()
@@ -107,7 +116,7 @@ fn collect_nodes_function(
     let body = collect_nodes_code_block(cc, &type_mapping, function_declaration.body);
     TyFunctionDeclaration {
         name: function_declaration.name,
-        type_parameters: function_declaration.type_parameters,
+        type_parameters,
         parameters,
         body,
         return_type,
@@ -132,7 +141,7 @@ fn collect_nodes_code_block(
         .for_each(|inner_nodes| {
             let a = inner_nodes[0];
             let b = inner_nodes[1];
-            cc.add_edge(a, b, CollectionEdge::SharedScope);
+            cc.add_edge(a, b, CollectionEdge::SharedScope).unwrap();
         });
     nodes
 }
@@ -217,7 +226,17 @@ fn collect_nodes_struct(
     struct_declaration: StructDeclaration,
 ) -> TyStructDeclaration {
     let mut type_mapping = type_mapping.clone();
-    type_mapping.extend(insert_type_parameters(&struct_declaration.type_parameters));
+    type_mapping.extend(insert_type_parameters(
+        struct_declaration.type_parameters.clone(),
+    ));
+    let type_parameters = struct_declaration
+        .type_parameters
+        .into_iter()
+        .map(|mut type_param| {
+            type_param.copy_types(cc, &type_mapping);
+            type_param
+        })
+        .collect::<Vec<_>>();
     let fields = struct_declaration
         .fields
         .into_iter()
@@ -225,7 +244,7 @@ fn collect_nodes_struct(
         .collect::<Vec<_>>();
     TyStructDeclaration {
         name: struct_declaration.name,
-        type_parameters: struct_declaration.type_parameters,
+        type_parameters,
         fields,
     }
 }
