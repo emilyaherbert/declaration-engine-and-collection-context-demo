@@ -2,8 +2,8 @@ use itertools::Itertools;
 
 use crate::{
     collection_context::{
-        collection_context::CollectionContext, collection_index::CollectionIndex,
-        graph_edge::GraphEdge,
+        collection_context::CollectionContext, collection_edge::CollectionEdge,
+        collection_index::CollectionIndex,
     },
     declaration_engine::declaration_engine::{
         de_insert_function, de_insert_struct, de_insert_trait, de_insert_trait_fn,
@@ -51,7 +51,7 @@ pub(super) fn collect_nodes_declaration(
 
             // add an edge to every node in the function body
             function_declaration.body.iter().for_each(|node_index| {
-                cc.add_edge(*node_index, func_index, GraphEdge::DeclarationContents);
+                cc.add_edge(*node_index, func_index, CollectionEdge::DeclarationContents);
             });
             func_index
         }
@@ -132,7 +132,7 @@ fn collect_nodes_code_block(
         .for_each(|inner_nodes| {
             let a = inner_nodes[0];
             let b = inner_nodes[1];
-            cc.add_edge(a, b, GraphEdge::SharedScope);
+            cc.add_edge(a, b, CollectionEdge::SharedScope);
         });
     nodes
 }

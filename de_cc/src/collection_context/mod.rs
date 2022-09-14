@@ -1,10 +1,11 @@
 mod bfs;
 #[allow(clippy::module_inception)]
 pub(crate) mod collection_context;
+pub(crate) mod collection_edge;
 pub(crate) mod collection_index;
-pub(crate) mod graph_edge;
-mod graph_node;
+mod collection_node;
+mod graph;
 
-use self::{graph_edge::GraphEdge, graph_node::GraphNode};
+use self::{collection_edge::CollectionEdge, collection_node::CollectionNode, graph::graph::Graph};
 
-type CollectionGraph = petgraph::Graph<GraphNode, GraphEdge>;
+type CollectionGraph = petgraph::Graph<CollectionNode, CollectionEdge>;
