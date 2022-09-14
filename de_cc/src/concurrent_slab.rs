@@ -20,6 +20,7 @@ impl<T> ConcurrentSlab<T>
 where
     T: Clone + PartialEq,
 {
+    #[allow(dead_code)]
     pub(crate) fn debug_print(&self)
     where
         T: fmt::Debug,

@@ -4,8 +4,8 @@ pub(crate) mod collection_context;
 pub(crate) mod collection_edge;
 pub(crate) mod collection_index;
 mod collection_node;
-mod graph;
+//mod graph;
 
-use self::{collection_edge::CollectionEdge, collection_node::CollectionNode, graph::graph::Graph};
+use self::{collection_edge::CollectionEdge, collection_node::CollectionNode};
 
-type CollectionGraph = Graph<CollectionNode, CollectionEdge>;
+type CollectionGraph = petgraph::Graph<CollectionNode, CollectionEdge>;

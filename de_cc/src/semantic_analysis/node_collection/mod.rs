@@ -33,7 +33,7 @@ pub(crate) fn collect_nodes(
     };
 
     // create a node for this application
-    let application_index = cc.add_node(application.into()).unwrap();
+    let application_index = cc.add_node(application.into());
 
     // add an edge to every file in this application
     file_indices.iter().for_each(|file_index| {
@@ -41,8 +41,7 @@ pub(crate) fn collect_nodes(
             *file_index,
             application_index,
             CollectionEdge::ApplicationContents,
-        )
-        .unwrap();
+        );
     });
     application_index
 }
@@ -55,12 +54,11 @@ fn collect_nodes_file(cc: &mut CollectionContext, file: File) -> CollectionIndex
     };
 
     // create a node for this file
-    let file_index = cc.add_node(file.into()).unwrap();
+    let file_index = cc.add_node(file.into());
 
     // add an edge to every (AST) node in file
     nodes.iter().for_each(|node_index| {
-        cc.add_edge(*node_index, file_index, CollectionEdge::FileContents)
-            .unwrap();
+        cc.add_edge(*node_index, file_index, CollectionEdge::FileContents);
     });
     file_index
 }
@@ -79,7 +77,7 @@ fn collect_nodes_nodes(cc: &mut CollectionContext, nodes: Vec<Node>) -> Vec<Coll
         .for_each(|inner_nodes| {
             let a = inner_nodes[0];
             let b = inner_nodes[1];
-            cc.add_edge(a, b, CollectionEdge::SharedScope).unwrap();
+            cc.add_edge(a, b, CollectionEdge::SharedScope);
         });
     nodes
 }
@@ -94,19 +92,18 @@ fn collect_nodes_node(
         Node::Declaration(decl) => {
             let decl_index = collect_nodes_declaration(cc, type_mapping, decl);
             let node = TyNode::Declaration(decl_index);
-            let node_index = cc.add_node(node.into()).unwrap();
-            cc.add_edge(decl_index, node_index, CollectionEdge::NodeContents)
-                .unwrap();
+            let node_index = cc.add_node(node.into());
+            cc.add_edge(decl_index, node_index, CollectionEdge::NodeContents);
             node_index
         }
         Node::Expression(expression) => {
             let node = TyNode::Expression(collect_nodes_expression(cc, type_mapping, expression));
-            cc.add_node(node.into()).unwrap()
+            cc.add_node(node.into())
         }
         Node::ReturnStatement(expression) => {
             let node =
                 TyNode::ReturnStatement(collect_nodes_expression(cc, type_mapping, expression));
-            cc.add_node(node.into()).unwrap()
+            cc.add_node(node.into())
         }
     }
 }

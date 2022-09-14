@@ -1,9 +1,11 @@
+use petgraph::prelude::NodeIndex;
+
 use crate::{
     type_system::type_mapping::TypeMapping,
     types::{copy_types::CopyTypes, pretty_print::PrettyPrint},
 };
 
-use super::{collection_context::CollectionContext, graph::node::NodeIndex};
+use super::collection_context::CollectionContext;
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub(crate) struct CollectionIndex(NodeIndex);
@@ -19,7 +21,6 @@ impl CopyTypes for CollectionIndex {
     fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
         let mut new_node = cc.get_node_mut(*self).clone();
         new_node.copy_types(cc, type_mapping);
-        cc.replace_node(*self, new_node);
     }
 }
 

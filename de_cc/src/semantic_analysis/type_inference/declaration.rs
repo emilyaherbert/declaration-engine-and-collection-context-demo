@@ -40,7 +40,7 @@ pub(super) fn analyze_declaration(
         }
         TyDeclaration::Trait(decl_id) => {
             let trait_declaration = de_get_trait(*decl_id).unwrap();
-            analyze_trait(cc, &mut ns.scoped(), &trait_declaration);
+            analyze_trait(&mut ns.scoped(), &trait_declaration);
             let name = trait_declaration.name;
             ns.insert_symbol(name, TyDeclaration::Trait(*decl_id));
         }
@@ -55,7 +55,7 @@ pub(super) fn analyze_declaration(
         }
         TyDeclaration::Struct(decl_id) => {
             let struct_declaration = de_get_struct(*decl_id).unwrap();
-            analyze_struct(cc, &mut ns.scoped(), &struct_declaration);
+            analyze_struct(&mut ns.scoped(), &struct_declaration);
             let name = struct_declaration.name;
             ns.insert_symbol(name, TyDeclaration::Struct(*decl_id));
         }
@@ -72,7 +72,7 @@ fn analyze_variable(
     analyze_expression(cc, current_index, ns, &variable_declaration.body);
 
     // resolve any custom types in the type ascription
-    resolve_custom_types(variable_declaration.type_ascription, ns, cc).unwrap();
+    resolve_custom_types(variable_declaration.type_ascription, ns).unwrap();
 
     // unify the type of the value and the type ascription
     unify_types(
@@ -110,7 +110,7 @@ fn analyze_function(
     // resolve any custom types in the parameters and
     // insert the type parameters into the ns
     for param in function_declaration.parameters.iter() {
-        resolve_custom_types(param.type_id, ns, cc).unwrap();
+        resolve_custom_types(param.type_id, ns).unwrap();
         ns.insert_symbol(param.name.clone(), param.into());
     }
 
@@ -118,7 +118,7 @@ fn analyze_function(
     let typed_body_return_type = analyze_code_block(cc, ns, function_declaration.body);
 
     // resolve any custom types in the function return type
-    resolve_custom_types(function_declaration.return_type, ns, cc).unwrap();
+    resolve_custom_types(function_declaration.return_type, ns).unwrap();
 
     // unify the function return type and body return type
     unify_types(typed_body_return_type, function_declaration.return_type).unwrap();
@@ -153,7 +153,7 @@ fn analyze_trait_impl(cc: &CollectionContext, ns: &mut Namespace, trait_impl: &T
     let _trait_decl = de_get_trait(trait_id).unwrap();
 
     // resolve any custom types in the type we are implementing for
-    resolve_custom_types(trait_impl.type_implementing_for, ns, cc).unwrap();
+    resolve_custom_types(trait_impl.type_implementing_for, ns).unwrap();
 
     // TODO: check to see if all of the methods are implementing, no new methods implementing,
     // when generic traits are implemented add the monomorphized copies to the declaration
@@ -166,38 +166,30 @@ fn analyze_trait_impl(cc: &CollectionContext, ns: &mut Namespace, trait_impl: &T
     });
 }
 
-fn analyze_struct(
-    cc: &CollectionContext,
-    ns: &mut Namespace,
-    struct_declaration: &TyStructDeclaration,
-) {
+fn analyze_struct(ns: &mut Namespace, struct_declaration: &TyStructDeclaration) {
     // do type inference on the fields
     struct_declaration.fields.iter().for_each(|field| {
-        resolve_custom_types(field.type_id, ns, cc).unwrap();
+        resolve_custom_types(field.type_id, ns).unwrap();
     });
 }
 
-fn analyze_trait(
-    cc: &CollectionContext,
-    ns: &mut Namespace,
-    trait_declaration: &TyTraitDeclaration,
-) {
+fn analyze_trait(ns: &mut Namespace, trait_declaration: &TyTraitDeclaration) {
     // do type inference on the interface
     trait_declaration
         .interface_surface
         .iter()
         .for_each(|trait_fn_id| {
             let trait_fn = de_get_trait_fn(*trait_fn_id).unwrap();
-            analyze_trait_fn(cc, ns, &trait_fn)
+            analyze_trait_fn(ns, &trait_fn)
         });
 }
 
-fn analyze_trait_fn(cc: &CollectionContext, ns: &mut Namespace, trait_fn: &TyTraitFn) {
+fn analyze_trait_fn(ns: &mut Namespace, trait_fn: &TyTraitFn) {
     // resolve any custom types in the parameters
     for parameter in trait_fn.parameters.iter() {
-        resolve_custom_types(parameter.type_id, ns, cc).unwrap();
+        resolve_custom_types(parameter.type_id, ns).unwrap();
     }
 
     // resolve any custom types in the return type
-    resolve_custom_types(trait_fn.return_type, ns, cc).unwrap();
+    resolve_custom_types(trait_fn.return_type, ns).unwrap();
 }

@@ -4,7 +4,6 @@ use crate::collection_context::collection_context::CollectionContext;
 use crate::collection_context::collection_index::CollectionIndex;
 use crate::declaration_engine::declaration_engine::*;
 use crate::type_system::type_engine::resolve_custom_types;
-use crate::types::pretty_print::PrettyPrint;
 use crate::{
     language::ty::typed_expression::{TyExpression, TyExpressionVariant},
     namespace::namespace::Namespace,
@@ -46,7 +45,7 @@ pub(super) fn analyze_expression(
             }
 
             // monomorphize the function declaration into a new copy, in place
-            monomorphize(&mut typed_function_declaration, type_arguments, cc).unwrap();
+            monomorphize(&mut typed_function_declaration, type_arguments).unwrap();
 
             // add the new copy to the declaration engine
             de_add_monomorphized_function_copy(decl_id, typed_function_declaration.clone());
@@ -62,9 +61,6 @@ pub(super) fn analyze_expression(
 
             // unify the return type of the function declaration and the expression
             unify_types(typed_function_declaration.return_type, expression.type_id).unwrap();
-
-            //println!("\n{:#?}\n", typed_function_declaration);
-            println!("\n{}\n", typed_function_declaration.pretty_print_debug(cc));
         }
         TyExpressionVariant::Struct {
             struct_name,
@@ -83,7 +79,7 @@ pub(super) fn analyze_expression(
             let mut typed_struct_declaration = de_get_struct(decl_id).unwrap();
 
             // monomorphize the struct declaration into a new copy, in place
-            monomorphize(&mut typed_struct_declaration, type_arguments, cc).unwrap();
+            monomorphize(&mut typed_struct_declaration, type_arguments).unwrap();
 
             // add the new copy to the declaration engine
             de_add_monomorphized_struct_copy(decl_id, typed_struct_declaration.clone());
@@ -147,7 +143,7 @@ pub(super) fn analyze_expression(
             // do type inference on the type arguments
             type_arguments
                 .iter()
-                .for_each(|type_arg| resolve_custom_types(type_arg.type_id, ns, cc).unwrap());
+                .for_each(|type_arg| resolve_custom_types(type_arg.type_id, ns).unwrap());
 
             // do type inference on the arguments
             arguments

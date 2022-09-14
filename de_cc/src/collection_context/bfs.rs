@@ -1,4 +1,9 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, ops::Index};
+
+use petgraph::{
+    visit::{VisitMap, Visitable},
+    Direction,
+};
 
 use crate::{
     declaration_engine::{
@@ -10,7 +15,7 @@ use crate::{
 
 use super::{
     collection_edge::CollectionEdge, collection_index::CollectionIndex,
-    collection_node::CollectionNode, graph::direction::Direction, CollectionGraph,
+    collection_node::CollectionNode, CollectionGraph,
 };
 
 pub(super) fn search_shared_scope_for_declaration(
@@ -19,7 +24,7 @@ pub(super) fn search_shared_scope_for_declaration(
     symbol: String,
 ) -> Result<Option<DeclarationId>, String> {
     let mut discovered = graph.visit_map();
-    discovered.visit(**index);
+    discovered.visit(*index);
     let mut stack = VecDeque::new();
     stack.push_front(*index);
 
@@ -53,7 +58,7 @@ pub(super) fn search_shared_scope_for_declaration(
         }
 
         for edge in graph.edges_directed(node_index, Direction::Outgoing) {
-            let valid = match edge.weight {
+            let valid = match edge.weight() {
                 CollectionEdge::ApplicationContents => false,
                 CollectionEdge::FileContents => false,
                 CollectionEdge::SharedScope => true,
@@ -68,7 +73,7 @@ pub(super) fn search_shared_scope_for_declaration(
                     .into_iter()
                     .rev()
                 {
-                    if discovered.visit(*next_node) {
+                    if discovered.visit(next_node) {
                         stack.push_back(next_node);
                     }
                 }

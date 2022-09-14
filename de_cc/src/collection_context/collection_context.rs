@@ -1,35 +1,30 @@
+use std::ops::{Index, IndexMut};
+
 use petgraph::dot::{Config, Dot};
 
 use crate::declaration_engine::declaration_id::DeclarationId;
 
 use super::{
-    bfs,
-    collection_edge::CollectionEdge,
-    collection_index::CollectionIndex,
-    collection_node::CollectionNode,
-    graph::{edge::EdgeIndex, graph::Graph},
+    bfs, collection_edge::CollectionEdge, collection_index::CollectionIndex,
+    collection_node::CollectionNode, CollectionGraph,
 };
 
 #[derive(Default, Clone)]
 pub(crate) struct CollectionContext {
-    pub(crate) graph: Graph<CollectionNode, CollectionEdge>,
+    pub(crate) graph: CollectionGraph,
 }
 
 impl CollectionContext {
     #[allow(dead_code)]
     pub(crate) fn debug_print(&self) {
-        // println!(
-        //     "{:?}",
-        //     Dot::with_config(&self.graph, &[Config::EdgeIndexLabel])
-        // );
+        println!(
+            "{:?}",
+            Dot::with_config(&self.graph, &[Config::EdgeIndexLabel])
+        );
     }
 
-    pub(crate) fn add_node(&mut self, node: CollectionNode) -> Result<CollectionIndex, String> {
-        Ok(CollectionIndex::new(self.graph.add_node(node)?))
-    }
-
-    pub(crate) fn replace_node(&mut self, index: CollectionIndex, node: CollectionNode) {
-        self.graph.replace_node(*index, node);
+    pub(crate) fn add_node(&mut self, node: CollectionNode) -> CollectionIndex {
+        CollectionIndex::new(self.graph.add_node(node))
     }
 
     pub(crate) fn get_node(&self, index: CollectionIndex) -> &CollectionNode {
@@ -45,8 +40,8 @@ impl CollectionContext {
         from: CollectionIndex,
         to: CollectionIndex,
         edge: CollectionEdge,
-    ) -> Result<EdgeIndex, String> {
-        self.graph.add_edge(*from, *to, edge)
+    ) {
+        self.graph.add_edge(*from, *to, edge);
     }
 
     // https://docs.rs/petgraph/latest/src/petgraph/visit/traversal.rs.html#253

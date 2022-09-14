@@ -1,5 +1,4 @@
 use crate::{
-    collection_context::collection_context::CollectionContext,
     concurrent_slab::ConcurrentSlab,
     declaration_engine::declaration_engine::*,
     language::{
@@ -30,6 +29,7 @@ struct TypeEngine {
 }
 
 impl TypeEngine {
+    #[allow(dead_code)]
     fn debug_print(&self) {
         self.slab.debug_print();
     }
@@ -194,14 +194,9 @@ impl TypeEngine {
         }
     }
 
-    fn resolve_custom_types(
-        &self,
-        id: TypeId,
-        namespace: &mut Namespace,
-        cc: &CollectionContext,
-    ) -> Result<(), String> {
+    fn resolve_custom_types(&self, id: TypeId, namespace: &mut Namespace) -> Result<(), String> {
         match self.slab.get(*id) {
-            TypeInfo::Ref(inner_id) => resolve_custom_types(inner_id, namespace, cc),
+            TypeInfo::Ref(inner_id) => resolve_custom_types(inner_id, namespace),
             TypeInfo::Custom { name } => {
                 match namespace.get_symbol(&name)? {
                     TyDeclaration::Struct(decl_id) => {
@@ -209,7 +204,7 @@ impl TypeEngine {
                         let mut struct_decl = de_get_struct(decl_id)?;
 
                         // monomorphize the struct declaration into a new copy
-                        self.monomorphize(&mut struct_decl, &[], cc)?;
+                        self.monomorphize(&mut struct_decl, &[])?;
 
                         // add the new copy to the declaration engine
                         de_add_monomorphized_struct_copy(decl_id, struct_decl.clone());
@@ -232,12 +227,7 @@ impl TypeEngine {
         }
     }
 
-    fn monomorphize<T>(
-        &self,
-        value: &mut T,
-        type_arguments: &[TypeArgument],
-        cc: &CollectionContext,
-    ) -> Result<(), String>
+    fn monomorphize<T>(&self, value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>
     where
         T: MonomorphizeHelper + CopyTypes + PrettyPrint,
     {
@@ -248,7 +238,6 @@ impl TypeEngine {
             (true, true) => Ok(()),
             (false, true) => {
                 refresh_type_parameters(value.type_parameters_mut());
-                println!("{}", value.pretty_print_debug(cc));
                 Ok(())
             }
             (true, false) => Err("does not take type arguments".to_string()),
@@ -277,6 +266,7 @@ fn refresh_type_parameters(type_parameters: &mut [TypeParameter]) {
     });
 }
 
+#[allow(dead_code)]
 pub(crate) fn te_debug_print() {
     TYPE_ENGINE.debug_print()
 }
@@ -297,23 +287,15 @@ pub(crate) fn resolve_type(type_id: TypeId) -> Result<ResolvedType, String> {
     TYPE_ENGINE.resolve_type(type_id)
 }
 
-pub(crate) fn resolve_custom_types(
-    id: TypeId,
-    namespace: &mut Namespace,
-    cc: &CollectionContext,
-) -> Result<(), String> {
-    TYPE_ENGINE.resolve_custom_types(id, namespace, cc)
+pub(crate) fn resolve_custom_types(id: TypeId, namespace: &mut Namespace) -> Result<(), String> {
+    TYPE_ENGINE.resolve_custom_types(id, namespace)
 }
 
-pub(crate) fn monomorphize<T>(
-    value: &mut T,
-    type_arguments: &[TypeArgument],
-    cc: &CollectionContext,
-) -> Result<(), String>
+pub(crate) fn monomorphize<T>(value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>
 where
     T: MonomorphizeHelper + CopyTypes + PrettyPrint,
 {
-    TYPE_ENGINE.monomorphize(value, type_arguments, cc)
+    TYPE_ENGINE.monomorphize(value, type_arguments)
 }
 
 pub(crate) trait MonomorphizeHelper {
