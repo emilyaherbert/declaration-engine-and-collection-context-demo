@@ -24,7 +24,7 @@ pub enum TypeInfo {
     },
     Unit,
     Ref(TypeId),
-    TypeRef(String, Arc<RwLock<TypeId>>),
+    TypeParamRef(String, Arc<RwLock<TypeId>>),
     UnsignedInteger(IntegerBits),
     Struct {
         name: String,
@@ -50,7 +50,7 @@ impl fmt::Display for TypeInfo {
             TypeInfo::Custom { name } => write!(f, "{{{}}}", name),
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
             TypeInfo::Ref(id) => write!(f, "{}", look_up_type_id(*id)),
-            TypeInfo::TypeRef(_, id) => {
+            TypeInfo::TypeParamRef(_, id) => {
                 let id = id.read().unwrap();
                 write!(f, "{}", look_up_type_id(*id))
             }
@@ -91,7 +91,7 @@ impl fmt::Debug for TypeInfo {
             TypeInfo::Custom { name } => write!(f, "{{{}}}", name),
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
             TypeInfo::Ref(id) => write!(f, "ref..{}..{}", **id, look_up_type_id(*id)),
-            TypeInfo::TypeRef(_, id) => {
+            TypeInfo::TypeParamRef(_, id) => {
                 let id = id.read().unwrap();
                 write!(f, "typeref..{}..{}", **id, look_up_type_id(*id))
             }
@@ -161,7 +161,7 @@ impl Hash for TypeInfo {
                 state.write_u8(7);
                 name.hash(state);
             }
-            TypeInfo::TypeRef(name, id) => {
+            TypeInfo::TypeParamRef(name, id) => {
                 state.write_u8(8);
                 name.hash(state);
                 let id = id.read().unwrap();
@@ -181,7 +181,7 @@ impl PartialEq for TypeInfo {
             ) => l_name == r_name,
             (TypeInfo::UnsignedInteger(l), TypeInfo::UnsignedInteger(r)) => l == r,
             (TypeInfo::Ref(l), TypeInfo::Ref(r)) => look_up_type_id(*l) == look_up_type_id(*r),
-            (TypeInfo::TypeRef(_, l), TypeInfo::TypeRef(_, r)) => {
+            (TypeInfo::TypeParamRef(_, l), TypeInfo::TypeParamRef(_, r)) => {
                 let l = l.read().unwrap();
                 let r = r.read().unwrap();
                 look_up_type_id(*l) == look_up_type_id(*r)
@@ -217,7 +217,7 @@ impl TypeInfo {
                         {
                             return Some(*ty_id)
                         }
-                        TypeInfo::TypeRef(r_name, _) if l_name.as_str() == r_name.as_str() => {
+                        TypeInfo::TypeParamRef(r_name, _) if l_name.as_str() == r_name.as_str() => {
                             return Some(*ty_id)
                         }
                         _ => {}
@@ -264,7 +264,7 @@ impl TypeInfo {
             | TypeInfo::Unknown
             | TypeInfo::Unit
             | TypeInfo::Ref(_)
-            | TypeInfo::TypeRef(_, _)
+            | TypeInfo::TypeParamRef(_, _)
             | TypeInfo::UnsignedInteger(_) => None,
         }
     }

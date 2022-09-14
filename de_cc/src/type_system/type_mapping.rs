@@ -16,7 +16,7 @@ pub(crate) fn insert_type_parameters(type_parameters: Vec<TypeParameter>) -> Typ
         .map(|x| {
             (
                 x.type_id,
-                insert_type(TypeInfo::TypeRef(
+                insert_type(TypeInfo::TypeParamRef(
                     x.name.clone(),
                     Arc::new(RwLock::new(insert_type(TypeInfo::UnknownGeneric {
                         name: x.name,

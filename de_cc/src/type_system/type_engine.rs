@@ -76,12 +76,12 @@ impl TypeEngine {
             (TypeInfo::Ref(received), _) => self.unify_types(received, expected),
             (_, TypeInfo::Ref(expected)) => self.unify_types(received, expected),
 
-            (TypeInfo::TypeRef(l_name, _), TypeInfo::TypeRef(r_name, _))
+            (TypeInfo::TypeParamRef(l_name, _), TypeInfo::TypeParamRef(r_name, _))
                 if l_name.as_str() == r_name.as_str() =>
             {
                 Ok(())
             }
-            (TypeInfo::TypeRef(_, l), TypeInfo::TypeRef(_, r)) => {
+            (TypeInfo::TypeParamRef(_, l), TypeInfo::TypeParamRef(_, r)) => {
                 let l = *l.read().unwrap();
                 let r = *r.read().unwrap();
                 if l == r {
@@ -90,11 +90,11 @@ impl TypeEngine {
                     self.unify_types(l, r)
                 }
             }
-            (TypeInfo::TypeRef(_, received), _) => {
+            (TypeInfo::TypeParamRef(_, received), _) => {
                 let received = *received.read().unwrap();
                 self.unify_types(received, expected)
             }
-            (_, TypeInfo::TypeRef(_, expected)) => {
+            (_, TypeInfo::TypeParamRef(_, expected)) => {
                 let expected = *expected.read().unwrap();
                 self.unify_types(received, expected)
             }
@@ -152,7 +152,7 @@ impl TypeEngine {
         match self.slab.get(*type_id) {
             TypeInfo::UnsignedInteger(bits) => Ok(ResolvedType::UnsignedInteger(bits)),
             TypeInfo::Ref(id) => self.resolve_type(id),
-            TypeInfo::TypeRef(_, id) => {
+            TypeInfo::TypeParamRef(_, id) => {
                 let id = id.read().unwrap();
                 self.resolve_type(*id)
             }
@@ -259,7 +259,7 @@ impl TypeEngine {
 
 fn refresh_type_parameters(type_parameters: &mut [TypeParameter]) {
     type_parameters.iter_mut().for_each(|type_param| {
-        if let TypeInfo::TypeRef(name, id) = look_up_type_id(type_param.type_id) {
+        if let TypeInfo::TypeParamRef(name, id) = look_up_type_id(type_param.type_id) {
             let mut id = id.write().unwrap();
             *id = insert_type(TypeInfo::UnknownGeneric { name });
         }
