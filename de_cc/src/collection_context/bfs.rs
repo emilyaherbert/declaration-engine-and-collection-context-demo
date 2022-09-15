@@ -178,7 +178,7 @@ fn get_all_declarations_in_a_file(
 
         for edge in cc.graph.edges_directed(*node_index, Direction::Incoming) {
             let valid = match edge.weight() {
-                CollectionEdge::ApplicationContents => true,
+                CollectionEdge::ApplicationContents => false,
                 CollectionEdge::FileContents => true,
                 CollectionEdge::NodeContents => true,
                 CollectionEdge::DeclarationContents => true,

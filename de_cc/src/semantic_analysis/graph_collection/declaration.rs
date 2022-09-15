@@ -56,7 +56,7 @@ pub(super) fn collect_graph_decl(
             CCIdx::add_edge(
                 &func_decl_cc_idx,
                 &decl_cc_idx,
-                CollectionEdge::ScopedChild,
+                CollectionEdge::DeclarationContents,
                 cc,
             );
             decl_cc_idx
@@ -70,7 +70,7 @@ pub(super) fn collect_graph_decl(
             CCIdx::add_edge(
                 &trait_decl_cc_idx,
                 &decl_cc_idx,
-                CollectionEdge::ScopedChild,
+                CollectionEdge::DeclarationContents,
                 cc,
             );
             decl_cc_idx
@@ -84,7 +84,7 @@ pub(super) fn collect_graph_decl(
             CCIdx::add_edge(
                 &trait_impl_cc_idx,
                 &decl_cc_idx,
-                CollectionEdge::ScopedChild,
+                CollectionEdge::DeclarationContents,
                 cc,
             );
             decl_cc_idx
@@ -98,7 +98,7 @@ pub(super) fn collect_graph_decl(
             CCIdx::add_edge(
                 &struct_decl_cc_idx,
                 &decl_cc_idx,
-                CollectionEdge::ScopedChild,
+                CollectionEdge::DeclarationContents,
                 cc,
             );
             decl_cc_idx
