@@ -589,3 +589,54 @@ fn mutual_recursion_function_test() {
     let resolved_application = compile(application);
     println!("{}", resolved_application);
 }
+
+#[test]
+fn mutual_recursion_method_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+
+    let ping_fn = trait_fn("ping", &[func_param("n", t_u64())], t_u64());
+    let pong_fn = trait_fn("pong", &[func_param("n", t_u64())], t_u64());
+    let ping_pong = trait_("PingPong", &[ping_fn, pong_fn]);
+
+    let data_decl = struct_("Data", &[], &[struct_field("value", t_u64())]);
+
+    let ping_fn_impl = func_decl_raw(
+        "ping",
+        &[],
+        &[func_param("n", t_u64())],
+        &[return_(func_app("pong", &[], &[var("n")]))],
+        t_u64(),
+    );
+    let pong_fn_impl = func_decl_raw(
+        "pong",
+        &[],
+        &[func_param("n", t_u64())],
+        &[return_(func_app("ping", &[], &[var("n")]))],
+        t_u64(),
+    );
+    let impl_ping_pong_for_data_decl = trait_impl(
+        "PingPong",
+        t_cus_("Data"),
+        &[],
+        &[ping_fn_impl, pong_fn_impl],
+    );
+
+    let foo_decl = var_decl(
+        "foo",
+        None,
+        struct_exp("Data", &[], &[struct_exp_field("value", u64(10u64))]),
+    );
+    let main_fn = func_decl("main", &[], &[], &[foo_decl], t_unit());
+    let program_1 = File {
+        name: "bob.sw".to_string(),
+        nodes: vec![ping_pong, data_decl, impl_ping_pong_for_data_decl, main_fn],
+    };
+    let application = Application {
+        files: vec![program_1],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
+}

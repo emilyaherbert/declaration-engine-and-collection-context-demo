@@ -62,6 +62,6 @@ impl CollectionContext {
                 return Ok(decl_id);
             }
         }
-        Err("symbol not found in scope".to_string())
+        Err(format!("symbol {} not found in scope", symbol))
     }
 }

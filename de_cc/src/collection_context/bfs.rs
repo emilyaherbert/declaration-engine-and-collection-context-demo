@@ -29,15 +29,15 @@ pub(super) fn get_all_declarations_in_scope(
     discovered.visit(*index);
 
     let mut stack = VecDeque::new();
-    stack.push_front(*index);
+    stack.push_front(index);
 
     let mut declarations = vec![];
 
     while let Some(node_index) = stack.pop_front() {
-        let node = graph.index(node_index);
+        let node = graph.index(*node_index);
 
-        if let CollectionNode::Node(TyNode::Declaration(decl)) = node {
-            match decl.inner_ref() {
+        match node {
+            CollectionNode::Node(TyNode::Declaration(decl)) => match decl.inner_ref() {
                 TyDeclaration::Variable(_) => {}
                 TyDeclaration::Function(decl_id) => {
                     let decl = de_get_function(*decl_id.inner_ref())?;
@@ -55,10 +55,41 @@ pub(super) fn get_all_declarations_in_scope(
                     let decl = de_get_struct(*decl_id.inner_ref())?;
                     declarations.push((decl.name, decl_id.clone()));
                 }
+            },
+            CollectionNode::Declaration(name, decl) => match decl {
+                TyDeclaration::Variable(_) => {}
+                TyDeclaration::Function(decl_id) => {
+                    declarations.push((name.to_string(), decl_id.clone()));
+                }
+                TyDeclaration::Trait(decl_id) => {
+                    declarations.push((name.to_string(), decl_id.clone()));
+                }
+                TyDeclaration::TraitImpl(decl_id) => {
+                    declarations.push((name.to_string(), decl_id.clone()));
+                }
+                TyDeclaration::Struct(decl_id) => {
+                    declarations.push((name.to_string(), decl_id.clone()));
+                }
+            },
+            CollectionNode::Function(name, decl_id) => {
+                declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
             }
+            CollectionNode::Trait(name, decl_id) => {
+                declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
+            }
+            CollectionNode::TraitFn(name, decl_id) => {
+                declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
+            }
+            CollectionNode::TraitImpl(name, decl_id) => {
+                declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
+            }
+            CollectionNode::Struct(name, decl_id) => {
+                declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
+            }
+            _ => {}
         }
 
-        for edge in graph.edges_directed(node_index, Direction::Outgoing) {
+        for edge in graph.edges_directed(*node_index, Direction::Outgoing) {
             let valid = match edge.weight() {
                 CollectionEdge::ApplicationContents => false,
                 CollectionEdge::FileContents => false,
@@ -69,14 +100,14 @@ pub(super) fn get_all_declarations_in_scope(
             };
             if valid {
                 for next_node in graph
-                    .neighbors_directed(node_index, Direction::Outgoing)
+                    .neighbors_directed(*node_index, Direction::Outgoing)
                     .into_iter()
                     .collect::<Vec<_>>()
                     .into_iter()
                     .rev()
                 {
                     if discovered.visit(next_node) {
-                        stack.push_back(next_node);
+                        stack.push_back(CollectionIndex::new(next_node));
                     }
                 }
             }
