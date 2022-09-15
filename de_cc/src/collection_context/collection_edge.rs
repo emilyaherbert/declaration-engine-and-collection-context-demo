@@ -5,4 +5,5 @@ pub(crate) enum CollectionEdge {
     SharedScope,
     NodeContents,
     DeclarationContents,
+    ScopedChild,
 }

@@ -1,7 +1,6 @@
 mod declaration;
 mod expression;
 
-use itertools::Itertools;
 use std::collections::HashMap;
 
 use declaration::*;
@@ -10,7 +9,7 @@ use expression::*;
 use crate::{
     collection_context::{
         collection_context::CollectionContext, collection_edge::CollectionEdge,
-        collection_index::CollectionIndex,
+        collection_index::CCIdx,
     },
     language::{
         parsed::{Application, File, Node},
@@ -19,36 +18,28 @@ use crate::{
     type_system::type_mapping::TypeMapping,
 };
 
-pub(crate) fn collect_graph(
-    cc: &mut CollectionContext,
-    application: Application,
-) -> CollectionIndex {
+pub(crate) fn collect_graph(cc: &mut CollectionContext, app: Application) -> CCIdx<TyApplication> {
     // create graph nodes for each of the files
-    let file_idxs = application
+    let file_idxs = app
         .files
         .into_iter()
         .map(|file| collect_graph_file(cc, file))
         .collect::<Vec<_>>();
 
     // create a graph node for this application
-    let application = TyApplication {
+    let app = TyApplication {
         files: file_idxs.clone(),
     };
-    let application_idx = cc.add_node(application.into());
+    let app_idx = cc.add_node((&app).into());
+    let cc_idx = CCIdx::new(app, app_idx);
 
-    // add a graph edge from every file to the appliction
-    file_idxs.iter().for_each(|file_idx| {
-        cc.add_edge(
-            *file_idx,
-            application_idx,
-            CollectionEdge::ApplicationContents,
-        );
-    });
+    // add a graph edge from every file to the application
+    CCIdx::add_edges_many_to_one(&file_idxs, &cc_idx, CollectionEdge::ApplicationContents, cc);
 
-    application_idx
+    cc_idx
 }
 
-fn collect_graph_file(cc: &mut CollectionContext, file: File) -> CollectionIndex {
+fn collect_graph_file(cc: &mut CollectionContext, file: File) -> CCIdx<TyFile> {
     // create graph nodes for the nodes
     let nodes = collect_graph_nodes(cc, file.nodes);
 
@@ -57,17 +48,16 @@ fn collect_graph_file(cc: &mut CollectionContext, file: File) -> CollectionIndex
         name: file.name,
         nodes: nodes.clone(),
     };
-    let file_idx = cc.add_node(file.into());
+    let file_idx = cc.add_node((&file).into());
+    let cc_idx = CCIdx::new(file, file_idx);
 
     // add a graph edge from every ast node to the file
-    nodes.iter().for_each(|node_idx| {
-        cc.add_edge(*node_idx, file_idx, CollectionEdge::FileContents);
-    });
+    CCIdx::add_edges_many_to_one(&nodes, &cc_idx, CollectionEdge::FileContents, cc);
 
-    file_idx
+    cc_idx
 }
 
-fn collect_graph_nodes(cc: &mut CollectionContext, nodes: Vec<Node>) -> Vec<CollectionIndex> {
+fn collect_graph_nodes(cc: &mut CollectionContext, nodes: Vec<Node>) -> Vec<CCIdx<TyNode>> {
     // create graph nodes for each of the ast nodes
     let nodes = nodes
         .into_iter()
@@ -75,15 +65,7 @@ fn collect_graph_nodes(cc: &mut CollectionContext, nodes: Vec<Node>) -> Vec<Coll
         .collect::<Vec<_>>();
 
     // for every ast node in this scope, connect them under the same shared scope with graph edges
-    nodes
-        .clone()
-        .into_iter()
-        .permutations(2)
-        .for_each(|inner_nodes| {
-            let a = inner_nodes[0];
-            let b = inner_nodes[1];
-            cc.add_edge(a, b, CollectionEdge::SharedScope);
-        });
+    CCIdx::add_edges_many(&nodes, CollectionEdge::SharedScope, cc);
 
     nodes
 }
@@ -92,28 +74,26 @@ fn collect_graph_node(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     node: Node,
-) -> CollectionIndex {
+) -> CCIdx<TyNode> {
     match node {
         Node::StarImport(_) => todo!(),
         Node::Declaration(decl) => {
-            // create a graph node for the declaration
-            let decl_idx = collect_graph_declaration(cc, type_mapping, decl);
-
-            // create a graph node for the ast node
-            let node_idx = cc.add_node(TyNode::Declaration(decl_idx).into());
-
-            // add a graph edge from the declaration to the ast node
-            cc.add_edge(decl_idx, node_idx, CollectionEdge::NodeContents);
-            node_idx
+            let decl = collect_graph_decl(cc, type_mapping, decl);
+            let node = TyNode::Declaration(decl);
+            let node_idx = cc.add_node((&node).into());
+            CCIdx::new(node, node_idx)
         }
         Node::Expression(expression) => {
-            let node = TyNode::Expression(collect_graph_expression(cc, type_mapping, expression));
-            cc.add_node(node.into())
+            let exp = collect_graph_exp(cc, type_mapping, expression);
+            let node = TyNode::Expression(exp);
+            let node_idx = cc.add_node((&node).into());
+            CCIdx::new(node, node_idx)
         }
         Node::ReturnStatement(expression) => {
-            let node =
-                TyNode::ReturnStatement(collect_graph_expression(cc, type_mapping, expression));
-            cc.add_node(node.into())
+            let exp = collect_graph_exp(cc, type_mapping, expression);
+            let node = TyNode::ReturnStatement(exp);
+            let node_idx = cc.add_node((&node).into());
+            CCIdx::new(node, node_idx)
         }
     }
 }

@@ -3,7 +3,7 @@ use itertools::Itertools;
 use crate::{
     collection_context::{
         collection_context::CollectionContext, collection_edge::CollectionEdge,
-        collection_index::CollectionIndex,
+        collection_index::{CollectionIndex, CCIdx}, collection_node::CollectionNode,
     },
     declaration_engine::declaration_engine::{
         de_insert_function, de_insert_struct, de_insert_trait, de_insert_trait_fn,
@@ -29,60 +29,58 @@ use crate::{
     types::copy_types::CopyTypes,
 };
 
-use super::{collect_graph_node, expression::collect_graph_expression};
+use super::{collect_graph_node, expression::collect_graph_exp};
 
-pub(super) fn collect_graph_declaration(
+pub(super) fn collect_graph_decl(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
-    declaration: Declaration,
-) -> CollectionIndex {
-    match declaration {
-        Declaration::Variable(variable_declaration) => {
-            let variable_declaration =
-                collect_graph_variable_declaration(cc, type_mapping, variable_declaration);
-            let decl = TyDeclaration::Variable(variable_declaration);
-            cc.add_node(decl.into())
+    decl: Declaration,
+) -> CCIdx<TyDeclaration> {
+    match decl {
+        Declaration::Variable(var_decl) => {
+            let var_decl = collect_graph_var_decl(cc, type_mapping, var_decl);
+            TyDeclaration::Variable(var_decl)
         }
-        Declaration::Function(function_declaration) => {
-            let function_declaration =
-                collect_graph_function(cc, type_mapping, function_declaration);
-            let decl = TyDeclaration::Function(de_insert_function(function_declaration.clone()));
-            let func_idx = cc.add_node(decl.into());
-
+        Declaration::Function(func_decl) => {
+            let func_decl = collect_graph_function(cc, type_mapping, func_decl);
+            let func_decl_id = de_insert_function(func_decl.clone());
+            let func_decl_idx = cc.add_node(CollectionNode::Function(func_decl.name, func_decl_id));
+            let cc_idx = CCIdx::new(func_decl_id, func_decl_idx)
             // add an edge to every node in the function body
-            function_declaration.body.iter().for_each(|node_idx| {
-                cc.add_edge(*node_idx, func_idx, CollectionEdge::DeclarationContents);
+            func_decl.body.iter().for_each(|node_idx| {
+                cc.add_edge(*node_idx, func_decl_idx, CollectionEdge::ScopedChild);
             });
-            func_idx
+            TyDeclaration::Function(cc_idx)
         }
-        Declaration::Trait(trait_declaration) => {
-            let trait_declaration = collect_graph_trait(cc, type_mapping, trait_declaration);
-            let decl = TyDeclaration::Trait(de_insert_trait(trait_declaration));
-            cc.add_node(decl.into())
+        Declaration::Trait(trait_decl) => {
+            let trait_decl = collect_graph_trait(cc, type_mapping, trait_decl);
+            let trait_decl_id = de_insert_trait(trait_decl);
+            let trait_decl_idx = cc.add_node(CollectionNode::Trait(trait_decl.name, trait_decl_id));
+            TyDeclaration::Trait((trait_decl_id, trait_decl_idx))
         }
         Declaration::TraitImpl(trait_impl) => {
             let trait_impl = collect_graph_trait_impl(cc, type_mapping, trait_impl);
             let decl = TyDeclaration::TraitImpl(de_insert_trait_impl(trait_impl));
             cc.add_node(decl.into())
         }
-        Declaration::Struct(struct_declaration) => {
-            let struct_declaration = collect_graph_struct(cc, type_mapping, struct_declaration);
-            let decl = TyDeclaration::Struct(de_insert_struct(struct_declaration));
+        Declaration::Struct(struct_decl) => {
+            let struct_decl = collect_graph_struct(cc, type_mapping, struct_decl);
+            let decl = TyDeclaration::Struct(de_insert_struct(struct_decl));
             cc.add_node(decl.into())
         }
     }
 }
 
-fn collect_graph_variable_declaration(
+fn collect_graph_var_decl(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
-    variable_declaration: VariableDeclaration,
+    var_decl: VariableDeclaration,
 ) -> TyVariableDeclaration {
-    let new_body = collect_graph_expression(cc, type_mapping, variable_declaration.body);
-    let mut new_type_ascription = insert_type(variable_declaration.type_ascription);
+    let new_body = collect_graph_exp(cc, type_mapping, var_decl.body);
+    let mut new_type_ascription = insert_type(var_decl.type_ascription);
     new_type_ascription.copy_types(cc, type_mapping);
     TyVariableDeclaration {
-        name: variable_declaration.name,
+        name: var_decl.name,
         body: new_body,
         type_ascription: new_type_ascription,
     }
@@ -91,18 +89,16 @@ fn collect_graph_variable_declaration(
 fn collect_graph_function(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
-    function_declaration: FunctionDeclaration,
+    func_decl: FunctionDeclaration,
 ) -> TyFunctionDeclaration {
     // new local mutable copy of type_mapping
     let mut type_mapping = type_mapping.clone();
 
     // extend type mapping with the type parameters
-    type_mapping.extend(insert_type_parameters(
-        function_declaration.type_parameters.clone(),
-    ));
+    type_mapping.extend(insert_type_parameters(func_decl.type_parameters.clone()));
 
     // collect the type parameters
-    let type_parameters = function_declaration
+    let type_parameters = func_decl
         .type_parameters
         .into_iter()
         .map(|mut type_param| {
@@ -112,21 +108,21 @@ fn collect_graph_function(
         .collect::<Vec<_>>();
 
     // collect the parameters
-    let parameters = function_declaration
+    let parameters = func_decl
         .parameters
         .into_iter()
         .map(|param| collect_graph_function_parameter(cc, &type_mapping, param))
         .collect::<Vec<_>>();
 
     // collect the return type
-    let mut return_type = insert_type(function_declaration.return_type);
+    let mut return_type = insert_type(func_decl.return_type);
     return_type.copy_types(cc, &type_mapping);
 
     // collect the body
-    let body = collect_graph_code_block(cc, &type_mapping, function_declaration.body);
+    let body = collect_graph_code_block(cc, &type_mapping, func_decl.body);
 
     let mut decl = TyFunctionDeclaration {
-        name: function_declaration.name,
+        name: func_decl.name,
         type_parameters,
         parameters,
         body,
@@ -176,9 +172,9 @@ fn collect_graph_function_parameter(
 fn collect_graph_trait(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
-    trait_declaration: TraitDeclaration,
+    trait_decl: TraitDeclaration,
 ) -> TyTraitDeclaration {
-    let interface_surface = trait_declaration
+    let interface_surface = trait_decl
         .interface_surface
         .into_iter()
         .map(|trait_fn| {
@@ -187,7 +183,7 @@ fn collect_graph_trait(
         })
         .collect::<Vec<_>>();
     TyTraitDeclaration {
-        name: trait_declaration.name,
+        name: trait_decl.name,
         interface_surface,
     }
 }
@@ -237,13 +233,11 @@ fn collect_graph_trait_impl(
 fn collect_graph_struct(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
-    struct_declaration: StructDeclaration,
+    struct_decl: StructDeclaration,
 ) -> TyStructDeclaration {
     let mut type_mapping = type_mapping.clone();
-    type_mapping.extend(insert_type_parameters(
-        struct_declaration.type_parameters.clone(),
-    ));
-    let type_parameters = struct_declaration
+    type_mapping.extend(insert_type_parameters(struct_decl.type_parameters.clone()));
+    let type_parameters = struct_decl
         .type_parameters
         .into_iter()
         .map(|mut type_param| {
@@ -251,13 +245,13 @@ fn collect_graph_struct(
             type_param
         })
         .collect::<Vec<_>>();
-    let fields = struct_declaration
+    let fields = struct_decl
         .fields
         .into_iter()
         .map(|field| collect_graph_struct_field(cc, &type_mapping, field))
         .collect::<Vec<_>>();
     TyStructDeclaration {
-        name: struct_declaration.name,
+        name: struct_decl.name,
         type_parameters,
         fields,
     }

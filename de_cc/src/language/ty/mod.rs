@@ -1,60 +1,36 @@
-use std::fmt::Write;
+use std::fmt;
 
 use colored::Colorize;
 
 use crate::{
-    collection_context::{
-        collection_context::CollectionContext, collection_index::CollectionIndex,
-    },
+    collection_context::{collection_context::CollectionContext, collection_index::CCIdx},
     type_system::type_mapping::TypeMapping,
-    types::{copy_types::CopyTypes, pretty_print::PrettyPrint},
+    types::copy_types::CopyTypes,
 };
 
-use self::typed_expression::TyExpression;
+use self::{typed_declaration::TyDeclaration, typed_expression::TyExpression};
 
 pub(crate) mod typed_declaration;
 pub(crate) mod typed_expression;
 
 #[derive(Clone, Debug)]
 pub(crate) struct TyApplication {
-    pub files: Vec<CollectionIndex>,
+    files: Vec<CCIdx<TyFile>>,
 }
 
-impl PrettyPrint for TyApplication {
-    #[allow(clippy::useless_format)]
-    fn pretty_print(&self, cc: &CollectionContext) -> String {
-        let mut builder = String::new();
+impl fmt::Display for TyApplication {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
-            builder,
+            f,
             "{}{}\n{}",
             format!("\n++++++++ RESOLVED").blue(),
             self.files
                 .iter()
-                .map(|file| file.pretty_print(cc))
+                .map(|file| file.to_string())
                 .collect::<Vec<_>>()
                 .join("\n"),
             format!("++++++++").blue(),
         )
-        .unwrap();
-        builder
-    }
-
-    #[allow(clippy::useless_format)]
-    fn pretty_print_debug(&self, cc: &CollectionContext) -> String {
-        let mut builder = String::new();
-        write!(
-            builder,
-            "{}{}\n{}",
-            format!("\n++++++++ RESOLVED").blue(),
-            self.files
-                .iter()
-                .map(|file| file.pretty_print_debug(cc))
-                .collect::<Vec<_>>()
-                .join("\n"),
-            format!("++++++++").blue(),
-        )
-        .unwrap();
-        builder
     }
 }
 
@@ -62,59 +38,33 @@ impl CopyTypes for TyApplication {
     fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
         self.files
             .iter_mut()
-            .for_each(|node_index| node_index.copy_types(cc, type_mapping));
+            .for_each(|file| file.copy_types(cc, type_mapping));
     }
 }
 
 #[derive(Clone, Debug)]
 pub(crate) struct TyFile {
     pub(crate) name: String,
-    pub(crate) nodes: Vec<CollectionIndex>,
+    pub(crate) nodes: Vec<CCIdx<TyNode>>,
 }
 
-impl PrettyPrint for TyFile {
-    #[allow(clippy::useless_format)]
-    fn pretty_print(&self, cc: &CollectionContext) -> String {
-        let mut builder = String::new();
+impl fmt::Display for TyFile {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let mut nodes_str = self
             .nodes
             .iter()
-            .map(|node| node.pretty_print(cc))
+            .map(|node| node.to_string())
             .collect::<Vec<_>>()
             .join(";\n");
         nodes_str.insert(0, '\n');
         nodes_str.push(';');
         write!(
-            builder,
+            f,
             "{}{}{}",
             format!("\n>>> {}", self.name).green(),
             nodes_str,
             format!("\n<<<").green(),
         )
-        .unwrap();
-        builder
-    }
-
-    #[allow(clippy::useless_format)]
-    fn pretty_print_debug(&self, cc: &CollectionContext) -> String {
-        let mut builder = String::new();
-        let mut nodes_str = self
-            .nodes
-            .iter()
-            .map(|node| node.pretty_print_debug(cc))
-            .collect::<Vec<_>>()
-            .join(";\n");
-        nodes_str.insert(0, '\n');
-        nodes_str.push(';');
-        write!(
-            builder,
-            "{}{}{}",
-            format!("\n>>> {}", self.name).green(),
-            nodes_str,
-            format!("\n<<<").green(),
-        )
-        .unwrap();
-        builder
     }
 }
 
@@ -122,31 +72,23 @@ impl CopyTypes for TyFile {
     fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
         self.nodes
             .iter_mut()
-            .for_each(|node_index| node_index.copy_types(cc, type_mapping));
+            .for_each(|node| node.copy_types(cc, type_mapping));
     }
 }
 
 #[derive(Clone, PartialEq, Debug)]
 pub(crate) enum TyNode {
-    Declaration(CollectionIndex),
-    Expression(TyExpression),
-    ReturnStatement(TyExpression),
+    Declaration(CCIdx<TyDeclaration>),
+    Expression(CCIdx<TyExpression>),
+    ReturnStatement(CCIdx<TyExpression>),
 }
 
-impl PrettyPrint for TyNode {
-    fn pretty_print(&self, cc: &CollectionContext) -> String {
+impl fmt::Display for TyNode {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            TyNode::Declaration(declaration) => declaration.pretty_print(cc),
-            TyNode::Expression(expression) => expression.to_string(),
-            TyNode::ReturnStatement(expression) => format!("return {}", expression),
-        }
-    }
-
-    fn pretty_print_debug(&self, cc: &CollectionContext) -> String {
-        match self {
-            TyNode::Declaration(declaration) => declaration.pretty_print_debug(cc),
-            TyNode::Expression(expression) => format!("{:?}", expression),
-            TyNode::ReturnStatement(expression) => format!("return {:?}", expression),
+            TyNode::Declaration(decl) => write!(f, "{}", decl),
+            TyNode::Expression(exp) => write!(f, "{}", exp),
+            TyNode::ReturnStatement(exp) => write!(f, "{}", exp),
         }
     }
 }
@@ -154,9 +96,9 @@ impl PrettyPrint for TyNode {
 impl CopyTypes for TyNode {
     fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
         match self {
-            TyNode::Declaration(declaration) => declaration.copy_types(cc, type_mapping),
-            TyNode::Expression(expression) => expression.copy_types(cc, type_mapping),
-            TyNode::ReturnStatement(expression) => expression.copy_types(cc, type_mapping),
+            TyNode::Declaration(decl) => decl.copy_types(cc, type_mapping),
+            TyNode::Expression(exp) => exp.copy_types(cc, type_mapping),
+            TyNode::ReturnStatement(exp) => exp.copy_types(cc, type_mapping),
         }
     }
 }

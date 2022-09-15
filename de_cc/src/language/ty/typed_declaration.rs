@@ -6,7 +6,7 @@ use super::typed_expression::*;
 
 use crate::{
     collection_context::{
-        collection_context::CollectionContext, collection_index::CollectionIndex,
+        collection_context::CollectionContext, collection_index::{CollectionIndex, CCIdx},
     },
     declaration_engine::declaration_id::DeclarationId,
     type_system::{
@@ -22,20 +22,20 @@ use crate::{
 #[derive(Clone, PartialEq)]
 pub(crate) enum TyDeclaration {
     Variable(TyVariableDeclaration),
-    Function(DeclarationId),
-    Trait(DeclarationId),
-    TraitImpl(DeclarationId),
-    Struct(DeclarationId),
+    Function(CCIdx<DeclarationId>),
+    Trait(CCIdx<DeclarationId>),
+    TraitImpl(CCIdx<DeclarationId>),
+    Struct(CCIdx<DeclarationId>),
 }
 
 impl fmt::Display for TyDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TyDeclaration::Variable(decl) => write!(f, "{}", decl),
-            TyDeclaration::Function(decl) => write!(f, "\n{}", decl),
-            TyDeclaration::Trait(decl) => write!(f, "\n{}", decl),
-            TyDeclaration::TraitImpl(decl) => write!(f, "\n{}", decl),
-            TyDeclaration::Struct(decl) => write!(f, "\n{}", decl),
+            TyDeclaration::Function(decl_id) => write!(f, "\n{}", decl_id),
+            TyDeclaration::Trait(decl_id) => write!(f, "\n{}", decl_id),
+            TyDeclaration::TraitImpl(decl_id) => write!(f, "\n{}", decl_id),
+            TyDeclaration::Struct(decl_id) => write!(f, "\n{}", decl_id),
         }
     }
 }
@@ -44,10 +44,10 @@ impl fmt::Debug for TyDeclaration {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             TyDeclaration::Variable(decl) => write!(f, "{:?}", decl),
-            TyDeclaration::Function(decl) => write!(f, "\n{:?}", decl),
-            TyDeclaration::Trait(decl) => write!(f, "\n{:?}", decl),
-            TyDeclaration::TraitImpl(decl) => write!(f, "\n{:?}", decl),
-            TyDeclaration::Struct(decl) => write!(f, "\n{:?}", decl),
+            TyDeclaration::Function(decl_id) => write!(f, "\n{:?}", decl_id),
+            TyDeclaration::Trait(decl_id) => write!(f, "\n{:?}", decl_id),
+            TyDeclaration::TraitImpl(decl_id) => write!(f, "\n{:?}", decl_id),
+            TyDeclaration::Struct(decl_id) => write!(f, "\n{:?}", decl_id),
         }
     }
 }
@@ -88,7 +88,7 @@ impl TyDeclaration {
 
     pub(crate) fn expect_function(self) -> Result<DeclarationId, String> {
         if let TyDeclaration::Function(decl_id) = self {
-            Ok(decl_id)
+            Ok(decl_id.inner())
         } else {
             Err("not a function declaration".to_string())
         }
@@ -96,7 +96,7 @@ impl TyDeclaration {
 
     pub(crate) fn expect_trait(self) -> Result<DeclarationId, String> {
         if let TyDeclaration::Trait(decl_id) = self {
-            Ok(decl_id)
+            Ok(decl_id.inner())
         } else {
             Err("not a trait declaration".to_string())
         }
@@ -104,7 +104,7 @@ impl TyDeclaration {
 
     pub(crate) fn expect_struct(self) -> Result<DeclarationId, String> {
         if let TyDeclaration::Struct(decl_id) = self {
-            Ok(decl_id)
+            Ok(decl_id.inner())
         } else {
             Err("not a struct declaration".to_string())
         }

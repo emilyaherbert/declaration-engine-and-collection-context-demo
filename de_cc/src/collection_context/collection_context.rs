@@ -10,11 +10,11 @@ use super::{
 };
 
 #[derive(Default, Clone)]
-pub(crate) struct CollectionContext {
-    pub(crate) graph: CollectionGraph,
+pub(crate) struct CollectionContext<'cc> {
+    pub(crate) graph: CollectionGraph<'cc>,
 }
 
-impl CollectionContext {
+impl CollectionContext<'_> {
     #[allow(dead_code)]
     pub(crate) fn debug_print(&self) {
         println!(
@@ -50,7 +50,12 @@ impl CollectionContext {
         index: CollectionIndex,
         symbol: String,
     ) -> Result<DeclarationId, String> {
-        bfs::search_shared_scope_for_declaration(&self.graph, index, symbol)?
-            .ok_or_else(|| "could not find symbol in the collection context".to_string())
+        let decls_in_scope = bfs::get_all_declarations_in_scope(&self.graph, index)?;
+        for (name, decl_id) in decls_in_scope.into_iter() {
+            if name == symbol {
+                return Ok(decl_id);
+            }
+        }
+        Err("symbol not found in scope".to_string())
     }
 }

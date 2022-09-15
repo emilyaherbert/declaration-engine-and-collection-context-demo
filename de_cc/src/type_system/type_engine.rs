@@ -199,7 +199,7 @@ impl TypeEngine {
             TypeInfo::Ref(inner_id) => resolve_custom_types(inner_id, namespace),
             TypeInfo::Custom { name } => {
                 match namespace.get_symbol(&name)? {
-                    TyDeclaration::Struct(decl_id) => {
+                    TyDeclaration::Struct((decl_id, _)) => {
                         // get the original struct declaration
                         let mut struct_decl = de_get_struct(decl_id)?;
 
