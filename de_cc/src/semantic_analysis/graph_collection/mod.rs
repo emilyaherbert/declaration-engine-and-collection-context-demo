@@ -9,7 +9,7 @@ use expression::*;
 use crate::{
     collection_context::{
         collection_context::CollectionContext, collection_edge::CollectionEdge,
-        collection_index::CCIdx,
+        collection_index::CCIdx, collection_node::CollectionNode,
     },
     language::{
         parsed::{Application, File, Node},
@@ -49,6 +49,10 @@ fn collect_graph_file(cc: &mut CollectionContext, file: File) -> CCIdx<TyFile> {
         nodes: nodes.clone(),
     };
     let file_idx = cc.add_node(file.clone().into());
+
+    // register the file with the collection context
+    cc.register_file_index(file.name.clone(), file_idx);
+
     let cc_idx = CCIdx::new(file, file_idx);
 
     // add a graph edge from every ast node to the file
@@ -76,7 +80,11 @@ fn collect_graph_node(
     node: Node,
 ) -> CCIdx<TyNode> {
     match node {
-        Node::StarImport(_) => todo!(),
+        Node::StarImport(filename) => {
+            let node = TyNode::StarImport(filename.clone());
+            let node_idx = cc.add_node(CollectionNode::StarImport(filename));
+            CCIdx::new(node, node_idx)
+        }
         Node::Declaration(decl) => {
             let decl_cc_idx = collect_graph_decl(cc, type_mapping, decl);
             let node = TyNode::Declaration(decl_cc_idx.clone());

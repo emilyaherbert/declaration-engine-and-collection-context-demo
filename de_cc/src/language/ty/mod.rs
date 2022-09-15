@@ -117,6 +117,7 @@ impl CopyTypes for TyFile {
 
 #[derive(Clone, PartialEq)]
 pub(crate) enum TyNode {
+    StarImport(String),
     Declaration(CCIdx<TyDeclaration>),
     Expression(TyExpression),
     ReturnStatement(TyExpression),
@@ -128,6 +129,7 @@ impl fmt::Debug for TyNode {
             TyNode::Declaration(decl) => write!(f, "{:?}", decl),
             TyNode::Expression(exp) => write!(f, "{:?}", exp),
             TyNode::ReturnStatement(exp) => write!(f, "{:?}", exp),
+            TyNode::StarImport(filename) => write!(f, "use {}::*", filename),
         }
     }
 }
@@ -138,6 +140,7 @@ impl fmt::Display for TyNode {
             TyNode::Declaration(decl) => write!(f, "{}", decl),
             TyNode::Expression(exp) => write!(f, "{}", exp),
             TyNode::ReturnStatement(exp) => write!(f, "{}", exp),
+            TyNode::StarImport(filename) => write!(f, "use {}::*", filename),
         }
     }
 }
@@ -148,6 +151,7 @@ impl CopyTypes for TyNode {
             TyNode::Declaration(decl) => decl.copy_types(type_mapping),
             TyNode::Expression(exp) => exp.copy_types(type_mapping),
             TyNode::ReturnStatement(exp) => exp.copy_types(type_mapping),
+            TyNode::StarImport(_) => {}
         }
     }
 }

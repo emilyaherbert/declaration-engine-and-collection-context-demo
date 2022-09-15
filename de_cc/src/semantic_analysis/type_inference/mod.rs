@@ -35,5 +35,6 @@ fn analyze_node(cc: &CollectionContext, ns: &mut Namespace, node: &mut CCIdx<TyN
         TyNode::Declaration(decl) => analyze_declaration(cc, ns, decl),
         TyNode::Expression(expression) => analyze_expression(cc, cc_idx, ns, expression),
         TyNode::ReturnStatement(expression) => analyze_expression(cc, cc_idx, ns, expression),
+        TyNode::StarImport(_) => {}
     }
 }

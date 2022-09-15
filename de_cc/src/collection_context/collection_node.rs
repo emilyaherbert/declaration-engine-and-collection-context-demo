@@ -13,6 +13,7 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub(crate) enum CollectionNode {
+    StarImport(String),
     Application(TyApplication),
     File(TyFile),
     Node(TyNode),
@@ -45,6 +46,7 @@ pub(crate) enum CollectionNode {
 impl fmt::Display for CollectionNode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            CollectionNode::StarImport(name) => write!(f, "{}", name),
             CollectionNode::Application(node) => write!(f, "{}", node),
             CollectionNode::File(node) => write!(f, "{}", node),
             CollectionNode::Node(node) => write!(f, "{}", node),

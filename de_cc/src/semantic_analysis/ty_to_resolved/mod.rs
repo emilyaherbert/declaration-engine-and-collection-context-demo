@@ -56,5 +56,6 @@ fn to_resolved_node(cc: &CollectionContext, node: CCIdx<TyNode>) -> Vec<Resolved
         TyNode::ReturnStatement(exp) => {
             vec![ResolvedNode::ReturnStatement(to_resolved_expression(exp))]
         }
+        TyNode::StarImport(filename) => vec![ResolvedNode::StarImport(filename)],
     }
 }

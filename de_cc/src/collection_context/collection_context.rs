@@ -1,4 +1,4 @@
-use std::ops::Index;
+use std::{collections::HashMap, ops::Index};
 
 use petgraph::{
     dot::{Config, Dot},
@@ -17,7 +17,8 @@ use super::{
 
 #[derive(Default, Clone)]
 pub(crate) struct CollectionContext {
-    pub(crate) graph: CollectionGraph,
+    pub(super) graph: CollectionGraph,
+    pub(super) files: HashMap<String, CollectionIndex>,
 }
 
 impl CollectionContext {
@@ -27,6 +28,17 @@ impl CollectionContext {
             "{:?}",
             Dot::with_config(&self.graph, &[Config::EdgeIndexLabel])
         );
+    }
+
+    pub(crate) fn register_file_index(&mut self, filename: String, index: CollectionIndex) {
+        self.files.insert(filename, index);
+    }
+
+    pub(crate) fn get_file_index(&self, filename: String) -> Result<CollectionIndex, String> {
+        self.files
+            .get(&filename)
+            .cloned()
+            .ok_or_else(|| "file not in file list".to_string())
     }
 
     pub(crate) fn add_node(&mut self, node: CollectionNode) -> CollectionIndex {
@@ -56,7 +68,7 @@ impl CollectionContext {
         index: CollectionIndex,
         symbol: String,
     ) -> Result<CCIdx<DeclarationId>, String> {
-        let decls_in_scope = bfs::get_all_declarations_in_scope(&self.graph, index)?;
+        let decls_in_scope = bfs::get_all_declarations_in_scope(self, index)?;
         for (name, decl_id) in decls_in_scope.into_iter() {
             if name == symbol {
                 return Ok(decl_id);

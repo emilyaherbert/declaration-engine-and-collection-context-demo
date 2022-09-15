@@ -277,6 +277,10 @@ pub mod constructors {
         TraitDeclaration, TraitFn, TraitImpl, VariableDeclaration,
     };
 
+    pub fn star_import(name: &str) -> Node {
+        Node::StarImport(name.to_string())
+    }
+
     pub fn var_decl(name: &str, type_ascription: Option<TypeInfo>, body: Expression) -> Node {
         Node::Declaration(Declaration::Variable(VariableDeclaration {
             name: name.to_string(),

@@ -32,5 +32,6 @@ fn collect_types_node(cc: &CollectionContext, ns: &mut Namespace, node: &mut CCI
         TyNode::Declaration(decl) => collect_types_declaration(cc, ns, decl),
         TyNode::Expression(_) => {}
         TyNode::ReturnStatement(_) => {}
+        TyNode::StarImport(_) => {}
     }
 }
