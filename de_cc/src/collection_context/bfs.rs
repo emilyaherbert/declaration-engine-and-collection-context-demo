@@ -37,10 +37,14 @@ pub(super) fn get_all_declarations_in_scope(
         let node = cc.graph.index(*node_index);
 
         match node {
+            // this case is triggered upon hitting a star import statement
             CollectionNode::StarImport(filename) => {
                 let new_index = cc.get_file_index(filename.to_string())?;
                 declarations.append(&mut get_all_declarations_in_a_file(cc, new_index)?);
             }
+
+            // this case is triggered when looking for symbols that are located in the
+            // same scope as other nodes
             CollectionNode::Node(TyNode::Declaration(decl)) => match decl.inner_ref() {
                 TyDeclaration::Variable(_) => {}
                 TyDeclaration::Function(decl_id) => {
@@ -60,6 +64,7 @@ pub(super) fn get_all_declarations_in_scope(
                     declarations.push((decl.name, decl_id.clone()));
                 }
             },
+
             CollectionNode::Declaration(name, decl) => match decl {
                 TyDeclaration::Variable(_) => {}
                 TyDeclaration::Function(decl_id) => {
@@ -75,6 +80,9 @@ pub(super) fn get_all_declarations_in_scope(
                     declarations.push((name.to_string(), decl_id.clone()));
                 }
             },
+
+            // these cases are triggered when looking for symbols that are located in the
+            // same scope, in the case of methods, trait impls, etc
             CollectionNode::Function(name, decl_id) => {
                 declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
             }
@@ -138,27 +146,8 @@ fn get_all_declarations_in_a_file(
     while let Some(node_index) = stack.pop_front() {
         let node = cc.graph.index(*node_index);
 
-        match node {
-            CollectionNode::Node(TyNode::Declaration(decl)) => match decl.inner_ref() {
-                TyDeclaration::Variable(_) => {}
-                TyDeclaration::Function(decl_id) => {
-                    let decl = de_get_function(*decl_id.inner_ref())?;
-                    declarations.push((decl.name, decl_id.clone()));
-                }
-                TyDeclaration::Trait(decl_id) => {
-                    let decl = de_get_trait(*decl_id.inner_ref())?;
-                    declarations.push((decl.name, decl_id.clone()));
-                }
-                TyDeclaration::TraitImpl(decl_id) => {
-                    let decl = de_get_trait_impl(*decl_id.inner_ref())?;
-                    declarations.push((decl.trait_name, decl_id.clone()));
-                }
-                TyDeclaration::Struct(decl_id) => {
-                    let decl = de_get_struct(*decl_id.inner_ref())?;
-                    declarations.push((decl.name, decl_id.clone()));
-                }
-            },
-            CollectionNode::Declaration(name, decl) => match decl {
+        if let CollectionNode::Declaration(name, decl) = node {
+            match decl {
                 TyDeclaration::Variable(_) => {}
                 TyDeclaration::Function(decl_id) => {
                     declarations.push((name.to_string(), decl_id.clone()));
@@ -172,8 +161,7 @@ fn get_all_declarations_in_a_file(
                 TyDeclaration::Struct(decl_id) => {
                     declarations.push((name.to_string(), decl_id.clone()));
                 }
-            },
-            _ => {}
+            }
         }
 
         for edge in cc.graph.edges_directed(*node_index, Direction::Incoming) {
