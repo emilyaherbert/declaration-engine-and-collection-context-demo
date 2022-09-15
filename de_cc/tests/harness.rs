@@ -680,3 +680,52 @@ fn star_import_test() {
     let resolved_application = compile(application);
     println!("{}", resolved_application);
 }
+
+#[test]
+fn mutual_recursion_files_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+
+    let bob_fn = func_decl(
+        "bob_fn",
+        &[],
+        &[func_param("n", t_u64())],
+        &[return_(var("n"))],
+        t_u64(),
+    );
+    let suzie_fn = func_decl(
+        "suzie_fn",
+        &[],
+        &[func_param("n", t_u64())],
+        &[return_(func_app("alice_fn", &[], &[var("n")]))],
+        t_u64(),
+    );
+
+    let program_2 = File {
+        name: "bob.sw".to_string(),
+        nodes: vec![star_import("alice.sw"), bob_fn, suzie_fn],
+    };
+
+    let alice_fn = func_decl(
+        "alice_fn",
+        &[],
+        &[func_param("n", t_u64())],
+        &[return_(func_app("bob_fn", &[], &[var("n")]))],
+        t_u64(),
+    );
+
+    let foo_decl = var_decl("foo", None, func_app("alice_fn", &[], &[u64(5u64)]));
+    let main_fn = func_decl("main", &[], &[], &[foo_decl], t_unit());
+
+    let program_1 = File {
+        name: "alice.sw".to_string(),
+        nodes: vec![star_import("bob.sw"), alice_fn, main_fn],
+    };
+    let application = Application {
+        files: vec![program_1, program_2],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
+}
