@@ -1,8 +1,6 @@
 use std::fmt;
 use std::hash::Hash;
 use std::hash::Hasher;
-use std::sync::Arc;
-use std::sync::RwLock;
 
 use crate::language::ty::typed_declaration::TyStructField;
 
@@ -24,7 +22,6 @@ pub enum TypeInfo {
     },
     Unit,
     Ref(TypeId),
-    TypeParamRef(String, Arc<RwLock<TypeId>>),
     UnsignedInteger(IntegerBits),
     Struct {
         name: String,
@@ -50,10 +47,6 @@ impl fmt::Display for TypeInfo {
             TypeInfo::Custom { name } => write!(f, "{{{}}}", name),
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
             TypeInfo::Ref(id) => write!(f, "{}", look_up_type_id(*id)),
-            TypeInfo::TypeParamRef(_, id) => {
-                let id = id.read().unwrap();
-                write!(f, "{}", look_up_type_id(*id))
-            }
             TypeInfo::Unit => write!(f, "()"),
             TypeInfo::Struct {
                 name,
@@ -91,10 +84,6 @@ impl fmt::Debug for TypeInfo {
             TypeInfo::Custom { name } => write!(f, "{{{}}}", name),
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
             TypeInfo::Ref(id) => write!(f, "ref..{}..{}", **id, look_up_type_id(*id)),
-            TypeInfo::TypeParamRef(_, id) => {
-                let id = id.read().unwrap();
-                write!(f, "typeref..{}..{}", **id, look_up_type_id(*id))
-            }
             TypeInfo::Unit => write!(f, "()"),
             TypeInfo::Struct {
                 name,
@@ -161,12 +150,6 @@ impl Hash for TypeInfo {
                 state.write_u8(7);
                 name.hash(state);
             }
-            TypeInfo::TypeParamRef(name, id) => {
-                state.write_u8(8);
-                name.hash(state);
-                let id = id.read().unwrap();
-                id.hash(state);
-            }
         }
     }
 }
@@ -181,11 +164,6 @@ impl PartialEq for TypeInfo {
             ) => l_name == r_name,
             (TypeInfo::UnsignedInteger(l), TypeInfo::UnsignedInteger(r)) => l == r,
             (TypeInfo::Ref(l), TypeInfo::Ref(r)) => look_up_type_id(*l) == look_up_type_id(*r),
-            (TypeInfo::TypeParamRef(_, l), TypeInfo::TypeParamRef(_, r)) => {
-                let l = l.read().unwrap();
-                let r = r.read().unwrap();
-                look_up_type_id(*l) == look_up_type_id(*r)
-            }
             (TypeInfo::ErrorRecovery, TypeInfo::ErrorRecovery) => todo!(),
             (TypeInfo::Custom { name: l }, TypeInfo::Custom { name: r }) if l == r => true,
             (TypeInfo::Unit, TypeInfo::Unit) => true,
@@ -209,18 +187,10 @@ impl PartialEq for TypeInfo {
 impl TypeInfo {
     pub(crate) fn matches_type_parameter(&self, mapping: &TypeMapping) -> Option<TypeId> {
         match self {
-            TypeInfo::UnknownGeneric { name: l_name } => {
+            TypeInfo::UnknownGeneric { .. } => {
                 for (param, ty_id) in mapping.iter() {
-                    match look_up_type_id(*param) {
-                        TypeInfo::UnknownGeneric { name: r_name }
-                            if l_name.as_str() == r_name.as_str() =>
-                        {
-                            return Some(*ty_id)
-                        }
-                        TypeInfo::TypeParamRef(r_name, _) if l_name.as_str() == r_name.as_str() => {
-                            return Some(*ty_id)
-                        }
-                        _ => {}
+                    if look_up_type_id(*param) == *self {
+                        return Some(*ty_id);
                     }
                 }
                 None
@@ -264,7 +234,6 @@ impl TypeInfo {
             | TypeInfo::Unknown
             | TypeInfo::Unit
             | TypeInfo::Ref(_)
-            | TypeInfo::TypeParamRef(_, _)
             | TypeInfo::UnsignedInteger(_) => None,
         }
     }

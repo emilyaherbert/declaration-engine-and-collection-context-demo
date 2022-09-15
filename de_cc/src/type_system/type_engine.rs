@@ -76,29 +76,6 @@ impl TypeEngine {
             (TypeInfo::Ref(received), _) => self.unify_types(received, expected),
             (_, TypeInfo::Ref(expected)) => self.unify_types(received, expected),
 
-            (TypeInfo::TypeParamRef(l_name, _), TypeInfo::TypeParamRef(r_name, _))
-                if l_name.as_str() == r_name.as_str() =>
-            {
-                Ok(())
-            }
-            (TypeInfo::TypeParamRef(_, l), TypeInfo::TypeParamRef(_, r)) => {
-                let l = *l.read().unwrap();
-                let r = *r.read().unwrap();
-                if l == r {
-                    Ok(())
-                } else {
-                    self.unify_types(l, r)
-                }
-            }
-            (TypeInfo::TypeParamRef(_, received), _) => {
-                let received = *received.read().unwrap();
-                self.unify_types(received, expected)
-            }
-            (_, TypeInfo::TypeParamRef(_, expected)) => {
-                let expected = *expected.read().unwrap();
-                self.unify_types(received, expected)
-            }
-
             (
                 TypeInfo::UnknownGeneric { name: l_name },
                 TypeInfo::UnknownGeneric { name: r_name },
@@ -152,10 +129,6 @@ impl TypeEngine {
         match self.slab.get(*type_id) {
             TypeInfo::UnsignedInteger(bits) => Ok(ResolvedType::UnsignedInteger(bits)),
             TypeInfo::Ref(id) => self.resolve_type(id),
-            TypeInfo::TypeParamRef(_, id) => {
-                let id = id.read().unwrap();
-                self.resolve_type(*id)
-            }
             TypeInfo::Unit => Ok(ResolvedType::Unit),
             TypeInfo::Struct {
                 name,
