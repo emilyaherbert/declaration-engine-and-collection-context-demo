@@ -4,15 +4,10 @@ use crate::{
         parsed::expression::Expression,
         ty::typed_expression::{TyExpression, TyExpressionVariant, TyStructExpressionField},
     },
-    type_system::{type_engine::insert_type, type_info::TypeInfo, type_mapping::TypeMapping},
-    types::copy_types::CopyTypes,
+    type_system::{type_engine::insert_type, type_info::TypeInfo},
 };
 
-pub(super) fn collect_graph_exp(
-    cc: &mut CollectionContext,
-    type_mapping: &TypeMapping,
-    exp: Expression,
-) -> TyExpression {
+pub(super) fn collect_graph_exp(cc: &mut CollectionContext, exp: Expression) -> TyExpression {
     match exp {
         Expression::Literal { value } => {
             let type_id = insert_type(value.to_type());
@@ -26,7 +21,7 @@ pub(super) fn collect_graph_exp(
         }
         Expression::FunctionApplication {
             name,
-            mut type_arguments,
+            type_arguments,
             arguments,
         } => {
             // don't allow type arguments in the prototype
@@ -34,15 +29,10 @@ pub(super) fn collect_graph_exp(
                 panic!()
             }
 
-            // apply the type mapping to the type arguments
-            type_arguments
-                .iter_mut()
-                .for_each(|type_arg| type_arg.copy_types(type_mapping));
-
             // transform the arguments into Ty AST nodes
             let new_arguments = arguments
                 .into_iter()
-                .map(|argument| collect_graph_exp(cc, type_mapping, argument))
+                .map(|argument| collect_graph_exp(cc, argument))
                 .collect::<Vec<_>>();
 
             // return!
@@ -59,7 +49,7 @@ pub(super) fn collect_graph_exp(
         Expression::MethodCall {
             parent_name,
             func_name,
-            mut type_arguments,
+            type_arguments,
             arguments,
         } => {
             // don't allow type arguments in the prototype
@@ -67,15 +57,10 @@ pub(super) fn collect_graph_exp(
                 panic!()
             }
 
-            // apply the type mapping to the type arguments
-            type_arguments
-                .iter_mut()
-                .for_each(|type_arg| type_arg.copy_types(type_mapping));
-
             // transform the arguments into Ty AST nodes
             let new_arguments = arguments
                 .into_iter()
-                .map(|argument| collect_graph_exp(cc, type_mapping, argument))
+                .map(|argument| collect_graph_exp(cc, argument))
                 .collect::<Vec<_>>();
 
             // return!
@@ -92,7 +77,7 @@ pub(super) fn collect_graph_exp(
         }
         Expression::Struct {
             struct_name,
-            mut type_arguments,
+            type_arguments,
             fields,
         } => {
             // don't allow type arguments in the prototype
@@ -100,17 +85,12 @@ pub(super) fn collect_graph_exp(
                 panic!()
             }
 
-            // apply the type mapping to the type arguments
-            type_arguments
-                .iter_mut()
-                .for_each(|type_arg| type_arg.copy_types(type_mapping));
-
             // transform the fields into Ty AST nodes
             let typed_fields = fields
                 .into_iter()
                 .map(|field| TyStructExpressionField {
                     name: field.name,
-                    value: collect_graph_exp(cc, type_mapping, field.value),
+                    value: collect_graph_exp(cc, field.value),
                 })
                 .collect::<Vec<_>>();
 

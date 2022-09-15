@@ -42,7 +42,7 @@ pub(super) fn collect_graph_decl(
 ) -> CCIdx<TyDeclaration> {
     match decl {
         Declaration::Variable(var_decl) => {
-            let var_decl = collect_graph_var_decl(cc, type_mapping, var_decl);
+            let var_decl = collect_graph_var_decl(cc, var_decl);
             let decl = TyDeclaration::Variable(var_decl);
             let decl_idx = cc.add_node(decl.clone().into());
             CCIdx::new(decl, decl_idx)
@@ -62,7 +62,7 @@ pub(super) fn collect_graph_decl(
             decl_cc_idx
         }
         Declaration::Trait(trait_decl) => {
-            let trait_decl_cc_idx = collect_graph_trait(cc, type_mapping, trait_decl);
+            let trait_decl_cc_idx = collect_graph_trait(cc, trait_decl);
             let decl = TyDeclaration::Trait(trait_decl_cc_idx.clone());
             let decl_idx = cc.add_node(decl.clone().into());
             let decl_cc_idx = CCIdx::new(decl, decl_idx);
@@ -108,12 +108,10 @@ pub(super) fn collect_graph_decl(
 
 fn collect_graph_var_decl(
     cc: &mut CollectionContext,
-    type_mapping: &TypeMapping,
     var_decl: VariableDeclaration,
 ) -> TyVariableDeclaration {
-    let new_body = collect_graph_exp(cc, type_mapping, var_decl.body);
-    let mut new_type_ascription = insert_type(var_decl.type_ascription);
-    new_type_ascription.copy_types(type_mapping);
+    let new_body = collect_graph_exp(cc, var_decl.body);
+    let new_type_ascription = insert_type(var_decl.type_ascription);
     TyVariableDeclaration {
         name: var_decl.name,
         body: new_body,
@@ -133,20 +131,24 @@ fn collect_graph_function(
     type_mapping.extend(insert_type_parameters(func_decl.type_parameters.clone()));
 
     // collect the type parameters
-    let type_parameters = func_decl
-        .type_parameters
-        .into_iter()
-        .map(|mut type_param| {
-            type_param.copy_types(&type_mapping);
-            type_param
-        })
-        .collect::<Vec<_>>();
+    // let type_parameters = func_decl
+    //     .type_parameters
+    //     .into_iter()
+    //     .map(|mut type_param| {
+    //         type_param.copy_types(&type_mapping);
+    //         type_param
+    //     })
+    //     .collect::<Vec<_>>();
 
     // collect the parameters
     let parameters = func_decl
         .parameters
         .into_iter()
-        .map(|param| collect_graph_function_parameter(&type_mapping, param))
+        .map(|param| {
+            let mut param = collect_graph_function_parameter(param);
+            param.copy_types(&type_mapping);
+            param
+        })
         .collect::<Vec<_>>();
 
     // collect the return type
@@ -156,14 +158,13 @@ fn collect_graph_function(
     // collect the body
     let body = collect_graph_code_block(cc, &type_mapping, func_decl.body);
 
-    let mut func_decl = TyFunctionDeclaration {
+    let func_decl = TyFunctionDeclaration {
         name: func_decl.name,
-        type_parameters,
+        type_parameters: func_decl.type_parameters,
         parameters,
         body,
         return_type,
     };
-    func_decl.copy_types(&type_mapping);
 
     // insert the function into the declaration engine
     let func_decl_id = de_insert_function(func_decl.clone());
@@ -202,28 +203,22 @@ fn collect_graph_code_block(
     nodes
 }
 
-fn collect_graph_function_parameter(
-    type_mapping: &TypeMapping,
-    function_parameter: FunctionParameter,
-) -> TyFunctionParameter {
-    let mut type_id = insert_type(function_parameter.type_info);
-    type_id.copy_types(type_mapping);
+fn collect_graph_function_parameter(function_parameter: FunctionParameter) -> TyFunctionParameter {
     TyFunctionParameter {
         name: function_parameter.name,
-        type_id,
+        type_id: insert_type(function_parameter.type_info),
     }
 }
 
 fn collect_graph_trait(
     cc: &mut CollectionContext,
-    type_mapping: &TypeMapping,
     trait_decl: TraitDeclaration,
 ) -> CCIdx<DeclarationId> {
     // connect the interface surface
     let interface_surface = trait_decl
         .interface_surface
         .into_iter()
-        .map(|trait_fn| collect_graph_trait_fn(cc, type_mapping, trait_fn))
+        .map(|trait_fn| collect_graph_trait_fn(cc, trait_fn))
         .collect::<Vec<_>>();
 
     let trait_decl = TyTraitDeclaration {
@@ -258,21 +253,16 @@ fn collect_graph_trait(
     trait_decl_cc_idx
 }
 
-fn collect_graph_trait_fn(
-    cc: &mut CollectionContext,
-    type_mapping: &TypeMapping,
-    trait_fn: TraitFn,
-) -> CCIdx<DeclarationId> {
+fn collect_graph_trait_fn(cc: &mut CollectionContext, trait_fn: TraitFn) -> CCIdx<DeclarationId> {
     // collect the parameters
     let parameters = trait_fn
         .parameters
         .into_iter()
-        .map(|param| collect_graph_function_parameter(type_mapping, param))
+        .map(collect_graph_function_parameter)
         .collect::<Vec<_>>();
 
     // transform the return type
-    let mut return_type = insert_type(trait_fn.return_type);
-    return_type.copy_types(type_mapping);
+    let return_type = insert_type(trait_fn.return_type);
 
     let trait_fn = TyTraitFn {
         name: trait_fn.name,
@@ -299,16 +289,36 @@ fn collect_graph_trait_impl(
         panic!()
     }
 
+    // new local mutable copy of type_mapping
+    let mut type_mapping = type_mapping.clone();
+
+    // extend type mapping with the type parameters
+    type_mapping.extend(insert_type_parameters(trait_impl.type_parameters.clone()));
+
+    // collect the type parameters
+    // let type_parameters = func_decl
+    //     .type_parameters
+    //     .into_iter()
+    //     .map(|mut type_param| {
+    //         type_param.copy_types(&type_mapping);
+    //         type_param
+    //     })
+    //     .collect::<Vec<_>>();
+
     // collect the methods
     let methods = trait_impl
         .methods
         .into_iter()
-        .map(|method| collect_graph_function(cc, type_mapping, method))
+        .map(|method| {
+            let mut method = collect_graph_function(cc, &type_mapping, method);
+            method.copy_types(&type_mapping);
+            method
+        })
         .collect::<Vec<_>>();
 
     // transform the type we are implementing for
     let mut type_implementing_for = insert_type(trait_impl.type_implementing_for);
-    type_implementing_for.copy_types(type_mapping);
+    type_implementing_for.copy_types(&type_mapping);
 
     let trait_impl = TyTraitImpl {
         trait_name: trait_impl.trait_name,
@@ -355,25 +365,29 @@ fn collect_graph_struct(
     type_mapping.extend(insert_type_parameters(struct_decl.type_parameters.clone()));
 
     // collect the type parameters
-    let type_parameters = struct_decl
-        .type_parameters
-        .into_iter()
-        .map(|mut type_param| {
-            type_param.copy_types(&type_mapping);
-            type_param
-        })
-        .collect::<Vec<_>>();
+    // let type_parameters = struct_decl
+    //     .type_parameters
+    //     .into_iter()
+    //     .map(|mut type_param| {
+    //         type_param.copy_types(&type_mapping);
+    //         type_param
+    //     })
+    //     .collect::<Vec<_>>();
 
     // collect the fields
     let fields = struct_decl
         .fields
         .into_iter()
-        .map(|field| collect_graph_struct_field(&type_mapping, field))
+        .map(|field| {
+            let mut field = collect_graph_struct_field(field);
+            field.copy_types(&type_mapping);
+            field
+        })
         .collect::<Vec<_>>();
 
     let struct_decl = TyStructDeclaration {
         name: struct_decl.name,
-        type_parameters,
+        type_parameters: struct_decl.type_parameters,
         fields,
     };
 
@@ -387,14 +401,9 @@ fn collect_graph_struct(
     CCIdx::new(struct_decl_id, struct_decl_idx)
 }
 
-fn collect_graph_struct_field(
-    type_mapping: &TypeMapping,
-    struct_field: StructField,
-) -> TyStructField {
-    let mut type_id = insert_type(struct_field.type_info);
-    type_id.copy_types(type_mapping);
+fn collect_graph_struct_field(struct_field: StructField) -> TyStructField {
     TyStructField {
         name: struct_field.name,
-        type_id,
+        type_id: insert_type(struct_field.type_info),
     }
 }

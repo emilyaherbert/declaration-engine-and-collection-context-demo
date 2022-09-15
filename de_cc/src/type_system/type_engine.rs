@@ -239,7 +239,8 @@ impl TypeEngine {
         ) {
             (true, true) => Ok(()),
             (false, true) => {
-                refresh_type_parameters(value.type_parameters_mut());
+                let type_mapping = insert_type_parameters(value.type_parameters().to_vec());
+                value.copy_types(&type_mapping);
                 Ok(())
             }
             (true, false) => Err("does not take type arguments".to_string()),
@@ -247,25 +248,16 @@ impl TypeEngine {
                 if value.type_parameters().len() != type_arguments.len() {
                     return Err("incorrect number of type arguments".to_string());
                 }
-                refresh_type_parameters(value.type_parameters_mut());
                 let type_mapping = insert_type_parameters(value.type_parameters().to_vec());
                 for ((_, interim_type), type_arg) in type_mapping.iter().zip(type_arguments.iter())
                 {
                     self.unify_types(*interim_type, type_arg.type_id)?;
                 }
+                value.copy_types(&type_mapping);
                 Ok(())
             }
         }
     }
-}
-
-fn refresh_type_parameters(type_parameters: &mut [TypeParameter]) {
-    type_parameters.iter_mut().for_each(|type_param| {
-        if let TypeInfo::TypeParamRef(name, id) = look_up_type_id(type_param.type_id) {
-            let mut id = id.write().unwrap();
-            *id = insert_type(TypeInfo::UnknownGeneric { name });
-        }
-    });
 }
 
 #[allow(dead_code)]

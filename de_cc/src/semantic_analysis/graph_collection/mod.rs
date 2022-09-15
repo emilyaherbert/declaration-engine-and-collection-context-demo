@@ -92,13 +92,13 @@ fn collect_graph_node(
             node_cc_idx
         }
         Node::Expression(expression) => {
-            let exp = collect_graph_exp(cc, type_mapping, expression);
+            let exp = collect_graph_exp(cc, expression);
             let node = TyNode::Expression(exp);
             let node_idx = cc.add_node(node.clone().into());
             CCIdx::new(node, node_idx)
         }
         Node::ReturnStatement(expression) => {
-            let exp = collect_graph_exp(cc, type_mapping, expression);
+            let exp = collect_graph_exp(cc, expression);
             let node = TyNode::ReturnStatement(exp);
             let node_idx = cc.add_node(node.clone().into());
             CCIdx::new(node, node_idx)

@@ -263,15 +263,38 @@ impl fmt::Debug for TyExpressionVariant {
 impl CopyTypes for TyExpressionVariant {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         match self {
-            TyExpressionVariant::FunctionApplication { arguments, .. } => {
+            TyExpressionVariant::FunctionApplication {
+                arguments,
+                type_arguments,
+                ..
+            } => {
+                type_arguments
+                    .iter_mut()
+                    .for_each(|type_arg| type_arg.copy_types(type_mapping));
                 arguments
                     .iter_mut()
                     .for_each(|argument| argument.copy_types(type_mapping));
             }
-            TyExpressionVariant::Struct { fields, .. } => fields
-                .iter_mut()
-                .for_each(|field| field.copy_types(type_mapping)),
-            TyExpressionVariant::MethodCall { arguments, .. } => {
+            TyExpressionVariant::Struct {
+                fields,
+                type_arguments,
+                ..
+            } => {
+                type_arguments
+                    .iter_mut()
+                    .for_each(|type_arg| type_arg.copy_types(type_mapping));
+                fields
+                    .iter_mut()
+                    .for_each(|field| field.copy_types(type_mapping));
+            }
+            TyExpressionVariant::MethodCall {
+                arguments,
+                type_arguments,
+                ..
+            } => {
+                type_arguments
+                    .iter_mut()
+                    .for_each(|type_arg| type_arg.copy_types(type_mapping));
                 arguments
                     .iter_mut()
                     .for_each(|argument| argument.copy_types(type_mapping));
