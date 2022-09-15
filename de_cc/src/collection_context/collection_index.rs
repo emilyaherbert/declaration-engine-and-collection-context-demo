@@ -103,7 +103,7 @@ impl<T> CCIdx<T> {
         nodes.iter().permutations(2).for_each(|inner_nodes| {
             let a = inner_nodes[0];
             let b = inner_nodes[1];
-            let e = CCIdx::add_edge(a, b, edge.clone(), cc);
+            CCIdx::add_edge(a, b, edge.clone(), cc);
         });
     }
 }

@@ -83,12 +83,7 @@ fn collect_graph_node(
             let node_idx = cc.add_node(node.clone().into());
             let node_cc_idx = CCIdx::new(node, node_idx);
             // connect from the inside of the node
-            CCIdx::add_edge(
-                &decl_cc_idx,
-                &node_cc_idx,
-                CollectionEdge::DeclarationContents,
-                cc,
-            );
+            CCIdx::add_edge(&decl_cc_idx, &node_cc_idx, CollectionEdge::ScopedChild, cc);
             node_cc_idx
         }
         Node::Expression(expression) => {
