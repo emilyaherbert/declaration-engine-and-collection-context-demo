@@ -7,7 +7,7 @@ use petgraph::{
 
 use crate::{
     declaration_engine::{
-        declaration_engine::{de_get_function, de_get_struct, de_get_trait},
+        declaration_engine::{de_get_function, de_get_struct, de_get_trait, de_get_trait_impl},
         declaration_id::DeclarationId,
     },
     language::ty::{typed_declaration::TyDeclaration, TyNode},
@@ -47,7 +47,10 @@ pub(super) fn get_all_declarations_in_scope(
                     let decl = de_get_trait(*decl_id.inner_ref())?;
                     declarations.push((decl.name, decl_id.clone()));
                 }
-                TyDeclaration::TraitImpl(_) => todo!(),
+                TyDeclaration::TraitImpl(decl_id) => {
+                    let decl = de_get_trait_impl(*decl_id.inner_ref())?;
+                    declarations.push((decl.trait_name, decl_id.clone()));
+                }
                 TyDeclaration::Struct(decl_id) => {
                     let decl = de_get_struct(*decl_id.inner_ref())?;
                     declarations.push((decl.name, decl_id.clone()));
