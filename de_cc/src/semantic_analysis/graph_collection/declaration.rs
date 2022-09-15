@@ -1,13 +1,14 @@
-use itertools::Itertools;
-
 use crate::{
     collection_context::{
         collection_context::CollectionContext, collection_edge::CollectionEdge,
-        collection_index::{CollectionIndex, CCIdx}, collection_node::CollectionNode,
+        collection_index::CCIdx, collection_node::CollectionNode,
     },
-    declaration_engine::declaration_engine::{
-        de_insert_function, de_insert_struct, de_insert_trait, de_insert_trait_fn,
-        de_insert_trait_impl,
+    declaration_engine::{
+        declaration_engine::{
+            de_insert_function, de_insert_struct, de_insert_trait, de_insert_trait_fn,
+            de_insert_trait_impl,
+        },
+        declaration_id::DeclarationId,
     },
     language::{
         parsed::{
@@ -17,9 +18,12 @@ use crate::{
             },
             Node,
         },
-        ty::typed_declaration::{
-            TyDeclaration, TyFunctionDeclaration, TyFunctionParameter, TyStructDeclaration,
-            TyStructField, TyTraitDeclaration, TyTraitFn, TyTraitImpl, TyVariableDeclaration,
+        ty::{
+            typed_declaration::{
+                TyDeclaration, TyFunctionDeclaration, TyFunctionParameter, TyStructDeclaration,
+                TyStructField, TyTraitDeclaration, TyTraitFn, TyTraitImpl, TyVariableDeclaration,
+            },
+            TyNode,
         },
     },
     type_system::{
@@ -39,34 +43,65 @@ pub(super) fn collect_graph_decl(
     match decl {
         Declaration::Variable(var_decl) => {
             let var_decl = collect_graph_var_decl(cc, type_mapping, var_decl);
-            TyDeclaration::Variable(var_decl)
+            let decl = TyDeclaration::Variable(var_decl);
+            let decl_idx = cc.add_node(decl.clone().into());
+            CCIdx::new(decl, decl_idx)
         }
         Declaration::Function(func_decl) => {
-            let func_decl = collect_graph_function(cc, type_mapping, func_decl);
-            let func_decl_id = de_insert_function(func_decl.clone());
-            let func_decl_idx = cc.add_node(CollectionNode::Function(func_decl.name, func_decl_id));
-            let cc_idx = CCIdx::new(func_decl_id, func_decl_idx)
-            // add an edge to every node in the function body
-            func_decl.body.iter().for_each(|node_idx| {
-                cc.add_edge(*node_idx, func_decl_idx, CollectionEdge::ScopedChild);
-            });
-            TyDeclaration::Function(cc_idx)
+            let func_decl_cc_idx = collect_graph_function(cc, type_mapping, func_decl);
+            let decl = TyDeclaration::Function(func_decl_cc_idx.clone());
+            let decl_idx = cc.add_node(decl.clone().into());
+            let decl_cc_idx = CCIdx::new(decl, decl_idx);
+            // add an edge from the interior of the declaration
+            CCIdx::add_edge(
+                &func_decl_cc_idx,
+                &decl_cc_idx,
+                CollectionEdge::ScopedChild,
+                cc,
+            );
+            decl_cc_idx
         }
         Declaration::Trait(trait_decl) => {
-            let trait_decl = collect_graph_trait(cc, type_mapping, trait_decl);
-            let trait_decl_id = de_insert_trait(trait_decl);
-            let trait_decl_idx = cc.add_node(CollectionNode::Trait(trait_decl.name, trait_decl_id));
-            TyDeclaration::Trait((trait_decl_id, trait_decl_idx))
+            let trait_decl_cc_idx = collect_graph_trait(cc, type_mapping, trait_decl);
+            let decl = TyDeclaration::Trait(trait_decl_cc_idx.clone());
+            let decl_idx = cc.add_node(decl.clone().into());
+            let decl_cc_idx = CCIdx::new(decl, decl_idx);
+            // add an edge from the interior of the declaration
+            CCIdx::add_edge(
+                &trait_decl_cc_idx,
+                &decl_cc_idx,
+                CollectionEdge::ScopedChild,
+                cc,
+            );
+            decl_cc_idx
         }
         Declaration::TraitImpl(trait_impl) => {
-            let trait_impl = collect_graph_trait_impl(cc, type_mapping, trait_impl);
-            let decl = TyDeclaration::TraitImpl(de_insert_trait_impl(trait_impl));
-            cc.add_node(decl.into())
+            let trait_impl_cc_idx = collect_graph_trait_impl(cc, type_mapping, trait_impl);
+            let decl = TyDeclaration::TraitImpl(trait_impl_cc_idx.clone());
+            let decl_idx = cc.add_node(decl.clone().into());
+            let decl_cc_idx = CCIdx::new(decl, decl_idx);
+            // add an edge from the interior of the declaration
+            CCIdx::add_edge(
+                &trait_impl_cc_idx,
+                &decl_cc_idx,
+                CollectionEdge::ScopedChild,
+                cc,
+            );
+            decl_cc_idx
         }
         Declaration::Struct(struct_decl) => {
-            let struct_decl = collect_graph_struct(cc, type_mapping, struct_decl);
-            let decl = TyDeclaration::Struct(de_insert_struct(struct_decl));
-            cc.add_node(decl.into())
+            let struct_decl_cc_idx = collect_graph_struct(cc, type_mapping, struct_decl);
+            let decl = TyDeclaration::Struct(struct_decl_cc_idx.clone());
+            let decl_idx = cc.add_node(decl.clone().into());
+            let decl_cc_idx = CCIdx::new(decl, decl_idx);
+            // add an edge from the interior of the declaration
+            CCIdx::add_edge(
+                &struct_decl_cc_idx,
+                &decl_cc_idx,
+                CollectionEdge::ScopedChild,
+                cc,
+            );
+            decl_cc_idx
         }
     }
 }
@@ -78,7 +113,7 @@ fn collect_graph_var_decl(
 ) -> TyVariableDeclaration {
     let new_body = collect_graph_exp(cc, type_mapping, var_decl.body);
     let mut new_type_ascription = insert_type(var_decl.type_ascription);
-    new_type_ascription.copy_types(cc, type_mapping);
+    new_type_ascription.copy_types(type_mapping);
     TyVariableDeclaration {
         name: var_decl.name,
         body: new_body,
@@ -90,7 +125,7 @@ fn collect_graph_function(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     func_decl: FunctionDeclaration,
-) -> TyFunctionDeclaration {
+) -> CCIdx<DeclarationId> {
     // new local mutable copy of type_mapping
     let mut type_mapping = type_mapping.clone();
 
@@ -102,7 +137,7 @@ fn collect_graph_function(
         .type_parameters
         .into_iter()
         .map(|mut type_param| {
-            type_param.copy_types(cc, &type_mapping);
+            type_param.copy_types(&type_mapping);
             type_param
         })
         .collect::<Vec<_>>();
@@ -111,58 +146,68 @@ fn collect_graph_function(
     let parameters = func_decl
         .parameters
         .into_iter()
-        .map(|param| collect_graph_function_parameter(cc, &type_mapping, param))
+        .map(|param| collect_graph_function_parameter(&type_mapping, param))
         .collect::<Vec<_>>();
 
     // collect the return type
     let mut return_type = insert_type(func_decl.return_type);
-    return_type.copy_types(cc, &type_mapping);
+    return_type.copy_types(&type_mapping);
 
     // collect the body
     let body = collect_graph_code_block(cc, &type_mapping, func_decl.body);
 
-    let mut decl = TyFunctionDeclaration {
+    let mut func_decl = TyFunctionDeclaration {
         name: func_decl.name,
         type_parameters,
         parameters,
         body,
         return_type,
     };
-    decl.copy_types(cc, &type_mapping);
+    func_decl.copy_types(&type_mapping);
 
-    decl
+    // insert the function into the declaration engine
+    let func_decl_id = de_insert_function(func_decl.clone());
+
+    // add the function id to the graph
+    let func_decl_idx = cc.add_node(CollectionNode::Function(func_decl.name, func_decl_id));
+
+    // create an Idx for the function
+    let func_decl_cc_idx = CCIdx::new(func_decl_id, func_decl_idx);
+
+    // add an edge from every node in the function body
+    CCIdx::add_edges_many_to_one(
+        &func_decl.body,
+        &func_decl_cc_idx,
+        CollectionEdge::ScopedChild,
+        cc,
+    );
+
+    func_decl_cc_idx
 }
 
 fn collect_graph_code_block(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     nodes: Vec<Node>,
-) -> Vec<CollectionIndex> {
+) -> Vec<CCIdx<TyNode>> {
+    // collect the nodes
     let nodes = nodes
         .into_iter()
         .map(|node| collect_graph_node(cc, type_mapping, node))
         .collect::<Vec<_>>();
 
     // for every node in this scope, connect them under the same shared scope
-    nodes
-        .clone()
-        .into_iter()
-        .permutations(2)
-        .for_each(|inner_nodes| {
-            let a = inner_nodes[0];
-            let b = inner_nodes[1];
-            cc.add_edge(a, b, CollectionEdge::SharedScope);
-        });
+    CCIdx::add_edges_many(&nodes, CollectionEdge::SharedScope, cc);
+
     nodes
 }
 
 fn collect_graph_function_parameter(
-    cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     function_parameter: FunctionParameter,
 ) -> TyFunctionParameter {
     let mut type_id = insert_type(function_parameter.type_info);
-    type_id.copy_types(cc, type_mapping);
+    type_id.copy_types(type_mapping);
     TyFunctionParameter {
         name: function_parameter.name,
         type_id,
@@ -173,97 +218,181 @@ fn collect_graph_trait(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     trait_decl: TraitDeclaration,
-) -> TyTraitDeclaration {
+) -> CCIdx<DeclarationId> {
+    // connect the interface surface
     let interface_surface = trait_decl
         .interface_surface
         .into_iter()
-        .map(|trait_fn| {
-            let trait_fn = collect_graph_trait_fn(cc, type_mapping, trait_fn);
-            de_insert_trait_fn(trait_fn)
-        })
+        .map(|trait_fn| collect_graph_trait_fn(cc, type_mapping, trait_fn))
         .collect::<Vec<_>>();
-    TyTraitDeclaration {
+
+    let trait_decl = TyTraitDeclaration {
         name: trait_decl.name,
         interface_surface,
-    }
+    };
+
+    // insert the trait into the declaration engine
+    let trait_decl_id = de_insert_trait(trait_decl.clone());
+
+    // add the trait to the graph
+    let trait_decl_idx = cc.add_node(CollectionNode::Trait(trait_decl.name, trait_decl_id));
+
+    // create an Idx for the trait
+    let trait_decl_cc_idx = CCIdx::new(trait_decl_id, trait_decl_idx);
+
+    // connect every trait fn in the interface surface
+    CCIdx::add_edges_many(
+        &trait_decl.interface_surface,
+        CollectionEdge::SharedScope,
+        cc,
+    );
+
+    // connect every trait fn to the trait decl
+    CCIdx::add_edges_many_to_one(
+        &trait_decl.interface_surface,
+        &trait_decl_cc_idx,
+        CollectionEdge::ScopedChild,
+        cc,
+    );
+
+    trait_decl_cc_idx
 }
 
 fn collect_graph_trait_fn(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     trait_fn: TraitFn,
-) -> TyTraitFn {
+) -> CCIdx<DeclarationId> {
+    // collect the parameters
     let parameters = trait_fn
         .parameters
         .into_iter()
-        .map(|param| collect_graph_function_parameter(cc, type_mapping, param))
+        .map(|param| collect_graph_function_parameter(type_mapping, param))
         .collect::<Vec<_>>();
+
+    // transform the return type
     let mut return_type = insert_type(trait_fn.return_type);
-    return_type.copy_types(cc, type_mapping);
-    TyTraitFn {
+    return_type.copy_types(type_mapping);
+
+    let trait_fn = TyTraitFn {
         name: trait_fn.name,
         parameters,
         return_type,
-    }
+    };
+
+    // insert the trait fn into the declaration engine
+    let trait_fn_id = de_insert_trait_fn(trait_fn.clone());
+
+    // add the trait fn to the graph
+    let trait_fn_idx = cc.add_node(CollectionNode::TraitFn(trait_fn.name, trait_fn_id));
+
+    // create an Idx for the trait fn
+    CCIdx::new(trait_fn_id, trait_fn_idx)
 }
 
 fn collect_graph_trait_impl(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     trait_impl: TraitImpl,
-) -> TyTraitImpl {
+) -> CCIdx<DeclarationId> {
     if !trait_impl.type_parameters.is_empty() {
         panic!()
     }
+
+    // collect the methods
     let methods = trait_impl
         .methods
         .into_iter()
-        .map(|method| de_insert_function(collect_graph_function(cc, type_mapping, method)))
+        .map(|method| collect_graph_function(cc, type_mapping, method))
         .collect::<Vec<_>>();
+
+    // transform the type we are implementing for
     let mut type_implementing_for = insert_type(trait_impl.type_implementing_for);
-    type_implementing_for.copy_types(cc, type_mapping);
-    TyTraitImpl {
+    type_implementing_for.copy_types(type_mapping);
+
+    let trait_impl = TyTraitImpl {
         trait_name: trait_impl.trait_name,
         type_implementing_for,
         type_parameters: vec![],
         methods,
-    }
+    };
+
+    // insert the trait into the declaration engine
+    let trait_impl_id = de_insert_trait_impl(trait_impl.clone());
+
+    // add the trait to the graph
+    let trait_impl_idx = cc.add_node(CollectionNode::TraitImpl(
+        trait_impl.trait_name,
+        trait_impl_id,
+    ));
+
+    // create an Idx for the trait
+    let trait_impl_cc_idx = CCIdx::new(trait_impl_id, trait_impl_idx);
+
+    // connect every method
+    CCIdx::add_edges_many(&trait_impl.methods, CollectionEdge::SharedScope, cc);
+
+    // connect every method to the trait impl
+    CCIdx::add_edges_many_to_one(
+        &trait_impl.methods,
+        &trait_impl_cc_idx,
+        CollectionEdge::ScopedChild,
+        cc,
+    );
+
+    trait_impl_cc_idx
 }
 
 fn collect_graph_struct(
     cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     struct_decl: StructDeclaration,
-) -> TyStructDeclaration {
+) -> CCIdx<DeclarationId> {
+    // new local mutable copy of type_mapping
     let mut type_mapping = type_mapping.clone();
+
+    // extend type mapping with the type parameters
     type_mapping.extend(insert_type_parameters(struct_decl.type_parameters.clone()));
+
+    // collect the type parameters
     let type_parameters = struct_decl
         .type_parameters
         .into_iter()
         .map(|mut type_param| {
-            type_param.copy_types(cc, &type_mapping);
+            type_param.copy_types(&type_mapping);
             type_param
         })
         .collect::<Vec<_>>();
+
+    // collect the fields
     let fields = struct_decl
         .fields
         .into_iter()
-        .map(|field| collect_graph_struct_field(cc, &type_mapping, field))
+        .map(|field| collect_graph_struct_field(&type_mapping, field))
         .collect::<Vec<_>>();
-    TyStructDeclaration {
+
+    let struct_decl = TyStructDeclaration {
         name: struct_decl.name,
         type_parameters,
         fields,
-    }
+    };
+
+    // insert the struct into the declaration engine
+    let struct_decl_id = de_insert_struct(struct_decl.clone());
+
+    // add the trait to the graph
+    let struct_decl_idx = cc.add_node(CollectionNode::Struct(struct_decl.name, struct_decl_id));
+
+    // create an Idx for the trait
+    CCIdx::new(struct_decl_id, struct_decl_idx)
 }
 
 fn collect_graph_struct_field(
-    cc: &mut CollectionContext,
     type_mapping: &TypeMapping,
     struct_field: StructField,
 ) -> TyStructField {
     let mut type_id = insert_type(struct_field.type_info);
-    type_id.copy_types(cc, type_mapping);
+    type_id.copy_types(type_mapping);
     TyStructField {
         name: struct_field.name,
         type_id,

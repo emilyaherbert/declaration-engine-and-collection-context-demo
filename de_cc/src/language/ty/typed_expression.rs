@@ -3,7 +3,6 @@ use std::fmt;
 use std::fmt::Write;
 
 use crate::{
-    collection_context::collection_context::CollectionContext,
     language::literal::Literal,
     type_system::{type_argument::TypeArgument, type_id::TypeId, type_mapping::TypeMapping},
     types::copy_types::CopyTypes,
@@ -28,9 +27,9 @@ impl fmt::Debug for TyExpression {
 }
 
 impl CopyTypes for TyExpression {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
-        self.variant.copy_types(cc, type_mapping);
-        self.type_id.copy_types(cc, type_mapping);
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.variant.copy_types(type_mapping);
+        self.type_id.copy_types(type_mapping);
     }
 }
 
@@ -262,20 +261,20 @@ impl fmt::Debug for TyExpressionVariant {
 }
 
 impl CopyTypes for TyExpressionVariant {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
         match self {
             TyExpressionVariant::FunctionApplication { arguments, .. } => {
                 arguments
                     .iter_mut()
-                    .for_each(|argument| argument.copy_types(cc, type_mapping));
+                    .for_each(|argument| argument.copy_types(type_mapping));
             }
             TyExpressionVariant::Struct { fields, .. } => fields
                 .iter_mut()
-                .for_each(|field| field.copy_types(cc, type_mapping)),
+                .for_each(|field| field.copy_types(type_mapping)),
             TyExpressionVariant::MethodCall { arguments, .. } => {
                 arguments
                     .iter_mut()
-                    .for_each(|argument| argument.copy_types(cc, type_mapping));
+                    .for_each(|argument| argument.copy_types(type_mapping));
             }
             TyExpressionVariant::Literal { .. }
             | TyExpressionVariant::Variable { .. }
@@ -303,7 +302,7 @@ impl fmt::Debug for TyStructExpressionField {
 }
 
 impl CopyTypes for TyStructExpressionField {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
-        self.value.copy_types(cc, type_mapping)
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.value.copy_types(type_mapping)
     }
 }

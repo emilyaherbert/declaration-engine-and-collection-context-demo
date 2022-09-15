@@ -9,24 +9,40 @@ use crate::{
         typed_declaration::TyDeclaration, typed_expression::TyExpression, TyApplication, TyFile,
         TyNode,
     },
-    type_system::type_mapping::TypeMapping,
-    types::copy_types::CopyTypes,
 };
 
-use super::collection_context::CollectionContext;
-
 #[derive(Clone, Debug)]
-pub(crate) enum CollectionNode<'cc> {
-    Application(&'cc TyApplication),
-    File(&'cc TyFile),
-    Node(&'cc TyNode),
-    Declaration(String, &'cc TyDeclaration),
-    Expression(&'cc TyExpression),
+pub(crate) enum CollectionNode {
+    Application(TyApplication),
+    File(TyFile),
+    Node(TyNode),
+    Declaration(String, TyDeclaration),
+    Expression(TyExpression),
     Function(String, DeclarationId),
     Trait(String, DeclarationId),
+    TraitFn(String, DeclarationId),
+    TraitImpl(String, DeclarationId),
+    Struct(String, DeclarationId),
 }
 
-impl fmt::Display for CollectionNode<'_> {
+// impl fmt::Debug for CollectionNode {
+//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+//         match self {
+//             CollectionNode::Application(node) => write!(f, "{:?}", node),
+//             CollectionNode::File(node) => write!(f, "{:?}", node),
+//             CollectionNode::Node(node) => write!(f, "{:?}", node),
+//             CollectionNode::Declaration(_, node) => write!(f, "{:?}", node),
+//             CollectionNode::Expression(node) => write!(f, "{:?}", node),
+//             CollectionNode::Function(_, node) => write!(f, "{:?}", node),
+//             CollectionNode::Trait(_, node) => write!(f, "{:?}", node),
+//             CollectionNode::TraitFn(_, node) => write!(f, "{:?}", node),
+//             CollectionNode::TraitImpl(_, node) => write!(f, "{:?}", node),
+//             CollectionNode::Struct(_, node) => write!(f, "{:?}", node),
+//         }
+//     }
+// }
+
+impl fmt::Display for CollectionNode {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             CollectionNode::Application(node) => write!(f, "{}", node),
@@ -36,76 +52,65 @@ impl fmt::Display for CollectionNode<'_> {
             CollectionNode::Expression(node) => write!(f, "{}", node),
             CollectionNode::Function(_, node) => write!(f, "{}", node),
             CollectionNode::Trait(_, node) => write!(f, "{}", node),
+            CollectionNode::TraitFn(_, node) => write!(f, "{}", node),
+            CollectionNode::TraitImpl(_, node) => write!(f, "{}", node),
+            CollectionNode::Struct(_, node) => write!(f, "{}", node),
         }
     }
 }
 
-impl CopyTypes for CollectionNode<'_> {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
-        match self {
-            CollectionNode::Application(node) => node.copy_types(cc, type_mapping),
-            CollectionNode::File(node) => node.copy_types(cc, type_mapping),
-            CollectionNode::Node(node) => node.copy_types(cc, type_mapping),
-            CollectionNode::Declaration(_, node) => node.copy_types(cc, type_mapping),
-            CollectionNode::Expression(node) => node.copy_types(cc, type_mapping),
-            CollectionNode::Function(_, node) => node.copy_types(cc, type_mapping),
-            CollectionNode::Trait(_, node) => node.copy_types(cc, type_mapping),
-        }
-    }
-}
-
-impl From<&TyApplication> for CollectionNode<'_> {
-    fn from(node: &TyApplication) -> Self {
+impl From<TyApplication> for CollectionNode {
+    fn from(node: TyApplication) -> Self {
         CollectionNode::Application(node)
     }
 }
 
-impl From<&TyFile> for CollectionNode<'_> {
-    fn from(node: &TyFile) -> Self {
+impl From<TyFile> for CollectionNode {
+    fn from(node: TyFile) -> Self {
         CollectionNode::File(node)
     }
 }
 
-impl From<&TyNode> for CollectionNode<'_> {
-    fn from(node: &TyNode) -> Self {
+impl From<TyNode> for CollectionNode {
+    fn from(node: TyNode) -> Self {
         CollectionNode::Node(node)
     }
 }
 
-impl From<&TyDeclaration> for CollectionNode<'_> {
-    fn from(node: &TyDeclaration) -> Self {
-        match node {
+impl From<TyDeclaration> for CollectionNode {
+    fn from(node: TyDeclaration) -> Self {
+        match &node {
             TyDeclaration::Variable(decl) => CollectionNode::Declaration(decl.name.clone(), node),
             TyDeclaration::Function(decl_id) => {
-                let decl = de_get_function(decl_id.inner()).unwrap();
+                let decl = de_get_function(*decl_id.inner_ref()).unwrap();
                 CollectionNode::Declaration(decl.name, node)
             }
             TyDeclaration::Trait(decl_id) => {
-                let decl = de_get_trait(decl_id.inner()).unwrap();
+                let decl = de_get_trait(*decl_id.inner_ref()).unwrap();
                 CollectionNode::Declaration(decl.name, node)
             }
             TyDeclaration::TraitImpl(decl_id) => {
-                let decl = de_get_trait_impl(decl_id.inner()).unwrap();
+                let decl = de_get_trait_impl(*decl_id.inner_ref()).unwrap();
                 CollectionNode::Declaration(
                     format!("{}+for+{}", decl.trait_name, decl.type_implementing_for),
                     node,
                 )
             }
             TyDeclaration::Struct(decl_id) => {
-                let decl = de_get_struct(decl_id.inner()).unwrap();
+                let decl = de_get_struct(*decl_id.inner_ref()).unwrap();
                 CollectionNode::Declaration(decl.name, node)
             }
         }
     }
 }
 
-impl From<&TyExpression> for CollectionNode<'_> {
-    fn from(node: &TyExpression) -> Self {
+impl From<TyExpression> for CollectionNode {
+    fn from(node: TyExpression) -> Self {
         CollectionNode::Expression(node)
     }
 }
 
-impl<'cc> CollectionNode<'cc> {
+impl CollectionNode {
     pub(crate) fn expect_application(&self) -> Result<&TyApplication, String> {
         match self {
             CollectionNode::Application(node) => Ok(node),

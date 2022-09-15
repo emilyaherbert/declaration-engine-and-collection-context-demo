@@ -14,15 +14,17 @@ use crate::{
 };
 
 use super::{
-    collection_edge::CollectionEdge, collection_index::CollectionIndex,
-    collection_node::CollectionNode, CollectionGraph,
+    collection_edge::CollectionEdge,
+    collection_index::{CCIdx, CollectionIndex},
+    collection_node::CollectionNode,
+    CollectionGraph,
 };
 
 // https://docs.rs/petgraph/latest/src/petgraph/visit/traversal.rs.html#253
 pub(super) fn get_all_declarations_in_scope(
     graph: &CollectionGraph,
     index: CollectionIndex,
-) -> Result<Vec<(String, DeclarationId)>, String> {
+) -> Result<Vec<(String, CCIdx<DeclarationId>)>, String> {
     let mut discovered = graph.visit_map();
     discovered.visit(*index);
 
@@ -34,21 +36,21 @@ pub(super) fn get_all_declarations_in_scope(
     while let Some(node_index) = stack.pop_front() {
         let node = graph.index(node_index);
 
-        if let CollectionNode::Node(TyNode::Declaration(decl, _)) = node {
-            match decl {
+        if let CollectionNode::Node(TyNode::Declaration(decl)) = node {
+            match decl.inner_ref() {
                 TyDeclaration::Variable(_) => {}
-                TyDeclaration::Function((decl_id, _)) => {
-                    let decl = de_get_function(*decl_id)?;
-                    declarations.push((decl.name, *decl_id));
+                TyDeclaration::Function(decl_id) => {
+                    let decl = de_get_function(*decl_id.inner_ref())?;
+                    declarations.push((decl.name, decl_id.clone()));
                 }
-                TyDeclaration::Trait((decl_id, _)) => {
-                    let decl = de_get_trait(*decl_id)?;
-                    declarations.push((decl.name, *decl_id));
+                TyDeclaration::Trait(decl_id) => {
+                    let decl = de_get_trait(*decl_id.inner_ref())?;
+                    declarations.push((decl.name, decl_id.clone()));
                 }
                 TyDeclaration::TraitImpl(_) => todo!(),
-                TyDeclaration::Struct((decl_id, _)) => {
-                    let decl = de_get_struct(*decl_id)?;
-                    declarations.push((decl.name, *decl_id));
+                TyDeclaration::Struct(decl_id) => {
+                    let decl = de_get_struct(*decl_id.inner_ref())?;
+                    declarations.push((decl.name, decl_id.clone()));
                 }
             }
         }

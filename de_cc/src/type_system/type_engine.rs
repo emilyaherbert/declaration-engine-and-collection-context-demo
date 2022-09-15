@@ -5,7 +5,7 @@ use crate::{
         resolved::resolved_declaration::ResolvedStructField, ty::typed_declaration::TyDeclaration,
     },
     namespace::namespace::Namespace,
-    types::{copy_types::CopyTypes, create_type_id::CreateTypeId, pretty_print::PrettyPrint},
+    types::{copy_types::CopyTypes, create_type_id::CreateTypeId},
 };
 
 use super::{
@@ -199,7 +199,9 @@ impl TypeEngine {
             TypeInfo::Ref(inner_id) => resolve_custom_types(inner_id, namespace),
             TypeInfo::Custom { name } => {
                 match namespace.get_symbol(&name)? {
-                    TyDeclaration::Struct((decl_id, _)) => {
+                    TyDeclaration::Struct(decl_id) => {
+                        let decl_id = decl_id.inner();
+
                         // get the original struct declaration
                         let mut struct_decl = de_get_struct(decl_id)?;
 
@@ -229,7 +231,7 @@ impl TypeEngine {
 
     fn monomorphize<T>(&self, value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>
     where
-        T: MonomorphizeHelper + CopyTypes + PrettyPrint,
+        T: MonomorphizeHelper + CopyTypes,
     {
         match (
             value.type_parameters().is_empty(),
@@ -293,7 +295,7 @@ pub(crate) fn resolve_custom_types(id: TypeId, namespace: &mut Namespace) -> Res
 
 pub(crate) fn monomorphize<T>(value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>
 where
-    T: MonomorphizeHelper + CopyTypes + PrettyPrint,
+    T: MonomorphizeHelper + CopyTypes,
 {
     TYPE_ENGINE.monomorphize(value, type_arguments)
 }

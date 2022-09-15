@@ -7,4 +7,4 @@ pub(crate) mod collection_node;
 
 use self::{collection_edge::CollectionEdge, collection_node::CollectionNode};
 
-type CollectionGraph<'cc> = petgraph::Graph<CollectionNode<'cc>, CollectionEdge>;
+type CollectionGraph = petgraph::Graph<CollectionNode, CollectionEdge>;

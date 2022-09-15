@@ -4,6 +4,7 @@ use crate::collection_context::collection_context::CollectionContext;
 use crate::collection_context::collection_index::CollectionIndex;
 use crate::declaration_engine::declaration_engine::*;
 use crate::type_system::type_engine::resolve_custom_types;
+use crate::type_system::type_id::TypeId;
 use crate::{
     language::ty::typed_expression::{TyExpression, TyExpressionVariant},
     namespace::namespace::Namespace,
@@ -15,13 +16,29 @@ pub(super) fn analyze_expression(
     cc: &CollectionContext,
     current_index: CollectionIndex,
     ns: &mut Namespace,
-    expression: &TyExpression,
+    expression: &mut TyExpression,
 ) {
-    match &expression.variant {
+    analyze_expression_variant(
+        cc,
+        current_index,
+        ns,
+        &mut expression.variant,
+        &mut expression.type_id,
+    );
+}
+
+fn analyze_expression_variant(
+    cc: &CollectionContext,
+    current_index: CollectionIndex,
+    ns: &mut Namespace,
+    variant: &mut TyExpressionVariant,
+    type_id: &mut TypeId,
+) {
+    match variant {
         TyExpressionVariant::Literal { .. } => {}
         TyExpressionVariant::Variable { name } => {
             let variable_decl = ns.get_symbol(name).unwrap().expect_variable().unwrap();
-            unify_types(variable_decl.type_ascription, expression.type_id).unwrap();
+            unify_types(variable_decl.type_ascription, *type_id).unwrap();
         }
         TyExpressionVariant::FunctionApplication {
             name,
@@ -37,7 +54,7 @@ pub(super) fn analyze_expression(
             let decl_id = cc.get_symbol(current_index, name.to_string()).unwrap();
 
             // get the original function declaration
-            let mut typed_function_declaration = de_get_function(decl_id).unwrap();
+            let mut typed_function_declaration = de_get_function(*decl_id.inner_ref()).unwrap();
 
             // make sure we have the correct number of arguments
             if typed_function_declaration.parameters.len() != arguments.len() {
@@ -48,11 +65,14 @@ pub(super) fn analyze_expression(
             monomorphize(&mut typed_function_declaration, type_arguments).unwrap();
 
             // add the new copy to the declaration engine
-            de_add_monomorphized_function_copy(decl_id, typed_function_declaration.clone());
+            de_add_monomorphized_function_copy(
+                *decl_id.inner_ref(),
+                typed_function_declaration.clone(),
+            );
 
             // do type inference on the arguments
             arguments
-                .iter()
+                .iter_mut()
                 .zip(typed_function_declaration.parameters.iter())
                 .for_each(|(argument, parameter)| {
                     analyze_expression(cc, current_index, ns, argument);
@@ -60,7 +80,7 @@ pub(super) fn analyze_expression(
                 });
 
             // unify the return type of the function declaration and the expression
-            unify_types(typed_function_declaration.return_type, expression.type_id).unwrap();
+            unify_types(typed_function_declaration.return_type, *type_id).unwrap();
         }
         TyExpressionVariant::Struct {
             struct_name,
@@ -85,7 +105,7 @@ pub(super) fn analyze_expression(
             de_add_monomorphized_struct_copy(decl_id, typed_struct_declaration.clone());
 
             // create reference maps for the expression and the declaration
-            let given_fields_map: HashMap<_, _> = fields
+            let mut given_fields_map: HashMap<_, _> = fields
                 .iter()
                 .map(|field| (field.name.clone(), field.value.clone()))
                 .collect();
@@ -105,18 +125,14 @@ pub(super) fn analyze_expression(
             }
 
             // do type inference on the fields
-            given_fields_map.iter().for_each(|(name, value)| {
+            given_fields_map.iter_mut().for_each(|(name, value)| {
                 analyze_expression(cc, current_index, ns, value);
                 let oracle_field = oracle_fields_map.get(name).unwrap();
                 unify_types(value.type_id, *oracle_field).unwrap();
             });
 
             // unify the struct type id with the expression type id
-            unify_types(
-                typed_struct_declaration.create_type_id(),
-                expression.type_id,
-            )
-            .unwrap();
+            unify_types(typed_struct_declaration.create_type_id(), *type_id).unwrap();
         }
         TyExpressionVariant::MethodCall {
             parent_name,
@@ -147,7 +163,7 @@ pub(super) fn analyze_expression(
 
             // do type inference on the arguments
             arguments
-                .iter()
+                .iter_mut()
                 .zip(typed_method_declaration.parameters.iter())
                 .for_each(|(argument, parameter)| {
                     analyze_expression(cc, current_index, ns, argument);
@@ -155,7 +171,7 @@ pub(super) fn analyze_expression(
                 });
 
             // unify the return type of the method declaration and the expression
-            unify_types(typed_method_declaration.return_type, expression.type_id).unwrap();
+            unify_types(typed_method_declaration.return_type, *type_id).unwrap();
         }
         TyExpressionVariant::FunctionParameter => todo!(),
     }

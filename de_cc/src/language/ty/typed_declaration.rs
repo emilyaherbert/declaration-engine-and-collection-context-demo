@@ -2,12 +2,10 @@ use indent_write::fmt::IndentWriter;
 use std::fmt;
 use std::fmt::Write;
 
-use super::typed_expression::*;
+use super::{typed_expression::*, TyNode};
 
 use crate::{
-    collection_context::{
-        collection_context::CollectionContext, collection_index::{CollectionIndex, CCIdx},
-    },
+    collection_context::{collection_context::CollectionContext, collection_index::CCIdx},
     declaration_engine::declaration_id::DeclarationId,
     type_system::{
         type_engine::{insert_type, MonomorphizeHelper},
@@ -53,13 +51,13 @@ impl fmt::Debug for TyDeclaration {
 }
 
 impl CopyTypes for TyDeclaration {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
         match self {
-            TyDeclaration::Variable(decl) => decl.copy_types(cc, type_mapping),
-            TyDeclaration::Function(decl_id) => decl_id.copy_types(cc, type_mapping),
-            TyDeclaration::Trait(decl_id) => decl_id.copy_types(cc, type_mapping),
-            TyDeclaration::TraitImpl(decl_id) => decl_id.copy_types(cc, type_mapping),
-            TyDeclaration::Struct(decl_id) => decl_id.copy_types(cc, type_mapping),
+            TyDeclaration::Variable(decl) => decl.copy_types(type_mapping),
+            TyDeclaration::Function(decl_id) => decl_id.copy_types(type_mapping),
+            TyDeclaration::Trait(decl_id) => decl_id.copy_types(type_mapping),
+            TyDeclaration::TraitImpl(decl_id) => decl_id.copy_types(type_mapping),
+            TyDeclaration::Struct(decl_id) => decl_id.copy_types(type_mapping),
         }
     }
 }
@@ -139,9 +137,9 @@ impl fmt::Debug for TyVariableDeclaration {
 }
 
 impl CopyTypes for TyVariableDeclaration {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
-        self.type_ascription.copy_types(cc, type_mapping);
-        self.body.copy_types(cc, type_mapping);
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_ascription.copy_types(type_mapping);
+        self.body.copy_types(type_mapping);
     }
 }
 
@@ -150,30 +148,29 @@ pub(crate) struct TyFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) parameters: Vec<TyFunctionParameter>,
-    pub(crate) body: Vec<CollectionIndex>,
+    pub(crate) body: Vec<CCIdx<TyNode>>,
     pub(crate) return_type: TypeId,
 }
 
 impl CopyTypes for TyFunctionDeclaration {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.type_parameters
             .iter_mut()
-            .for_each(|x| x.copy_types(cc, type_mapping));
+            .for_each(|x| x.copy_types(type_mapping));
         self.parameters
             .iter_mut()
-            .for_each(|x| x.copy_types(cc, type_mapping));
-        self.return_type.copy_types(cc, type_mapping);
+            .for_each(|x| x.copy_types(type_mapping));
+        self.return_type.copy_types(type_mapping);
         self.body
             .iter_mut()
-            .for_each(|node| node.copy_types(cc, type_mapping));
+            .for_each(|node| node.copy_types(type_mapping));
     }
 }
 
-impl PrettyPrint for TyFunctionDeclaration {
-    fn pretty_print(&self, cc: &CollectionContext) -> String {
-        let mut builder = String::new();
+impl fmt::Display for TyFunctionDeclaration {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
-            builder,
+            f,
             "fn {}{}({}) -> {}{} {{",
             self.name,
             if self.type_parameters.is_empty() {
@@ -214,66 +211,12 @@ impl PrettyPrint for TyFunctionDeclaration {
         )
         .unwrap();
         {
-            let mut indent = IndentWriter::new("  ", &mut builder);
+            let mut indent = IndentWriter::new("  ", &mut f);
             for node in self.body.iter() {
-                writeln!(indent, "{};", node.pretty_print(cc)).unwrap();
+                writeln!(indent, "{};", node).unwrap();
             }
         }
-        write!(builder, "}}").unwrap();
-        builder
-    }
-
-    fn pretty_print_debug(&self, cc: &CollectionContext) -> String {
-        let mut builder = String::new();
-        writeln!(
-            builder,
-            "fn {}{}({}) -> {:?}{} {{",
-            self.name,
-            if self.type_parameters.is_empty() {
-                "".to_string()
-            } else {
-                format!(
-                    "<{}>",
-                    self.type_parameters
-                        .iter()
-                        .map(|x| format!("{:?}", x))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-            },
-            self.parameters
-                .iter()
-                .map(|parameter| format!("{:?}", parameter))
-                .collect::<Vec<_>>()
-                .join(", "),
-            self.return_type,
-            if self.type_parameters.is_empty() {
-                "".to_string()
-            } else {
-                format!(
-                    " where {}",
-                    self.type_parameters
-                        .iter()
-                        .filter(|x| x.trait_constraint.is_some())
-                        .map(|x| format!(
-                            "{:?}: {}",
-                            x.type_id,
-                            x.trait_constraint.clone().unwrap().trait_name
-                        ))
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
-            },
-        )
-        .unwrap();
-        {
-            let mut indent = IndentWriter::new("  ", &mut builder);
-            for node in self.body.iter() {
-                writeln!(indent, "{};", node.pretty_print_debug(cc)).unwrap();
-            }
-        }
-        write!(builder, "}}").unwrap();
-        builder
+        write!(f, "}}")
     }
 }
 
@@ -298,8 +241,8 @@ pub(crate) struct TyFunctionParameter {
 }
 
 impl CopyTypes for TyFunctionParameter {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
-        self.type_id.copy_types(cc, type_mapping);
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_id.copy_types(type_mapping);
     }
 }
 
@@ -318,14 +261,14 @@ impl fmt::Debug for TyFunctionParameter {
 #[derive(Clone, PartialEq)]
 pub(crate) struct TyTraitDeclaration {
     pub(crate) name: String,
-    pub(crate) interface_surface: Vec<DeclarationId>,
+    pub(crate) interface_surface: Vec<CCIdx<DeclarationId>>,
 }
 
 impl CopyTypes for TyTraitDeclaration {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.interface_surface
             .iter_mut()
-            .for_each(|x| x.copy_types(cc, type_mapping));
+            .for_each(|x| x.copy_types(type_mapping));
     }
 }
 
@@ -337,8 +280,8 @@ pub(crate) struct TyTraitFn {
 }
 
 impl CopyTypes for TyTraitFn {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
-        self.return_type.copy_types(cc, type_mapping);
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.return_type.copy_types(type_mapping);
     }
 }
 
@@ -363,14 +306,14 @@ pub(crate) struct TyTraitImpl {
     pub(crate) trait_name: String,
     pub(crate) type_implementing_for: TypeId,
     pub(crate) type_parameters: Vec<TypeParameter>,
-    pub(crate) methods: Vec<DeclarationId>,
+    pub(crate) methods: Vec<CCIdx<DeclarationId>>,
 }
 
 impl CopyTypes for TyTraitImpl {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.methods
             .iter_mut()
-            .for_each(|x| x.copy_types(cc, type_mapping));
+            .for_each(|x| x.copy_types(type_mapping));
     }
 }
 
@@ -392,13 +335,13 @@ impl CreateTypeId for TyStructDeclaration {
 }
 
 impl CopyTypes for TyStructDeclaration {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.type_parameters
             .iter_mut()
-            .for_each(|x| x.copy_types(cc, type_mapping));
+            .for_each(|x| x.copy_types(type_mapping));
         self.fields
             .iter_mut()
-            .for_each(|x| x.copy_types(cc, type_mapping));
+            .for_each(|x| x.copy_types(type_mapping));
     }
 }
 
@@ -463,8 +406,8 @@ pub struct TyStructField {
 }
 
 impl CopyTypes for TyStructField {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
-        self.type_id.copy_types(cc, type_mapping);
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_id.copy_types(type_mapping);
     }
 }
 

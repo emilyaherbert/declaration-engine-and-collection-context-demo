@@ -3,6 +3,7 @@ use std::fmt;
 use std::fmt::Write;
 
 use crate::{
+    collection_context::collection_index::CCIdx,
     declaration_engine::{
         declaration_engine::*, declaration_id::DeclarationId,
         declaration_wrapper::DeclarationWrapper,
@@ -14,11 +15,13 @@ use linked_hash_map::LinkedHashMap;
 
 use super::function_signature::TypedFunctionSignature;
 
+type MethodList = Vec<CCIdx<DeclarationId>>;
+
 #[derive(Default)]
 pub(crate) struct Namespace {
     symbols: LinkedHashMap<String, TyDeclaration>,
     // this should be (type info, trait name) -> declaration id
-    methods: Vec<(TypeId, Vec<DeclarationId>)>,
+    methods: Vec<(TypeId, MethodList)>,
 }
 
 impl fmt::Display for Namespace {
@@ -69,7 +72,7 @@ impl Namespace {
         &mut self,
         type_id: TypeId,
         _trait_name: String,
-        mut methods: Vec<DeclarationId>,
+        mut methods: Vec<CCIdx<DeclarationId>>,
     ) {
         for (k, v) in self.methods.iter_mut() {
             // TODO: consider semantic similarity
@@ -90,7 +93,7 @@ impl Namespace {
             // TODO: consider semantic similarity
             if look_up_type_id(*k) == look_up_type_id(type_id) {
                 for method_id in method_ids.iter() {
-                    let (name, signature) = match de_look_up_decl_id(*method_id) {
+                    let (name, signature) = match de_look_up_decl_id(*method_id.inner_ref()) {
                         DeclarationWrapper::Function(decl) => (decl.name.clone(), decl.into()),
                         DeclarationWrapper::TraitFn(decl) => (decl.name.clone(), decl.into()),
                         _ => {

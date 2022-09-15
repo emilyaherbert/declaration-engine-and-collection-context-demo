@@ -1,13 +1,11 @@
 use crate::{
     collection_context::{
-        collection_context::CollectionContext, collection_index::CollectionIndex,
+        collection_context::CollectionContext,
+        collection_index::{CCIdx, CollectionIndex},
     },
-    declaration_engine::declaration_engine::*,
+    declaration_engine::{declaration_engine::*, declaration_id::DeclarationId},
     language::ty::{
-        typed_declaration::{
-            TyDeclaration, TyFunctionDeclaration, TyStructDeclaration, TyTraitDeclaration,
-            TyTraitFn, TyTraitImpl, TyVariableDeclaration,
-        },
+        typed_declaration::{TyDeclaration, TyVariableDeclaration},
         TyNode,
     },
     namespace::namespace::Namespace,
@@ -23,30 +21,30 @@ use super::{analyze_expression, analyze_node};
 pub(super) fn analyze_declaration(
     cc: &CollectionContext,
     ns: &mut Namespace,
-    node_index: CollectionIndex,
+    decl: &mut CCIdx<TyDeclaration>,
 ) {
-    let declaration = cc.get_node(node_index).expect_declaration().unwrap();
-    match declaration {
-        TyDeclaration::Variable(variable_declaration) => {
-            analyze_variable(cc, node_index, ns, variable_declaration);
-            let name = variable_declaration.name.clone();
-            ns.insert_symbol(name, TyDeclaration::Variable(variable_declaration.clone()));
+    let cc_idx = decl.idx();
+    match decl.inner_ref_mut() {
+        TyDeclaration::Variable(var_decl) => {
+            analyze_variable(cc, cc_idx, ns, var_decl);
+            let name = var_decl.name.clone();
+            ns.insert_symbol(name, TyDeclaration::Variable(var_decl.clone()));
         }
         TyDeclaration::Function(decl_id) => {
-            let function_declaration = de_get_function(*decl_id).unwrap();
-            let name = function_declaration.name.clone();
-            analyze_function(cc, &mut ns.scoped(), function_declaration);
-            ns.insert_symbol(name, TyDeclaration::Function(*decl_id));
+            analyze_function(cc, &mut ns.scoped(), decl_id);
+            let func_decl = de_get_function(*decl_id.inner_ref()).unwrap();
+            let name = func_decl.name;
+            ns.insert_symbol(name, TyDeclaration::Function(decl_id.clone()));
         }
         TyDeclaration::Trait(decl_id) => {
-            let trait_declaration = de_get_trait(*decl_id).unwrap();
-            analyze_trait(&mut ns.scoped(), &trait_declaration);
-            let name = trait_declaration.name;
-            ns.insert_symbol(name, TyDeclaration::Trait(*decl_id));
+            analyze_trait(&mut ns.scoped(), decl_id);
+            let trait_decl = de_get_trait(*decl_id.inner_ref()).unwrap();
+            let name = trait_decl.name;
+            ns.insert_symbol(name, TyDeclaration::Trait(decl_id.clone()));
         }
         TyDeclaration::TraitImpl(decl_id) => {
-            let trait_impl = de_get_trait_impl(*decl_id).unwrap();
-            analyze_trait_impl(cc, &mut ns.scoped(), &trait_impl);
+            analyze_trait_impl(cc, &mut ns.scoped(), decl_id);
+            let trait_impl = de_get_trait_impl(*decl_id.inner_ref()).unwrap();
             ns.insert_methods(
                 trait_impl.type_implementing_for,
                 trait_impl.trait_name.clone(),
@@ -54,10 +52,10 @@ pub(super) fn analyze_declaration(
             );
         }
         TyDeclaration::Struct(decl_id) => {
-            let struct_declaration = de_get_struct(*decl_id).unwrap();
-            analyze_struct(&mut ns.scoped(), &struct_declaration);
-            let name = struct_declaration.name;
-            ns.insert_symbol(name, TyDeclaration::Struct(*decl_id));
+            analyze_struct(&mut ns.scoped(), decl_id);
+            let struct_decl = de_get_struct(*decl_id.inner_ref()).unwrap();
+            let name = struct_decl.name;
+            ns.insert_symbol(name, TyDeclaration::Struct(decl_id.clone()));
         }
     }
 }
@@ -66,29 +64,27 @@ fn analyze_variable(
     cc: &CollectionContext,
     current_index: CollectionIndex,
     ns: &mut Namespace,
-    variable_declaration: &TyVariableDeclaration,
+    var_decl: &mut TyVariableDeclaration,
 ) {
     // do type inference on the value
-    analyze_expression(cc, current_index, ns, &variable_declaration.body);
+    analyze_expression(cc, current_index, ns, &mut var_decl.body);
 
     // resolve any custom types in the type ascription
-    resolve_custom_types(variable_declaration.type_ascription, ns).unwrap();
+    resolve_custom_types(var_decl.type_ascription, ns).unwrap();
 
     // unify the type of the value and the type ascription
-    unify_types(
-        variable_declaration.body.type_id,
-        variable_declaration.type_ascription,
-    )
-    .unwrap();
+    unify_types(var_decl.body.type_id, var_decl.type_ascription).unwrap();
 }
 
 fn analyze_function(
     cc: &CollectionContext,
     ns: &mut Namespace,
-    function_declaration: TyFunctionDeclaration,
+    decl_id: &mut CCIdx<DeclarationId>,
 ) {
+    let mut func_decl = de_get_function(*decl_id.inner_ref()).unwrap();
+
     // import the trait constraints into the ns
-    for type_param in function_declaration.type_parameters.iter() {
+    for type_param in func_decl.type_parameters.iter() {
         // if the type param has a trait constraint, take the TypedTraitFn's from
         // the trait it is constrained upon and insert them into the ns
         // under the type param
@@ -109,37 +105,42 @@ fn analyze_function(
 
     // resolve any custom types in the parameters and
     // insert the type parameters into the ns
-    for param in function_declaration.parameters.iter() {
+    for param in func_decl.parameters.iter() {
         resolve_custom_types(param.type_id, ns).unwrap();
         ns.insert_symbol(param.name.clone(), param.into());
     }
 
     // do type inference on the function body
-    let typed_body_return_type = analyze_code_block(cc, ns, function_declaration.body);
+    let typed_body_return_type = analyze_code_block(cc, ns, &mut func_decl.body);
 
     // resolve any custom types in the function return type
-    resolve_custom_types(function_declaration.return_type, ns).unwrap();
+    resolve_custom_types(func_decl.return_type, ns).unwrap();
 
     // unify the function return type and body return type
-    unify_types(typed_body_return_type, function_declaration.return_type).unwrap();
+    unify_types(typed_body_return_type, func_decl.return_type).unwrap();
 }
 
 fn analyze_code_block(
     cc: &CollectionContext,
     ns: &mut Namespace,
-    nodes: Vec<CollectionIndex>,
+    nodes: &mut [CCIdx<TyNode>],
 ) -> TypeId {
-    for node_index in nodes.into_iter() {
-        analyze_node(cc, ns, node_index);
-        let node = cc.get_node(node_index).expect_node().unwrap();
-        if let TyNode::ReturnStatement(exp) = node {
+    for node in nodes.iter_mut() {
+        analyze_node(cc, ns, node);
+        if let TyNode::ReturnStatement(exp) = node.inner_ref() {
             return exp.type_id;
         }
     }
     insert_type(TypeInfo::Unit)
 }
 
-fn analyze_trait_impl(cc: &CollectionContext, ns: &mut Namespace, trait_impl: &TyTraitImpl) {
+fn analyze_trait_impl(
+    cc: &CollectionContext,
+    ns: &mut Namespace,
+    decl_id: &mut CCIdx<DeclarationId>,
+) {
+    let mut trait_impl = de_get_trait_impl(*decl_id.inner_ref()).unwrap();
+
     if !trait_impl.type_parameters.is_empty() {
         panic!("no type parameters yet");
     }
@@ -160,31 +161,34 @@ fn analyze_trait_impl(cc: &CollectionContext, ns: &mut Namespace, trait_impl: &T
     // engine
 
     // do type inference on the methods
-    trait_impl.methods.iter().for_each(|method_id| {
-        let method = de_get_function(*method_id).unwrap();
-        analyze_function(cc, ns, method);
-    });
+    trait_impl
+        .methods
+        .iter_mut()
+        .for_each(|method_id| analyze_function(cc, ns, method_id));
 }
 
-fn analyze_struct(ns: &mut Namespace, struct_declaration: &TyStructDeclaration) {
+fn analyze_struct(ns: &mut Namespace, decl_id: &mut CCIdx<DeclarationId>) {
+    let struct_decl = de_get_struct(*decl_id.inner_ref()).unwrap();
+
     // do type inference on the fields
-    struct_declaration.fields.iter().for_each(|field| {
+    struct_decl.fields.iter().for_each(|field| {
         resolve_custom_types(field.type_id, ns).unwrap();
     });
 }
 
-fn analyze_trait(ns: &mut Namespace, trait_declaration: &TyTraitDeclaration) {
+fn analyze_trait(ns: &mut Namespace, decl_id: &mut CCIdx<DeclarationId>) {
+    let mut trait_decl = de_get_trait(*decl_id.inner_ref()).unwrap();
+
     // do type inference on the interface
-    trait_declaration
+    trait_decl
         .interface_surface
-        .iter()
-        .for_each(|trait_fn_id| {
-            let trait_fn = de_get_trait_fn(*trait_fn_id).unwrap();
-            analyze_trait_fn(ns, &trait_fn)
-        });
+        .iter_mut()
+        .for_each(|trait_fn_id| analyze_trait_fn(ns, trait_fn_id));
 }
 
-fn analyze_trait_fn(ns: &mut Namespace, trait_fn: &TyTraitFn) {
+fn analyze_trait_fn(ns: &mut Namespace, decl_id: &mut CCIdx<DeclarationId>) {
+    let trait_fn = de_get_trait_fn(*decl_id.inner_ref()).unwrap();
+
     // resolve any custom types in the parameters
     for parameter in trait_fn.parameters.iter() {
         resolve_custom_types(parameter.type_id, ns).unwrap();

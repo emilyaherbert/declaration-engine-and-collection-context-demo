@@ -30,7 +30,7 @@ pub(crate) fn collect_graph(cc: &mut CollectionContext, app: Application) -> CCI
     let app = TyApplication {
         files: file_idxs.clone(),
     };
-    let app_idx = cc.add_node((&app).into());
+    let app_idx = cc.add_node(app.clone().into());
     let cc_idx = CCIdx::new(app, app_idx);
 
     // add a graph edge from every file to the application
@@ -48,7 +48,7 @@ fn collect_graph_file(cc: &mut CollectionContext, file: File) -> CCIdx<TyFile> {
         name: file.name,
         nodes: nodes.clone(),
     };
-    let file_idx = cc.add_node((&file).into());
+    let file_idx = cc.add_node(file.clone().into());
     let cc_idx = CCIdx::new(file, file_idx);
 
     // add a graph edge from every ast node to the file
@@ -78,21 +78,29 @@ fn collect_graph_node(
     match node {
         Node::StarImport(_) => todo!(),
         Node::Declaration(decl) => {
-            let decl = collect_graph_decl(cc, type_mapping, decl);
-            let node = TyNode::Declaration(decl);
-            let node_idx = cc.add_node((&node).into());
-            CCIdx::new(node, node_idx)
+            let decl_cc_idx = collect_graph_decl(cc, type_mapping, decl);
+            let node = TyNode::Declaration(decl_cc_idx.clone());
+            let node_idx = cc.add_node(node.clone().into());
+            let node_cc_idx = CCIdx::new(node, node_idx);
+            // connect from the inside of the node
+            CCIdx::add_edge(
+                &decl_cc_idx,
+                &node_cc_idx,
+                CollectionEdge::DeclarationContents,
+                cc,
+            );
+            node_cc_idx
         }
         Node::Expression(expression) => {
             let exp = collect_graph_exp(cc, type_mapping, expression);
             let node = TyNode::Expression(exp);
-            let node_idx = cc.add_node((&node).into());
+            let node_idx = cc.add_node(node.clone().into());
             CCIdx::new(node, node_idx)
         }
         Node::ReturnStatement(expression) => {
             let exp = collect_graph_exp(cc, type_mapping, expression);
             let node = TyNode::ReturnStatement(exp);
-            let node_idx = cc.add_node((&node).into());
+            let node_idx = cc.add_node(node.clone().into());
             CCIdx::new(node, node_idx)
         }
     }

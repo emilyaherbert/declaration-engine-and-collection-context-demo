@@ -25,18 +25,20 @@ pub fn compile(application: Application) -> ResolvedApplication {
 
     // 2. transform to the Ty AST and do graph collection
     let mut collection_context = CollectionContext::default();
-    let application_idx = collect_graph(&mut collection_context, application);
+    let mut application = collect_graph(&mut collection_context, application);
+
+    //collection_context.debug_print();
 
     // 3. do type collection
     let mut namespace = Namespace::default();
-    collect_types(&collection_context, &mut namespace, application_idx);
+    collect_types(&collection_context, &mut namespace, &mut application);
 
     // 4. do type inference with new namespace
     let mut namespace = Namespace::default();
-    analyze(&collection_context, &mut namespace, application_idx);
+    analyze(&collection_context, &mut namespace, &mut application);
 
     // 5. resolve all types
-    let resolved_application = to_resolved(&collection_context, application_idx);
+    let resolved_application = to_resolved(&collection_context, application);
 
     // 6. ir generation happens here
 

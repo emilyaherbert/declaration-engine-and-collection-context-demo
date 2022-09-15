@@ -1,20 +1,26 @@
-use std::ops::{Index, IndexMut};
+use std::ops::Index;
 
-use petgraph::dot::{Config, Dot};
+use petgraph::{
+    dot::{Config, Dot},
+    prelude::EdgeIndex,
+};
 
 use crate::declaration_engine::declaration_id::DeclarationId;
 
 use super::{
-    bfs, collection_edge::CollectionEdge, collection_index::CollectionIndex,
-    collection_node::CollectionNode, CollectionGraph,
+    bfs,
+    collection_edge::CollectionEdge,
+    collection_index::{CCIdx, CollectionIndex},
+    collection_node::CollectionNode,
+    CollectionGraph,
 };
 
 #[derive(Default, Clone)]
-pub(crate) struct CollectionContext<'cc> {
-    pub(crate) graph: CollectionGraph<'cc>,
+pub(crate) struct CollectionContext {
+    pub(crate) graph: CollectionGraph,
 }
 
-impl CollectionContext<'_> {
+impl CollectionContext {
     #[allow(dead_code)]
     pub(crate) fn debug_print(&self) {
         println!(
@@ -31,17 +37,17 @@ impl CollectionContext<'_> {
         self.graph.index(*index)
     }
 
-    pub(crate) fn get_node_mut(&mut self, index: CollectionIndex) -> &mut CollectionNode {
-        self.graph.index_mut(*index)
-    }
+    // pub(crate) fn get_node_mut(&mut self, index: CollectionIndex) -> &mut CollectionNode {
+    //     self.graph.index_mut(*index)
+    // }
 
     pub(crate) fn add_edge(
         &mut self,
         from: CollectionIndex,
         to: CollectionIndex,
         edge: CollectionEdge,
-    ) {
-        self.graph.add_edge(*from, *to, edge);
+    ) -> EdgeIndex {
+        self.graph.add_edge(*from, *to, edge)
     }
 
     // https://docs.rs/petgraph/latest/src/petgraph/visit/traversal.rs.html#253
@@ -49,7 +55,7 @@ impl CollectionContext<'_> {
         &self,
         index: CollectionIndex,
         symbol: String,
-    ) -> Result<DeclarationId, String> {
+    ) -> Result<CCIdx<DeclarationId>, String> {
         let decls_in_scope = bfs::get_all_declarations_in_scope(&self.graph, index)?;
         for (name, decl_id) in decls_in_scope.into_iter() {
             if name == symbol {

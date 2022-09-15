@@ -1,18 +1,15 @@
 use crate::{
-    collection_context::{
-        collection_context::CollectionContext, collection_index::CollectionIndex,
-    },
+    collection_context::{collection_context::CollectionContext, collection_index::CCIdx},
     language::ty::typed_declaration::TyDeclaration,
     namespace::namespace::Namespace,
 };
 
 pub(super) fn collect_types_declaration(
-    cc: &CollectionContext,
+    _cc: &CollectionContext,
     _ns: &mut Namespace,
-    node_index: CollectionIndex,
+    decl: &mut CCIdx<TyDeclaration>,
 ) {
-    let declaration = cc.get_node(node_index).expect_declaration().unwrap();
-    match declaration {
+    match decl.inner_ref() {
         TyDeclaration::Variable(_) => {}
         TyDeclaration::Function(_) => {}
         TyDeclaration::Trait(_) => {}

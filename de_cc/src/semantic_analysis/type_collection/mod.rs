@@ -3,36 +3,33 @@ mod declaration;
 use declaration::*;
 
 use crate::{
-    collection_context::{
-        collection_context::CollectionContext, collection_index::CollectionIndex,
-    },
-    language::ty::TyNode,
+    collection_context::{collection_context::CollectionContext, collection_index::CCIdx},
+    language::ty::{TyApplication, TyFile, TyNode},
     namespace::namespace::Namespace,
 };
 
 pub(crate) fn collect_types(
     cc: &CollectionContext,
     ns: &mut Namespace,
-    node_index: CollectionIndex,
+    application: &mut CCIdx<TyApplication>,
 ) {
-    let application = cc.get_node(node_index).expect_application().unwrap();
     application
+        .inner_ref_mut()
         .files
-        .iter()
-        .for_each(|node_index| collect_types_file(cc, ns, *node_index));
+        .iter_mut()
+        .for_each(|file| collect_types_file(cc, ns, file));
 }
 
-fn collect_types_file(cc: &CollectionContext, ns: &mut Namespace, node_index: CollectionIndex) {
-    let file = cc.get_node(node_index).expect_file().unwrap();
-    file.nodes
-        .iter()
-        .for_each(|node_index| collect_types_node(cc, ns, *node_index));
+fn collect_types_file(cc: &CollectionContext, ns: &mut Namespace, file: &mut CCIdx<TyFile>) {
+    file.inner_ref_mut()
+        .nodes
+        .iter_mut()
+        .for_each(|node| collect_types_node(cc, ns, node));
 }
 
-fn collect_types_node(cc: &CollectionContext, ns: &mut Namespace, node_index: CollectionIndex) {
-    let node = cc.get_node(node_index).expect_node().unwrap();
-    match node {
-        TyNode::Declaration(node_index) => collect_types_declaration(cc, ns, *node_index),
+fn collect_types_node(cc: &CollectionContext, ns: &mut Namespace, node: &mut CCIdx<TyNode>) {
+    match node.inner_ref_mut() {
+        TyNode::Declaration(decl) => collect_types_declaration(cc, ns, decl),
         TyNode::Expression(_) => {}
         TyNode::ReturnStatement(_) => {}
     }

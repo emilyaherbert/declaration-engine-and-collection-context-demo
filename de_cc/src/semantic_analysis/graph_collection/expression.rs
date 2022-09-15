@@ -37,7 +37,7 @@ pub(super) fn collect_graph_exp(
             // apply the type mapping to the type arguments
             type_arguments
                 .iter_mut()
-                .for_each(|type_arg| type_arg.copy_types(cc, type_mapping));
+                .for_each(|type_arg| type_arg.copy_types(type_mapping));
 
             // transform the arguments into Ty AST nodes
             let new_arguments = arguments
@@ -70,7 +70,7 @@ pub(super) fn collect_graph_exp(
             // apply the type mapping to the type arguments
             type_arguments
                 .iter_mut()
-                .for_each(|type_arg| type_arg.copy_types(cc, type_mapping));
+                .for_each(|type_arg| type_arg.copy_types(type_mapping));
 
             // transform the arguments into Ty AST nodes
             let new_arguments = arguments
@@ -103,7 +103,7 @@ pub(super) fn collect_graph_exp(
             // apply the type mapping to the type arguments
             type_arguments
                 .iter_mut()
-                .for_each(|type_arg| type_arg.copy_types(cc, type_mapping));
+                .for_each(|type_arg| type_arg.copy_types(type_mapping));
 
             // transform the fields into Ty AST nodes
             let typed_fields = fields

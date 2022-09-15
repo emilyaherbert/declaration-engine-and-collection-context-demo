@@ -1,8 +1,6 @@
 use std::fmt;
 
-use crate::{
-    collection_context::collection_context::CollectionContext, types::copy_types::CopyTypes,
-};
+use crate::types::copy_types::CopyTypes;
 
 use super::{type_id::TypeId, type_mapping::TypeMapping};
 
@@ -18,7 +16,7 @@ impl fmt::Display for TypeArgument {
 }
 
 impl CopyTypes for TypeArgument {
-    fn copy_types(&mut self, cc: &mut CollectionContext, type_mapping: &TypeMapping) {
-        self.type_id.copy_types(cc, type_mapping);
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.type_id.copy_types(type_mapping);
     }
 }

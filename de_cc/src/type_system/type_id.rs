@@ -1,7 +1,6 @@
 use std::fmt;
 use std::hash::{Hash, Hasher};
 
-use crate::collection_context::collection_context::CollectionContext;
 use crate::types::copy_types::CopyTypes;
 
 use super::type_engine::{insert_type, look_up_type_id};
@@ -49,7 +48,7 @@ impl PartialEq for TypeId {
 }
 
 impl CopyTypes for TypeId {
-    fn copy_types(&mut self, _cc: &mut CollectionContext, type_mapping: &TypeMapping) {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
         if let Some(matching_id) = look_up_type_id(*self).matches_type_parameter(type_mapping) {
             *self = insert_type(TypeInfo::Ref(matching_id));
         }
