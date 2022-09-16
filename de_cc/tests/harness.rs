@@ -591,6 +591,34 @@ fn mutual_recursion_function_test() {
 }
 
 #[test]
+fn single_recursion_function_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+
+    let pong_fn = func_decl(
+        "pong",
+        &[],
+        &[func_param("n", t_u64())],
+        &[return_(func_app("pong", &[], &[var("n")]))],
+        t_u64(),
+    );
+
+    let foo_decl = var_decl("foo", None, func_app("pong", &[], &[u64(5u64)]));
+    let main_fn = func_decl("main", &[], &[], &[foo_decl], t_unit());
+    let program_1 = File {
+        name: "bob.sw".to_string(),
+        nodes: vec![pong_fn, main_fn],
+    };
+    let application = Application {
+        files: vec![program_1],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
+}
+
+#[test]
 fn mutual_recursion_method_test() {
     println!(
         "\n\n**********************************************************************************"
@@ -806,7 +834,11 @@ fn mutual_recursion_struct_test() {
     let bob_decl = struct_(
         "Bob",
         &[],
-        &[struct_field("a", t_u8()), struct_field("b", t_u32())],
+        &[
+            struct_field("a", t_u8()),
+            struct_field("b", t_u32()),
+            struct_field("alice", t_cus_("Alice", &[])),
+        ],
     );
 
     let alice_decl = struct_(
@@ -819,33 +851,7 @@ fn mutual_recursion_struct_test() {
         ],
     );
 
-    let foo_decl = var_decl(
-        "foo",
-        None,
-        struct_exp(
-            "Bob",
-            &[],
-            &[
-                struct_exp_field("a", u8(2u8)),
-                struct_exp_field("b", u32(3u32)),
-            ],
-        ),
-    );
-    let bar_decl = var_decl(
-        "bar",
-        None,
-        struct_exp(
-            "Alice",
-            &[],
-            &[
-                struct_exp_field("x", u8(4u8)),
-                struct_exp_field("y", u32(5u32)),
-                struct_exp_field("bob", var("foo")),
-            ],
-        ),
-    );
-
-    let main_fn = func_decl("main", &[], &[], &[foo_decl, bar_decl], t_unit());
+    let main_fn = func_decl("main", &[], &[], &[], t_unit());
     let program_1 = File {
         name: "do_it.sw".to_string(),
         nodes: vec![alice_decl, bob_decl, main_fn],
