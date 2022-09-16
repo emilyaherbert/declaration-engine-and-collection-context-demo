@@ -315,40 +315,55 @@ impl TypeEngine {
     /// "occurs check: a check for whether the same variable occurs on both sides and, if it does, decline to unify"
     /// https://papl.cs.brown.edu/2016/Type_Inference.html
     fn occurs_check(&self, left: TypeId, right: TypeId) -> bool {
-        fn gather_all_type_ids(te: &TypeEngine, start: TypeId) -> Vec<TypeId> {
+        fn gather_all_type_ids(
+            te: &TypeEngine,
+            start: TypeId,
+            mut memo: Vec<TypeId>,
+        ) -> Option<Vec<TypeId>> {
+            if memo.contains(&start) {
+                return None;
+            }
             let s = te.look_up_type_id(start);
             match s {
-                TypeInfo::ErrorRecovery => vec![],
-                TypeInfo::Unknown => vec![],
-                TypeInfo::UnknownGeneric { .. } => vec![start],
-                TypeInfo::Custom { type_arguments, .. } => {
-                    let next = type_arguments
-                        .into_iter()
-                        .flat_map(|ta| gather_all_type_ids(te, ta.type_id))
-                        .collect();
-                    [vec![start], next].concat()
+                TypeInfo::ErrorRecovery => Some(memo),
+                TypeInfo::Unknown => Some(memo),
+                TypeInfo::UnknownGeneric { .. } => {
+                    memo.push(start);
+                    Some(memo)
                 }
-                TypeInfo::Unit => vec![],
-                TypeInfo::Ref(next) => gather_all_type_ids(te, next),
-                TypeInfo::UnsignedInteger(_) => vec![],
+                TypeInfo::Custom { type_arguments, .. } => {
+                    memo.push(start);
+                    for ta in type_arguments.into_iter() {
+                        memo.append(&mut gather_all_type_ids(te, ta.type_id, memo.clone())?);
+                    }
+                    Some(memo)
+                }
+                TypeInfo::Unit => Some(memo),
+                TypeInfo::Ref(next) => gather_all_type_ids(te, next, memo),
+                TypeInfo::UnsignedInteger(_) => Some(memo),
                 TypeInfo::Struct { fields, .. } => {
-                    let next = fields
-                        .into_iter()
-                        .flat_map(|f| gather_all_type_ids(te, f.type_id))
-                        .collect();
-                    [vec![start], next].concat()
+                    memo.push(start);
+                    for f in fields.into_iter() {
+                        memo.append(&mut gather_all_type_ids(te, f.type_id, memo.clone())?);
+                    }
+                    Some(memo)
                 }
             }
         }
 
-        let left_ids = gather_all_type_ids(self, left);
-        let right_ids = gather_all_type_ids(self, right);
-        for l in left_ids.iter() {
-            if right_ids.contains(l) {
-                return true;
+        let left_ids = gather_all_type_ids(self, left, vec![]);
+        let right_ids = gather_all_type_ids(self, right, vec![]);
+        match (left_ids, right_ids) {
+            (Some(left_ids), Some(right_ids)) => {
+                for l in left_ids.iter() {
+                    if right_ids.contains(l) {
+                        return true;
+                    }
+                }
+                false
             }
+            _ => true,
         }
-        false
     }
 }
 

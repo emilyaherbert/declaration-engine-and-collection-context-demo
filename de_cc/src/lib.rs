@@ -32,7 +32,7 @@ pub fn compile(application: Application) -> ResolvedApplication {
     // 3. do type collection
     collect_types(&collection_context, &mut application);
 
-    //println!("{}", application);
+    println!("{}", application);
 
     // 4. do type inference with new namespace
     let mut namespace = Namespace::default();
