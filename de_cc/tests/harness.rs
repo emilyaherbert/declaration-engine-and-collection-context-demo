@@ -328,8 +328,8 @@ fn struct_with_trait_test() {
         ],
     );
 
-    let impl_handle_for_data = handle_u64_impl(t_cus_("Data"), 99);
-    let impl_handle_for_point = handle_u64_impl(t_cus_("Point"), 222);
+    let impl_handle_for_data = handle_u64_impl(t_cus_("Data", &[]), 99);
+    let impl_handle_for_point = handle_u64_impl(t_cus_("Point", &[]), 222);
 
     let foo_decl = var_decl(
         "foo",
@@ -399,8 +399,8 @@ fn method_call_test() {
         ],
     );
 
-    let impl_handle_for_data = handle_u64_impl(t_cus_("Data"), 99);
-    let impl_handle_for_point = handle_u64_impl(t_cus_("Point"), 222);
+    let impl_handle_for_data = handle_u64_impl(t_cus_("Data", &[]), 99);
+    let impl_handle_for_point = handle_u64_impl(t_cus_("Point", &[]), 222);
 
     let foo_decl = var_decl(
         "foo",
@@ -486,8 +486,8 @@ fn trait_constraint_test() {
         ],
     );
 
-    let impl_handle_for_data = handle_u64_impl(t_cus_("Data"), 99);
-    let impl_handle_for_point = handle_u64_impl(t_cus_("Point"), 222);
+    let impl_handle_for_data = handle_u64_impl(t_cus_("Data", &[]), 99);
+    let impl_handle_for_point = handle_u64_impl(t_cus_("Point", &[]), 222);
 
     let call_it_fn = func_decl(
         "call_it",
@@ -618,7 +618,7 @@ fn mutual_recursion_method_test() {
     );
     let impl_ping_pong_for_data_decl = trait_impl(
         "PingPong",
-        t_cus_("Data"),
+        t_cus_("Data", &[]),
         &[],
         &[ping_fn_impl, pong_fn_impl],
     );
@@ -724,6 +724,135 @@ fn mutual_recursion_files_test() {
     };
     let application = Application {
         files: vec![program_1, program_2],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
+}
+
+#[test]
+fn nested_generic_struct_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+
+    let bob_decl = struct_(
+        "Bob",
+        &[type_param("T", None)],
+        &[
+            struct_field("a", t_u8()),
+            struct_field("b", t_u32()),
+            struct_field("other", t_gen_("T")),
+        ],
+    );
+
+    let alice_decl = struct_(
+        "Alice",
+        &[type_param("F", None)],
+        &[
+            struct_field("x", t_u8()),
+            struct_field("y", t_u32()),
+            struct_field("bob", t_cus_("Bob", &[t_gen_("F")])),
+        ],
+    );
+
+    let foo_decl = var_decl(
+        "foo",
+        None,
+        struct_exp(
+            "Bob",
+            &[],
+            &[
+                struct_exp_field("a", u8(2u8)),
+                struct_exp_field("b", u32(3u32)),
+                struct_exp_field("other", u16(16u16)),
+            ],
+        ),
+    );
+    let bar_decl = var_decl(
+        "bar",
+        None,
+        struct_exp(
+            "Alice",
+            &[],
+            &[
+                struct_exp_field("x", u8(4u8)),
+                struct_exp_field("y", u32(5u32)),
+                struct_exp_field("bob", var("foo")),
+            ],
+        ),
+    );
+
+    let main_fn = func_decl("main", &[], &[], &[foo_decl, bar_decl], t_unit());
+    let program_1 = File {
+        name: "do_it.sw".to_string(),
+        nodes: vec![alice_decl, bob_decl, main_fn],
+    };
+
+    let application = Application {
+        files: vec![program_1],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
+}
+
+#[test]
+fn mutual_recursion_struct_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+
+    let bob_decl = struct_(
+        "Bob",
+        &[],
+        &[struct_field("a", t_u8()), struct_field("b", t_u32())],
+    );
+
+    let alice_decl = struct_(
+        "Alice",
+        &[],
+        &[
+            struct_field("x", t_u8()),
+            struct_field("y", t_u32()),
+            struct_field("bob", t_cus_("Bob", &[])),
+        ],
+    );
+
+    let foo_decl = var_decl(
+        "foo",
+        None,
+        struct_exp(
+            "Bob",
+            &[],
+            &[
+                struct_exp_field("a", u8(2u8)),
+                struct_exp_field("b", u32(3u32)),
+            ],
+        ),
+    );
+    let bar_decl = var_decl(
+        "bar",
+        None,
+        struct_exp(
+            "Alice",
+            &[],
+            &[
+                struct_exp_field("x", u8(4u8)),
+                struct_exp_field("y", u32(5u32)),
+                struct_exp_field("bob", var("foo")),
+            ],
+        ),
+    );
+
+    let main_fn = func_decl("main", &[], &[], &[foo_decl, bar_decl], t_unit());
+    let program_1 = File {
+        name: "do_it.sw".to_string(),
+        nodes: vec![alice_decl, bob_decl, main_fn],
+    };
+
+    let application = Application {
+        files: vec![program_1],
     };
     println!("{}", application);
     let resolved_application = compile(application);

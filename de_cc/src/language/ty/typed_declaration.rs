@@ -83,22 +83,6 @@ impl TyDeclaration {
             Err("not a variable declaration".to_string())
         }
     }
-
-    pub(crate) fn expect_trait(self) -> Result<DeclarationId, String> {
-        if let TyDeclaration::Trait(decl_id) = self {
-            Ok(decl_id.inner())
-        } else {
-            Err("not a trait declaration".to_string())
-        }
-    }
-
-    pub(crate) fn expect_struct(self) -> Result<DeclarationId, String> {
-        if let TyDeclaration::Struct(decl_id) = self {
-            Ok(decl_id.inner())
-        } else {
-            Err("not a struct declaration".to_string())
-        }
-    }
 }
 
 #[derive(Clone, PartialEq)]

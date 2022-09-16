@@ -66,7 +66,7 @@ impl CollectionContext {
     pub(crate) fn get_symbol(
         &self,
         index: CollectionIndex,
-        symbol: String,
+        symbol: &str,
     ) -> Result<CCIdx<DeclarationId>, String> {
         let decls_in_scope = bfs::get_all_declarations_in_scope(self, index)?;
         for (name, decl_id) in decls_in_scope.into_iter() {

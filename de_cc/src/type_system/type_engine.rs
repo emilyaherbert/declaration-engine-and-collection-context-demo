@@ -1,10 +1,10 @@
 use crate::{
-    concurrent_slab::ConcurrentSlab,
-    declaration_engine::declaration_engine::*,
-    language::{
-        resolved::resolved_declaration::ResolvedStructField, ty::typed_declaration::TyDeclaration,
+    collection_context::{
+        collection_context::CollectionContext, collection_index::CollectionIndex,
     },
-    namespace::namespace::Namespace,
+    concurrent_slab::ConcurrentSlab,
+    declaration_engine::{declaration_engine::*, declaration_wrapper::DeclarationWrapper},
+    language::resolved::resolved_declaration::ResolvedStructField,
     types::{copy_types::CopyTypes, create_type_id::CreateTypeId},
 };
 
@@ -167,25 +167,37 @@ impl TypeEngine {
         }
     }
 
-    fn resolve_custom_types(&self, id: TypeId, namespace: &mut Namespace) -> Result<(), String> {
+    fn resolve_custom_types(
+        &self,
+        id: TypeId,
+        cc: &CollectionContext,
+        current_index: CollectionIndex,
+    ) -> Result<(), String> {
         match self.slab.get(*id) {
-            TypeInfo::Ref(inner_id) => resolve_custom_types(inner_id, namespace),
-            TypeInfo::Custom { name } => {
-                match namespace.get_symbol(&name)? {
-                    TyDeclaration::Struct(decl_id) => {
-                        let decl_id = decl_id.inner();
+            TypeInfo::Ref(inner_id) => self.resolve_custom_types(inner_id, cc, current_index),
+            TypeInfo::Custom {
+                name,
+                mut type_arguments,
+            } => {
+                let decl_id = cc.get_symbol(current_index, &name)?;
+                match de_look_up_decl_id(*decl_id.inner_ref()) {
+                    DeclarationWrapper::Struct(mut struct_decl) => {
+                        // save the previous type info
+                        let prev_info = TypeInfo::Custom {
+                            name,
+                            type_arguments: type_arguments.clone(),
+                        };
 
-                        // get the original struct declaration
-                        let mut struct_decl = de_get_struct(decl_id)?;
+                        // do type inference on the type arguments
+                        for type_argument in type_arguments.iter_mut() {
+                            resolve_custom_types(type_argument.type_id, cc, current_index).unwrap();
+                        }
 
                         // monomorphize the struct declaration into a new copy
-                        self.monomorphize(&mut struct_decl, &[])?;
+                        self.monomorphize(&mut struct_decl, &mut type_arguments)?;
 
                         // add the new copy to the declaration engine
-                        de_add_monomorphized_struct_copy(decl_id, struct_decl.clone());
-
-                        // recreate the previous type info
-                        let prev_info = TypeInfo::Custom { name };
+                        de_add_monomorphized_struct_copy(*decl_id.inner_ref(), struct_decl.clone());
 
                         // get the new type info
                         let new_info = self.look_up_type_id(struct_decl.create_type_id());
@@ -202,7 +214,11 @@ impl TypeEngine {
         }
     }
 
-    fn monomorphize<T>(&self, value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>
+    fn monomorphize<T>(
+        &self,
+        value: &mut T,
+        type_arguments: &mut [TypeArgument],
+    ) -> Result<(), String>
     where
         T: MonomorphizeHelper + CopyTypes,
     {
@@ -254,11 +270,18 @@ pub(crate) fn resolve_type(type_id: TypeId) -> Result<ResolvedType, String> {
     TYPE_ENGINE.resolve_type(type_id)
 }
 
-pub(crate) fn resolve_custom_types(id: TypeId, namespace: &mut Namespace) -> Result<(), String> {
-    TYPE_ENGINE.resolve_custom_types(id, namespace)
+pub(crate) fn resolve_custom_types(
+    id: TypeId,
+    cc: &CollectionContext,
+    current_index: CollectionIndex,
+) -> Result<(), String> {
+    TYPE_ENGINE.resolve_custom_types(id, cc, current_index)
 }
 
-pub(crate) fn monomorphize<T>(value: &mut T, type_arguments: &[TypeArgument]) -> Result<(), String>
+pub(crate) fn monomorphize<T>(
+    value: &mut T,
+    type_arguments: &mut [TypeArgument],
+) -> Result<(), String>
 where
     T: MonomorphizeHelper + CopyTypes,
 {

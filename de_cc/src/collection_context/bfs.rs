@@ -46,9 +46,6 @@ pub(super) fn get_all_declarations_in_scope(
             CollectionNode::TraitFn(name, decl_id) => {
                 declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
             }
-            CollectionNode::TraitImpl(name, decl_id) => {
-                declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
-            }
             CollectionNode::Struct(name, decl_id) => {
                 declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
             }
@@ -106,9 +103,6 @@ fn get_all_declarations_in_a_file(
                 declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
             }
             CollectionNode::TraitFn(name, decl_id) => {
-                declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
-            }
-            CollectionNode::TraitImpl(name, decl_id) => {
                 declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
             }
             CollectionNode::Struct(name, decl_id) => {

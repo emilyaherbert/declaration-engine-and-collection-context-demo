@@ -4,6 +4,7 @@ use std::hash::Hasher;
 
 use crate::language::ty::typed_declaration::TyStructField;
 
+use super::type_argument::TypeArgument;
 use super::type_engine::insert_type;
 use super::type_engine::look_up_type_id;
 use super::type_mapping::TypeMapping;
@@ -19,6 +20,7 @@ pub enum TypeInfo {
     },
     Custom {
         name: String,
+        type_arguments: Vec<TypeArgument>,
     },
     Unit,
     Ref(TypeId),
@@ -44,7 +46,28 @@ impl fmt::Display for TypeInfo {
             TypeInfo::ErrorRecovery => write!(f, "ERR"),
             TypeInfo::Unknown => write!(f, "UNK"),
             TypeInfo::UnknownGeneric { name } => write!(f, "{}", name),
-            TypeInfo::Custom { name } => write!(f, "{{{}}}", name),
+            TypeInfo::Custom {
+                name,
+                type_arguments,
+            } => {
+                write!(
+                    f,
+                    "{{{}{}}}",
+                    name,
+                    if type_arguments.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "<{}>",
+                            type_arguments
+                                .iter()
+                                .map(|x| x.to_string())
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    },
+                )
+            }
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
             TypeInfo::Ref(id) => write!(f, "{}", look_up_type_id(*id)),
             TypeInfo::Unit => write!(f, "()"),
@@ -81,7 +104,28 @@ impl fmt::Debug for TypeInfo {
             TypeInfo::ErrorRecovery => write!(f, "ERR"),
             TypeInfo::Unknown => write!(f, "UNK"),
             TypeInfo::UnknownGeneric { name } => write!(f, "{}", name),
-            TypeInfo::Custom { name } => write!(f, "{{{}}}", name),
+            TypeInfo::Custom {
+                name,
+                type_arguments,
+            } => {
+                write!(
+                    f,
+                    "{{{}{}}}",
+                    name,
+                    if type_arguments.is_empty() {
+                        "".to_string()
+                    } else {
+                        format!(
+                            "<{}>",
+                            type_arguments
+                                .iter()
+                                .map(|x| format!("{:?}", x))
+                                .collect::<Vec<_>>()
+                                .join(", ")
+                        )
+                    },
+                )
+            }
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
             TypeInfo::Ref(id) => write!(f, "ref..{}..{}", **id, look_up_type_id(*id)),
             TypeInfo::Unit => write!(f, "()"),
@@ -146,9 +190,13 @@ impl Hash for TypeInfo {
                 type_parameters.hash(state);
                 fields.hash(state);
             }
-            TypeInfo::Custom { name } => {
+            TypeInfo::Custom {
+                name,
+                type_arguments,
+            } => {
                 state.write_u8(7);
                 name.hash(state);
+                type_arguments.hash(state);
             }
         }
     }
@@ -165,7 +213,16 @@ impl PartialEq for TypeInfo {
             (TypeInfo::UnsignedInteger(l), TypeInfo::UnsignedInteger(r)) => l == r,
             (TypeInfo::Ref(l), TypeInfo::Ref(r)) => look_up_type_id(*l) == look_up_type_id(*r),
             (TypeInfo::ErrorRecovery, TypeInfo::ErrorRecovery) => todo!(),
-            (TypeInfo::Custom { name: l }, TypeInfo::Custom { name: r }) if l == r => true,
+            (
+                TypeInfo::Custom {
+                    name: l_name,
+                    type_arguments: l_type_args,
+                },
+                TypeInfo::Custom {
+                    name: r_name,
+                    type_arguments: r_type_args,
+                },
+            ) => l_name == r_name && l_type_args == r_type_args,
             (TypeInfo::Unit, TypeInfo::Unit) => true,
             (
                 TypeInfo::Struct {
@@ -240,7 +297,7 @@ impl TypeInfo {
 }
 
 pub mod constructors {
-    use crate::type_system::IntegerBits;
+    use crate::type_system::{type_argument::TypeArgument, type_engine::insert_type, IntegerBits};
 
     use super::TypeInfo;
 
@@ -250,9 +307,16 @@ pub mod constructors {
         }
     }
 
-    pub fn t_cus_(name: &str) -> TypeInfo {
+    pub fn t_cus_(name: &str, type_arguments: &[TypeInfo]) -> TypeInfo {
         TypeInfo::Custom {
             name: name.to_string(),
+            type_arguments: type_arguments
+                .iter()
+                .cloned()
+                .map(|type_info| TypeArgument {
+                    type_id: insert_type(type_info),
+                })
+                .collect(),
         }
     }
 

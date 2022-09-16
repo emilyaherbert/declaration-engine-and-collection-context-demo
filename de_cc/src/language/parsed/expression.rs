@@ -143,7 +143,10 @@ impl fmt::Display for StructExpressionField {
 pub mod constructors {
     use std::u8;
 
-    use crate::{language::literal::Literal, type_system::type_argument::TypeArgument};
+    use crate::{
+        language::literal::Literal,
+        type_system::{type_argument::TypeArgument, type_engine::insert_type, type_info::TypeInfo},
+    };
 
     use super::{Expression, StructExpressionField};
 
@@ -191,12 +194,18 @@ pub mod constructors {
 
     pub fn struct_exp(
         struct_name: &str,
-        type_arguments: &[TypeArgument],
+        type_arguments: &[TypeInfo],
         fields: &[StructExpressionField],
     ) -> Expression {
         Expression::Struct {
             struct_name: struct_name.to_string(),
-            type_arguments: type_arguments.to_vec(),
+            type_arguments: type_arguments
+                .iter()
+                .cloned()
+                .map(|type_info| TypeArgument {
+                    type_id: insert_type(type_info),
+                })
+                .collect(),
             fields: fields.to_vec(),
         }
     }

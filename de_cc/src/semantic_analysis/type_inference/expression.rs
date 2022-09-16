@@ -51,7 +51,7 @@ fn analyze_expression_variant(
             }
 
             // get the original decl id for the function from the CC
-            let decl_id = cc.get_symbol(current_index, name.to_string()).unwrap();
+            let decl_id = cc.get_symbol(current_index, name).unwrap();
 
             // get the original function declaration
             let mut typed_function_declaration = de_get_function(*decl_id.inner_ref()).unwrap();
@@ -59,6 +59,11 @@ fn analyze_expression_variant(
             // make sure we have the correct number of arguments
             if typed_function_declaration.parameters.len() != arguments.len() {
                 panic!();
+            }
+
+            // do type inference on the type arguments
+            for type_argument in type_arguments.iter_mut() {
+                resolve_custom_types(type_argument.type_id, cc, current_index).unwrap();
             }
 
             // monomorphize the function declaration into a new copy, in place
@@ -92,11 +97,16 @@ fn analyze_expression_variant(
                 panic!()
             }
 
-            // get the original decl id for the struct from the ns
-            let decl_id = ns.get_symbol(struct_name).unwrap().expect_struct().unwrap();
+            // get the original decl id for the struct from the cc
+            let decl_id = cc.get_symbol(current_index, struct_name).unwrap().inner();
 
             // get the original struct declaration
             let mut typed_struct_declaration = de_get_struct(decl_id).unwrap();
+
+            // do type inference on the type arguments
+            for type_argument in type_arguments.iter_mut() {
+                resolve_custom_types(type_argument.type_id, cc, current_index).unwrap();
+            }
 
             // monomorphize the struct declaration into a new copy, in place
             monomorphize(&mut typed_struct_declaration, type_arguments).unwrap();
@@ -157,9 +167,9 @@ fn analyze_expression_variant(
                 ns.get_method(parent.type_ascription, func_name).unwrap();
 
             // do type inference on the type arguments
-            type_arguments
-                .iter()
-                .for_each(|type_arg| resolve_custom_types(type_arg.type_id, ns).unwrap());
+            type_arguments.iter().for_each(|type_arg| {
+                resolve_custom_types(type_arg.type_id, cc, current_index).unwrap()
+            });
 
             // do type inference on the arguments
             arguments
