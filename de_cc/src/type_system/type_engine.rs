@@ -162,7 +162,7 @@ impl TypeEngine {
             | found @ TypeInfo::Unknown
             | found @ TypeInfo::UnknownGeneric { .. }
             | found @ TypeInfo::Custom { .. } => {
-                Err(format!("type error in resolution, found: {}", found))
+                Err(format!("type error in resolution, found: {:?}", found))
             }
         }
     }

@@ -345,6 +345,36 @@ impl PrettyPrint for TyStructDeclaration {
     }
 }
 
+impl fmt::Debug for TyStructDeclaration {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "struct {}{} {{",
+            self.name,
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    "<{}>",
+                    self.type_parameters
+                        .iter()
+                        .map(|x| format!("{:?}", x))
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+        )
+        .unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for field in self.fields.iter() {
+                writeln!(indent, "{:?},", field).unwrap();
+            }
+        }
+        write!(f, "}}")
+    }
+}
+
 impl fmt::Display for TyStructDeclaration {
     fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(
@@ -384,6 +414,12 @@ pub struct TyStructField {
 impl CopyTypes for TyStructField {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.type_id.copy_types(type_mapping);
+    }
+}
+
+impl fmt::Debug for TyStructField {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}({:?})", self.name, self.type_id)
     }
 }
 

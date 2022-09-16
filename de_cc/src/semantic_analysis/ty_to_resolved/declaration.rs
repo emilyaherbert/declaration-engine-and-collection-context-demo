@@ -82,38 +82,47 @@ fn to_resolved_function_declaration(
 
 fn to_resolved_function_declaration_inner(
     cc: &CollectionContext,
-    function_declarations: Vec<TyFunctionDeclaration>,
+    func_decls: Vec<TyFunctionDeclaration>,
 ) -> Vec<ResolvedFunctionDeclaration> {
-    function_declarations
-        .into_iter()
-        .map(|function_declaration| {
-            let resolved_type_parameters = function_declaration
-                .type_parameters
-                .into_iter()
-                .map(resolve_type_parameter)
-                .collect::<Vec<_>>();
-            let resolved_parameters = function_declaration
-                .parameters
-                .into_iter()
-                .map(to_resolved_function_parameter)
-                .collect::<Vec<_>>();
-            let resolved_body = to_resolved_nodes(cc, function_declaration.body);
-            let resolved_type = resolve_type(function_declaration.return_type).unwrap();
-            ResolvedFunctionDeclaration {
-                name: function_declaration.name,
-                type_parameters: resolved_type_parameters,
-                parameters: resolved_parameters,
-                body: resolved_body,
-                return_type: resolved_type,
+    let mut new_func_decls = vec![];
+    for func_decl in func_decls.into_iter() {
+        let resolved_type_parameters = func_decl
+            .type_parameters
+            .into_iter()
+            .map(resolve_type_parameter)
+            .collect::<Result<_, _>>();
+        let resolved_type_parameters = match resolved_type_parameters {
+            Ok(resolved_type_parameters) => resolved_type_parameters,
+            Err(_) => {
+                // hack to prevent the ugly results from displaying on the screen
+                println!("omitting a function");
+                continue;
             }
-        })
-        .collect()
+        };
+        let resolved_parameters = func_decl
+            .parameters
+            .into_iter()
+            .map(to_resolved_function_parameter)
+            .collect::<Vec<_>>();
+        let resolved_body = to_resolved_nodes(cc, func_decl.body);
+        let resolved_type = resolve_type(func_decl.return_type).unwrap();
+        let func_decl = ResolvedFunctionDeclaration {
+            name: func_decl.name,
+            type_parameters: resolved_type_parameters,
+            parameters: resolved_parameters,
+            body: resolved_body,
+            return_type: resolved_type,
+        };
+        new_func_decls.push(func_decl);
+    }
+    new_func_decls
 }
 
-fn resolve_type_parameter(type_parameter: TypeParameter) -> ResolvedTypeParameter {
-    ResolvedTypeParameter {
-        type_info: resolve_type(type_parameter.type_id).unwrap(),
-    }
+fn resolve_type_parameter(type_parameter: TypeParameter) -> Result<ResolvedTypeParameter, String> {
+    let type_param = ResolvedTypeParameter {
+        type_info: resolve_type(type_parameter.type_id)?,
+    };
+    Ok(type_param)
 }
 
 fn to_resolved_function_parameter(
@@ -188,33 +197,50 @@ fn to_resolved_struct_declaration(
 }
 
 fn to_resolved_struct_declaration_inner(
-    struct_declarations: Vec<TyStructDeclaration>,
+    struct_decls: Vec<TyStructDeclaration>,
 ) -> Vec<ResolvedStructDeclaration> {
-    struct_declarations
-        .into_iter()
-        .map(|struct_declaration| {
-            let resolved_type_parameters = struct_declaration
-                .type_parameters
-                .into_iter()
-                .map(resolve_type_parameter)
-                .collect::<Vec<_>>();
-            let resolved_fields = struct_declaration
-                .fields
-                .into_iter()
-                .map(to_resolved_struct_field)
-                .collect::<Vec<_>>();
-            ResolvedStructDeclaration {
-                name: struct_declaration.name,
-                type_parameters: resolved_type_parameters,
-                fields: resolved_fields,
+    let mut new_struct_decls = vec![];
+    for struct_decl in struct_decls.into_iter() {
+        let resolved_type_parameters = struct_decl
+            .type_parameters
+            .into_iter()
+            .map(resolve_type_parameter)
+            .collect::<Result<_, _>>();
+        let resolved_type_parameters = match resolved_type_parameters {
+            Ok(resolved_type_parameters) => resolved_type_parameters,
+            Err(_) => {
+                // hack to prevent the ugly results from displaying on the screen
+                println!("omitting a struct");
+                continue;
             }
-        })
-        .collect()
+        };
+        let resolved_fields = struct_decl
+            .fields
+            .into_iter()
+            .map(to_resolved_struct_field)
+            .collect::<Result<_, _>>();
+        let resolved_fields = match resolved_fields {
+            Ok(resolved_fields) => resolved_fields,
+            Err(_) => {
+                // hack to prevent the ugly results from displaying on the screen
+                println!("omitting a struct");
+                continue;
+            }
+        };
+        let struct_decl = ResolvedStructDeclaration {
+            name: struct_decl.name,
+            type_parameters: resolved_type_parameters,
+            fields: resolved_fields,
+        };
+        new_struct_decls.push(struct_decl);
+    }
+    new_struct_decls
 }
 
-fn to_resolved_struct_field(field: TyStructField) -> ResolvedStructField {
-    ResolvedStructField {
+fn to_resolved_struct_field(field: TyStructField) -> Result<ResolvedStructField, String> {
+    let field = ResolvedStructField {
         name: field.name,
-        type_info: resolve_type(field.type_id).unwrap(),
-    }
+        type_info: resolve_type(field.type_id)?,
+    };
+    Ok(field)
 }
