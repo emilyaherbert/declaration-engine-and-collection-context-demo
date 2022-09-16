@@ -5,9 +5,7 @@ use std::hash::Hasher;
 use crate::language::ty::typed_declaration::TyStructField;
 
 use super::type_argument::TypeArgument;
-use super::type_engine::insert_type;
 use super::type_engine::look_up_type_id;
-use super::type_mapping::TypeMapping;
 use super::type_parameter::TypeParameter;
 use super::{type_id::*, IntegerBits};
 
@@ -237,61 +235,6 @@ impl PartialEq for TypeInfo {
                 },
             ) => l_name == r_name && l_fields == r_fields && l_type_parameters == r_type_parameters,
             _ => false,
-        }
-    }
-}
-
-impl TypeInfo {
-    pub(crate) fn matches_type_parameter(&self, mapping: &TypeMapping) -> Option<TypeId> {
-        match self {
-            TypeInfo::UnknownGeneric { .. } => {
-                for (param, ty_id) in mapping.iter() {
-                    if look_up_type_id(*param) == *self {
-                        return Some(*ty_id);
-                    }
-                }
-                None
-            }
-            TypeInfo::Custom { .. } => {
-                for (param, ty_id) in mapping.iter() {
-                    if look_up_type_id(*param) == *self {
-                        return Some(*ty_id);
-                    }
-                }
-                None
-            }
-            TypeInfo::Struct {
-                fields,
-                name,
-                type_parameters,
-            } => {
-                let mut new_type_parameters = type_parameters.clone();
-                for new_param in new_type_parameters.iter_mut() {
-                    if let Some(matching_id) =
-                        look_up_type_id(new_param.type_id).matches_type_parameter(mapping)
-                    {
-                        new_param.type_id = insert_type(TypeInfo::Ref(matching_id));
-                    }
-                }
-                let mut new_fields = fields.clone();
-                for new_field in new_fields.iter_mut() {
-                    if let Some(matching_id) =
-                        look_up_type_id(new_field.type_id).matches_type_parameter(mapping)
-                    {
-                        new_field.type_id = insert_type(TypeInfo::Ref(matching_id));
-                    }
-                }
-                Some(insert_type(TypeInfo::Struct {
-                    fields: new_fields,
-                    name: name.clone(),
-                    type_parameters: new_type_parameters,
-                }))
-            }
-            TypeInfo::ErrorRecovery
-            | TypeInfo::Unknown
-            | TypeInfo::Unit
-            | TypeInfo::Ref(_)
-            | TypeInfo::UnsignedInteger(_) => None,
         }
     }
 }

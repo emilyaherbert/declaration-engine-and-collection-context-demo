@@ -13,7 +13,7 @@ use super::{
     type_argument::TypeArgument,
     type_id::TypeId,
     type_info::TypeInfo,
-    type_mapping::insert_type_parameters,
+    type_mapping::{insert_type_parameters, TypeMapping},
     type_parameter::TypeParameter,
 };
 
@@ -247,6 +247,109 @@ impl TypeEngine {
             }
         }
     }
+
+    fn type_matches_type_parameter(
+        &self,
+        type_id: TypeId,
+        mapping: &TypeMapping,
+    ) -> Option<TypeId> {
+        let type_info = self.look_up_type_id(type_id);
+        match type_info {
+            TypeInfo::UnknownGeneric { .. } => {
+                for (param, ty_id) in mapping.iter() {
+                    if self.look_up_type_id(*param) == type_info {
+                        return Some(*ty_id);
+                    }
+                }
+                None
+            }
+            TypeInfo::Custom { .. } => {
+                for (param, ty_id) in mapping.iter() {
+                    if self.look_up_type_id(*param) == type_info {
+                        return Some(*ty_id);
+                    }
+                }
+                None
+            }
+            TypeInfo::Struct {
+                fields,
+                name,
+                type_parameters,
+            } => {
+                let mut new_type_parameters = type_parameters;
+                for new_param in new_type_parameters.iter_mut() {
+                    if self.occurs_check(type_id, new_param.type_id) {
+                        continue;
+                    }
+                    if let Some(matching_id) =
+                        self.type_matches_type_parameter(new_param.type_id, mapping)
+                    {
+                        new_param.type_id = self.insert_type(TypeInfo::Ref(matching_id));
+                    }
+                }
+                let mut new_fields = fields;
+                for new_field in new_fields.iter_mut() {
+                    if self.occurs_check(type_id, new_field.type_id) {
+                        continue;
+                    }
+                    if let Some(matching_id) =
+                        self.type_matches_type_parameter(new_field.type_id, mapping)
+                    {
+                        new_field.type_id = self.insert_type(TypeInfo::Ref(matching_id));
+                    }
+                }
+                Some(self.insert_type(TypeInfo::Struct {
+                    fields: new_fields,
+                    name,
+                    type_parameters: new_type_parameters,
+                }))
+            }
+            TypeInfo::ErrorRecovery
+            | TypeInfo::Unknown
+            | TypeInfo::Unit
+            | TypeInfo::Ref(_)
+            | TypeInfo::UnsignedInteger(_) => None,
+        }
+    }
+
+    /// "occurs check: a check for whether the same variable occurs on both sides and, if it does, decline to unify"
+    /// https://papl.cs.brown.edu/2016/Type_Inference.html
+    fn occurs_check(&self, left: TypeId, right: TypeId) -> bool {
+        fn gather_all_type_ids(te: &TypeEngine, start: TypeId) -> Vec<TypeId> {
+            let s = te.look_up_type_id(start);
+            match s {
+                TypeInfo::ErrorRecovery => vec![],
+                TypeInfo::Unknown => vec![],
+                TypeInfo::UnknownGeneric { .. } => vec![start],
+                TypeInfo::Custom { type_arguments, .. } => {
+                    let next = type_arguments
+                        .into_iter()
+                        .flat_map(|ta| gather_all_type_ids(te, ta.type_id))
+                        .collect();
+                    [vec![start], next].concat()
+                }
+                TypeInfo::Unit => vec![],
+                TypeInfo::Ref(next) => gather_all_type_ids(te, next),
+                TypeInfo::UnsignedInteger(_) => vec![],
+                TypeInfo::Struct { fields, .. } => {
+                    let next = fields
+                        .into_iter()
+                        .flat_map(|f| gather_all_type_ids(te, f.type_id))
+                        .collect();
+                    [vec![start], next].concat()
+                }
+            }
+        }
+
+        let left_ids = gather_all_type_ids(self, left);
+        let right_ids = gather_all_type_ids(self, right);
+        for l in left_ids.iter() {
+            if right_ids.contains(l) {
+                return true;
+            }
+        }
+        false
+    }
 }
 
 #[allow(dead_code)]
@@ -286,6 +389,13 @@ where
     T: MonomorphizeHelper + CopyTypes,
 {
     TYPE_ENGINE.monomorphize(value, type_arguments)
+}
+
+pub(crate) fn type_matches_type_parameter(
+    type_id: TypeId,
+    mapping: &TypeMapping,
+) -> Option<TypeId> {
+    TYPE_ENGINE.type_matches_type_parameter(type_id, mapping)
 }
 
 pub(crate) trait MonomorphizeHelper {
