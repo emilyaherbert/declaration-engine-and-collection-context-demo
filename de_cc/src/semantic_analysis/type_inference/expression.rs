@@ -16,15 +16,9 @@ pub(super) fn analyze_expression(
     cc: &CollectionContext,
     current_index: CollectionIndex,
     ns: &mut Namespace,
-    expression: &mut TyExpression,
+    exp: &mut TyExpression,
 ) {
-    analyze_expression_variant(
-        cc,
-        current_index,
-        ns,
-        &mut expression.variant,
-        &mut expression.type_id,
-    );
+    analyze_expression_variant(cc, current_index, ns, &mut exp.variant, &mut exp.type_id);
 }
 
 fn analyze_expression_variant(

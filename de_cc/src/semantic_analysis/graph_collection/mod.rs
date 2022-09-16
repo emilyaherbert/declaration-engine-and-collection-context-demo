@@ -1,8 +1,6 @@
 mod declaration;
 mod expression;
 
-use std::collections::HashMap;
-
 use declaration::*;
 use expression::*;
 
@@ -15,7 +13,6 @@ use crate::{
         parsed::{Application, File, Node},
         ty::{TyApplication, TyFile, TyNode},
     },
-    type_system::type_mapping::TypeMapping,
 };
 
 pub(crate) fn collect_graph(cc: &mut CollectionContext, app: Application) -> CCIdx<TyApplication> {
@@ -65,7 +62,7 @@ fn collect_graph_nodes(cc: &mut CollectionContext, nodes: Vec<Node>) -> Vec<CCId
     // create graph nodes for each of the ast nodes
     let nodes = nodes
         .into_iter()
-        .map(|node| collect_graph_node(cc, &HashMap::new(), node))
+        .map(|node| collect_graph_node(cc, node))
         .collect::<Vec<_>>();
 
     // for every ast node in this scope, connect them under the same shared scope with graph edges
@@ -74,11 +71,7 @@ fn collect_graph_nodes(cc: &mut CollectionContext, nodes: Vec<Node>) -> Vec<CCId
     nodes
 }
 
-fn collect_graph_node(
-    cc: &mut CollectionContext,
-    type_mapping: &TypeMapping,
-    node: Node,
-) -> CCIdx<TyNode> {
+fn collect_graph_node(cc: &mut CollectionContext, node: Node) -> CCIdx<TyNode> {
     match node {
         Node::StarImport(filename) => {
             let node = TyNode::StarImport(filename.clone());
@@ -86,7 +79,7 @@ fn collect_graph_node(
             CCIdx::new(node, node_idx)
         }
         Node::Declaration(decl) => {
-            let decl_cc_idx = collect_graph_decl(cc, type_mapping, decl);
+            let decl_cc_idx = collect_graph_decl(cc, decl);
             let node = TyNode::Declaration(decl_cc_idx.clone());
             CCIdx::new(node, decl_cc_idx.idx())
         }
