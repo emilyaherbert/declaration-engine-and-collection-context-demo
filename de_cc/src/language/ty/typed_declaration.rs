@@ -84,14 +84,6 @@ impl TyDeclaration {
         }
     }
 
-    pub(crate) fn expect_function(self) -> Result<DeclarationId, String> {
-        if let TyDeclaration::Function(decl_id) = self {
-            Ok(decl_id.inner())
-        } else {
-            Err("not a function declaration".to_string())
-        }
-    }
-
     pub(crate) fn expect_trait(self) -> Result<DeclarationId, String> {
         if let TyDeclaration::Trait(decl_id) = self {
             Ok(decl_id.inner())

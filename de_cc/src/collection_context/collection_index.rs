@@ -13,7 +13,7 @@ use super::{collection_context::CollectionContext, collection_edge::CollectionEd
 #[derive(Clone, Debug)]
 pub(crate) struct CCIdx<T> {
     inner: T,
-    pub(crate) idx: CollectionIndex,
+    idx: CollectionIndex,
 }
 
 // impl<T> fmt::Debug for CCIdx<T>

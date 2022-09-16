@@ -43,65 +43,29 @@ pub(super) fn collect_graph_decl(
     match decl {
         Declaration::Variable(var_decl) => {
             let var_decl = collect_graph_var_decl(cc, var_decl);
-            let decl = TyDeclaration::Variable(var_decl);
-            let decl_idx = cc.add_node(decl.clone().into());
+            let decl = TyDeclaration::Variable(var_decl.clone());
+            let decl_idx = cc.add_node(CollectionNode::Variable(var_decl.name.clone(), var_decl));
             CCIdx::new(decl, decl_idx)
         }
         Declaration::Function(func_decl) => {
             let func_decl_cc_idx = collect_graph_function(cc, type_mapping, func_decl);
             let decl = TyDeclaration::Function(func_decl_cc_idx.clone());
-            let decl_idx = cc.add_node(decl.clone().into());
-            let decl_cc_idx = CCIdx::new(decl, decl_idx);
-            // add an edge from the interior of the declaration
-            CCIdx::add_edge(
-                &func_decl_cc_idx,
-                &decl_cc_idx,
-                CollectionEdge::DeclarationContents,
-                cc,
-            );
-            decl_cc_idx
+            CCIdx::new(decl, func_decl_cc_idx.idx())
         }
         Declaration::Trait(trait_decl) => {
             let trait_decl_cc_idx = collect_graph_trait(cc, trait_decl);
             let decl = TyDeclaration::Trait(trait_decl_cc_idx.clone());
-            let decl_idx = cc.add_node(decl.clone().into());
-            let decl_cc_idx = CCIdx::new(decl, decl_idx);
-            // add an edge from the interior of the declaration
-            CCIdx::add_edge(
-                &trait_decl_cc_idx,
-                &decl_cc_idx,
-                CollectionEdge::DeclarationContents,
-                cc,
-            );
-            decl_cc_idx
+            CCIdx::new(decl, trait_decl_cc_idx.idx())
         }
         Declaration::TraitImpl(trait_impl) => {
             let trait_impl_cc_idx = collect_graph_trait_impl(cc, type_mapping, trait_impl);
             let decl = TyDeclaration::TraitImpl(trait_impl_cc_idx.clone());
-            let decl_idx = cc.add_node(decl.clone().into());
-            let decl_cc_idx = CCIdx::new(decl, decl_idx);
-            // add an edge from the interior of the declaration
-            CCIdx::add_edge(
-                &trait_impl_cc_idx,
-                &decl_cc_idx,
-                CollectionEdge::DeclarationContents,
-                cc,
-            );
-            decl_cc_idx
+            CCIdx::new(decl, trait_impl_cc_idx.idx())
         }
         Declaration::Struct(struct_decl) => {
             let struct_decl_cc_idx = collect_graph_struct(cc, type_mapping, struct_decl);
             let decl = TyDeclaration::Struct(struct_decl_cc_idx.clone());
-            let decl_idx = cc.add_node(decl.clone().into());
-            let decl_cc_idx = CCIdx::new(decl, decl_idx);
-            // add an edge from the interior of the declaration
-            CCIdx::add_edge(
-                &struct_decl_cc_idx,
-                &decl_cc_idx,
-                CollectionEdge::DeclarationContents,
-                cc,
-            );
-            decl_cc_idx
+            CCIdx::new(decl, struct_decl_cc_idx.idx())
         }
     }
 }

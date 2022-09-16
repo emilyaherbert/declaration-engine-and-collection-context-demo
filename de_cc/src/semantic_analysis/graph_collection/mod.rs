@@ -88,22 +88,18 @@ fn collect_graph_node(
         Node::Declaration(decl) => {
             let decl_cc_idx = collect_graph_decl(cc, type_mapping, decl);
             let node = TyNode::Declaration(decl_cc_idx.clone());
-            let node_idx = cc.add_node(node.clone().into());
-            let node_cc_idx = CCIdx::new(node, node_idx);
-            // connect from the inside of the node
-            CCIdx::add_edge(&decl_cc_idx, &node_cc_idx, CollectionEdge::NodeContents, cc);
-            node_cc_idx
+            CCIdx::new(node, decl_cc_idx.idx())
         }
         Node::Expression(expression) => {
             let exp = collect_graph_exp(cc, expression);
-            let node = TyNode::Expression(exp);
-            let node_idx = cc.add_node(node.clone().into());
+            let node = TyNode::Expression(exp.clone());
+            let node_idx = cc.add_node(CollectionNode::Expression(exp));
             CCIdx::new(node, node_idx)
         }
         Node::ReturnStatement(expression) => {
             let exp = collect_graph_exp(cc, expression);
-            let node = TyNode::ReturnStatement(exp);
-            let node_idx = cc.add_node(node.clone().into());
+            let node = TyNode::ReturnStatement(exp.clone());
+            let node_idx = cc.add_node(CollectionNode::Expression(exp));
             CCIdx::new(node, node_idx)
         }
     }

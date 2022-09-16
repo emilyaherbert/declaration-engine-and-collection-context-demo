@@ -5,13 +5,7 @@ use petgraph::{
     Direction,
 };
 
-use crate::{
-    declaration_engine::{
-        declaration_engine::{de_get_function, de_get_struct, de_get_trait, de_get_trait_impl},
-        declaration_id::DeclarationId,
-    },
-    language::ty::{typed_declaration::TyDeclaration, TyNode},
-};
+use crate::declaration_engine::declaration_id::DeclarationId;
 
 use super::{
     collection_context::CollectionContext,
@@ -43,46 +37,6 @@ pub(super) fn get_all_declarations_in_scope(
                 declarations.append(&mut get_all_declarations_in_a_file(cc, new_index)?);
             }
 
-            // this case is triggered when looking for symbols that are located in the
-            // same scope as other nodes
-            CollectionNode::Node(TyNode::Declaration(decl)) => match decl.inner_ref() {
-                TyDeclaration::Variable(_) => {}
-                TyDeclaration::Function(decl_id) => {
-                    let decl = de_get_function(*decl_id.inner_ref())?;
-                    declarations.push((decl.name, decl_id.clone()));
-                }
-                TyDeclaration::Trait(decl_id) => {
-                    let decl = de_get_trait(*decl_id.inner_ref())?;
-                    declarations.push((decl.name, decl_id.clone()));
-                }
-                TyDeclaration::TraitImpl(decl_id) => {
-                    let decl = de_get_trait_impl(*decl_id.inner_ref())?;
-                    declarations.push((decl.trait_name, decl_id.clone()));
-                }
-                TyDeclaration::Struct(decl_id) => {
-                    let decl = de_get_struct(*decl_id.inner_ref())?;
-                    declarations.push((decl.name, decl_id.clone()));
-                }
-            },
-
-            CollectionNode::Declaration(name, decl) => match decl {
-                TyDeclaration::Variable(_) => {}
-                TyDeclaration::Function(decl_id) => {
-                    declarations.push((name.to_string(), decl_id.clone()));
-                }
-                TyDeclaration::Trait(decl_id) => {
-                    declarations.push((name.to_string(), decl_id.clone()));
-                }
-                TyDeclaration::TraitImpl(decl_id) => {
-                    declarations.push((name.to_string(), decl_id.clone()));
-                }
-                TyDeclaration::Struct(decl_id) => {
-                    declarations.push((name.to_string(), decl_id.clone()));
-                }
-            },
-
-            // these cases are triggered when looking for symbols that are located in the
-            // same scope, in the case of methods, trait impls, etc
             CollectionNode::Function(name, decl_id) => {
                 declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
             }
@@ -105,8 +59,6 @@ pub(super) fn get_all_declarations_in_scope(
             let valid = match edge.weight() {
                 CollectionEdge::ApplicationContents => false,
                 CollectionEdge::FileContents => false,
-                CollectionEdge::NodeContents => true,
-                CollectionEdge::DeclarationContents => true,
                 CollectionEdge::SharedScope => true,
                 CollectionEdge::ScopedChild => true,
             };
@@ -146,30 +98,29 @@ fn get_all_declarations_in_a_file(
     while let Some(node_index) = stack.pop_front() {
         let node = cc.graph.index(*node_index);
 
-        if let CollectionNode::Declaration(name, decl) = node {
-            match decl {
-                TyDeclaration::Variable(_) => {}
-                TyDeclaration::Function(decl_id) => {
-                    declarations.push((name.to_string(), decl_id.clone()));
-                }
-                TyDeclaration::Trait(decl_id) => {
-                    declarations.push((name.to_string(), decl_id.clone()));
-                }
-                TyDeclaration::TraitImpl(decl_id) => {
-                    declarations.push((name.to_string(), decl_id.clone()));
-                }
-                TyDeclaration::Struct(decl_id) => {
-                    declarations.push((name.to_string(), decl_id.clone()));
-                }
+        match node {
+            CollectionNode::Function(name, decl_id) => {
+                declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
             }
+            CollectionNode::Trait(name, decl_id) => {
+                declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
+            }
+            CollectionNode::TraitFn(name, decl_id) => {
+                declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
+            }
+            CollectionNode::TraitImpl(name, decl_id) => {
+                declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
+            }
+            CollectionNode::Struct(name, decl_id) => {
+                declarations.push((name.to_string(), CCIdx::new(*decl_id, node_index)));
+            }
+            _ => {}
         }
 
         for edge in cc.graph.edges_directed(*node_index, Direction::Incoming) {
             let valid = match edge.weight() {
                 CollectionEdge::ApplicationContents => false,
                 CollectionEdge::FileContents => true,
-                CollectionEdge::NodeContents => true,
-                CollectionEdge::DeclarationContents => true,
                 CollectionEdge::SharedScope => false,
                 CollectionEdge::ScopedChild => false,
             };
