@@ -16,9 +16,6 @@ pub mod type_system;
 mod types;
 
 use declaration_engine::declaration_engine as de;
-use type_system::type_engine::insert_type;
-
-use crate::type_system::{type_id::TypeId, type_info::TypeInfo};
 
 #[allow(clippy::let_and_return)]
 pub fn compile(application: Application) -> ResolvedApplication {
@@ -30,7 +27,7 @@ pub fn compile(application: Application) -> ResolvedApplication {
     let mut collection_context = CollectionContext::default();
     let mut application = collect_graph(&mut collection_context, application);
 
-    //collection_context.create_link();
+    collection_context.create_link();
 
     // 3. do type collection
     collect_types(&collection_context, &mut application);

@@ -828,7 +828,8 @@ fn nested_generic_struct_test() {
     println!("{}", resolved_application);
 }
 
-//#[test]
+#[test]
+#[should_panic]
 fn mutual_recursion_struct_test() {
     println!(
         "\n\n**********************************************************************************"
@@ -862,6 +863,50 @@ fn mutual_recursion_struct_test() {
 
     let application = Application {
         files: vec![program_1],
+    };
+    println!("{}", application);
+    let resolved_application = compile(application);
+    println!("{}", resolved_application);
+}
+
+#[test]
+#[should_panic]
+fn mutual_recursion_struct_and_files_test() {
+    println!(
+        "\n\n**********************************************************************************"
+    );
+
+    let bob_decl = struct_(
+        "Bob",
+        &[],
+        &[
+            struct_field("a", t_u8()),
+            struct_field("b", t_u32()),
+            struct_field("alice", t_cus_("Alice", &[])),
+        ],
+    );
+    let program_2 = File {
+        name: "bob.sw".to_string(),
+        nodes: vec![star_import("alice.sw"), bob_decl],
+    };
+
+    let alice_decl = struct_(
+        "Alice",
+        &[],
+        &[
+            struct_field("x", t_u8()),
+            struct_field("y", t_u32()),
+            struct_field("bob", t_cus_("Bob", &[])),
+        ],
+    );
+    let main_fn = func_decl("main", &[], &[], &[], t_unit());
+    let program_1 = File {
+        name: "alice.sw".to_string(),
+        nodes: vec![star_import("bob.sw"), alice_decl, main_fn],
+    };
+
+    let application = Application {
+        files: vec![program_1, program_2],
     };
     println!("{}", application);
     let resolved_application = compile(application);
