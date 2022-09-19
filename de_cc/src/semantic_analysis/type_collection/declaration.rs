@@ -72,7 +72,6 @@ fn collect_types_trait_impl(cc: &CollectionContext, decl_id: &mut CCIdx<Declarat
 }
 
 fn collect_types_struct(cc: &CollectionContext, decl_id: &mut CCIdx<DeclarationId>) {
-    println!("0");
     let mut struct_decl = de_get_struct(*decl_id.inner_ref()).unwrap();
 
     // create type mapping

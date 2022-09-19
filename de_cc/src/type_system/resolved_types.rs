@@ -44,7 +44,7 @@ impl fmt::Display for ResolvedType {
                         )
                     },
                 )
-            } // ResolvedType::Enum { .. } => todo!(),
+            }
         }
     }
 }

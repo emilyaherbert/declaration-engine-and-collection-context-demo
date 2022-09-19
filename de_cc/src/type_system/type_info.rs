@@ -125,16 +125,16 @@ impl fmt::Debug for TypeInfo {
                 )
             }
             TypeInfo::UnsignedInteger(bits) => write!(f, "{}", bits),
-            TypeInfo::Ref(id) => write!(f, "ref..{}..{}", **id, look_up_type_id(*id)),
+            TypeInfo::Ref(id) => write!(f, "ref..{}", **id),
             TypeInfo::Unit => write!(f, "()"),
             TypeInfo::Struct {
                 name,
                 type_parameters,
-                ..
+                fields,
             } => {
                 write!(
                     f,
-                    "{}{}",
+                    "{}{}{{{}}}",
                     name,
                     if type_parameters.is_empty() {
                         "".to_string()
@@ -143,11 +143,16 @@ impl fmt::Debug for TypeInfo {
                             "<{}>",
                             type_parameters
                                 .iter()
-                                .map(|x| x.to_string())
+                                .map(|x| format!("{:?}", x))
                                 .collect::<Vec<_>>()
                                 .join(", ")
                         )
                     },
+                    fields
+                        .iter()
+                        .map(|x| format!("{:?}", TypeInfo::Ref(x.type_id)))
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 )
             }
         }

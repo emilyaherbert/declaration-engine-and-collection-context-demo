@@ -3,7 +3,9 @@ use std::hash::{Hash, Hasher};
 
 use crate::types::copy_types::CopyTypes;
 
-use super::type_engine::{insert_type, look_up_type_id, type_matches_type_parameter};
+use super::type_engine::{
+    insert_type, look_up_type_id, look_up_type_id_raw, type_matches_type_parameter,
+};
 use super::type_info::TypeInfo;
 use super::type_mapping::TypeMapping;
 
@@ -25,7 +27,7 @@ impl From<usize> for TypeId {
 
 impl fmt::Debug for TypeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}-{:?}", self.0, look_up_type_id(*self))
+        write!(f, "{}-{:?}", self.0, look_up_type_id_raw(*self))
     }
 }
 

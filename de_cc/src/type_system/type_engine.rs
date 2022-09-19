@@ -45,6 +45,10 @@ impl TypeEngine {
         }
     }
 
+    fn look_up_type_id_raw(&self, id: TypeId) -> TypeInfo {
+        self.slab.get(*id)
+    }
+
     fn unify_types(&self, received: TypeId, expected: TypeId) -> Result<(), String> {
         match (self.slab.get(*received), self.slab.get(*expected)) {
             // if the two types are the same literal then we are done
@@ -351,17 +355,9 @@ impl TypeEngine {
             }
         }
 
-        let left_ids = gather_all_type_ids(self, left, vec![]);
         let right_ids = gather_all_type_ids(self, right, vec![]);
-        match (left_ids, right_ids) {
-            (Some(left_ids), Some(right_ids)) => {
-                for l in left_ids.iter() {
-                    if right_ids.contains(l) {
-                        return true;
-                    }
-                }
-                false
-            }
+        match right_ids {
+            Some(right_ids) => right_ids.contains(&left),
             _ => true,
         }
     }
@@ -378,6 +374,10 @@ pub(crate) fn insert_type(ty: TypeInfo) -> TypeId {
 
 pub(crate) fn look_up_type_id(id: TypeId) -> TypeInfo {
     TYPE_ENGINE.look_up_type_id(id)
+}
+
+pub(crate) fn look_up_type_id_raw(id: TypeId) -> TypeInfo {
+    TYPE_ENGINE.look_up_type_id_raw(id)
 }
 
 pub(crate) fn unify_types(received: TypeId, expected: TypeId) -> Result<(), String> {

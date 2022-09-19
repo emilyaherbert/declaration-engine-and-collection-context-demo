@@ -30,6 +30,18 @@ impl CollectionContext {
         );
     }
 
+    pub(crate) fn create_link(&self) {
+        let dot_str = format!(
+            "https://dreampuf.github.io/GraphvizOnline/#{:?}",
+            Dot::with_config(&self.graph, &[Config::EdgeIndexLabel])
+        )
+        .replace('\n', "%0A")
+        .replace('=', "%3D")
+        .replace("   ", "%20%20%20");
+        let s = std::str::from_utf8(dot_str.as_bytes()).unwrap();
+        println!("{}", s);
+    }
+
     pub(crate) fn register_file_index(&mut self, filename: String, index: CollectionIndex) {
         self.files.insert(filename, index);
     }

@@ -92,7 +92,7 @@ fn collect_graph_node(cc: &mut CollectionContext, node: Node) -> CCIdx<TyNode> {
         Node::ReturnStatement(expression) => {
             let exp = collect_graph_exp(cc, expression);
             let node = TyNode::ReturnStatement(exp.clone());
-            let node_idx = cc.add_node(CollectionNode::Expression(exp));
+            let node_idx = cc.add_node(CollectionNode::Return(exp));
             CCIdx::new(node, node_idx)
         }
     }

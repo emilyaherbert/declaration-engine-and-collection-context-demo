@@ -600,7 +600,10 @@ fn single_recursion_function_test() {
         "pong",
         &[],
         &[func_param("n", t_u64())],
-        &[return_(func_app("pong", &[], &[var("n")]))],
+        &[
+            var_decl("dummy", None, func_app("pong", &[], &[var("n")])),
+            return_(func_app("pong", &[], &[var("n")])),
+        ],
         t_u64(),
     );
 
@@ -825,7 +828,7 @@ fn nested_generic_struct_test() {
     println!("{}", resolved_application);
 }
 
-#[test]
+//#[test]
 fn mutual_recursion_struct_test() {
     println!(
         "\n\n**********************************************************************************"

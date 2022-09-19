@@ -27,12 +27,10 @@ pub fn compile(application: Application) -> ResolvedApplication {
     let mut collection_context = CollectionContext::default();
     let mut application = collect_graph(&mut collection_context, application);
 
-    //collection_context.debug_print();
+    //collection_context.create_link();
 
     // 3. do type collection
     collect_types(&collection_context, &mut application);
-
-    println!("{}", application);
 
     // 4. do type inference with new namespace
     let mut namespace = Namespace::default();
