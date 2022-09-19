@@ -16,6 +16,9 @@ pub mod type_system;
 mod types;
 
 use declaration_engine::declaration_engine as de;
+use type_system::type_engine::insert_type;
+
+use crate::type_system::{type_id::TypeId, type_info::TypeInfo};
 
 #[allow(clippy::let_and_return)]
 pub fn compile(application: Application) -> ResolvedApplication {

@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use crate::{
     collection_context::{
         collection_context::CollectionContext, collection_index::CollectionIndex,
@@ -17,6 +19,7 @@ use super::{
     type_parameter::TypeParameter,
 };
 
+use either::Either;
 use lazy_static::lazy_static;
 
 lazy_static! {
@@ -39,6 +42,9 @@ impl TypeEngine {
     }
 
     fn look_up_type_id(&self, id: TypeId) -> TypeInfo {
+        if id.occurs_check() {
+            panic!("recursive type has infinite size");
+        }
         match self.slab.get(*id) {
             TypeInfo::Ref(other) => self.look_up_type_id(other),
             ty => ty,
@@ -50,6 +56,9 @@ impl TypeEngine {
     }
 
     fn unify_types(&self, received: TypeId, expected: TypeId) -> Result<(), String> {
+        if self.occurs_check(received, expected) {
+            panic!("recursive types have infinite size");
+        }
         match (self.slab.get(*received), self.slab.get(*expected)) {
             // if the two types are the same literal then we are done
             (TypeInfo::Unit, TypeInfo::Unit) => Ok(()),
@@ -130,6 +139,9 @@ impl TypeEngine {
     }
 
     fn resolve_type(&self, type_id: TypeId) -> Result<ResolvedType, String> {
+        if type_id.occurs_check() {
+            panic!("recursive type has infinite size");
+        }
         match self.slab.get(*type_id) {
             TypeInfo::UnsignedInteger(bits) => Ok(ResolvedType::UnsignedInteger(bits)),
             TypeInfo::Ref(id) => self.resolve_type(id),
@@ -173,11 +185,14 @@ impl TypeEngine {
 
     fn resolve_custom_types(
         &self,
-        id: TypeId,
+        type_id: TypeId,
         cc: &CollectionContext,
         current_index: CollectionIndex,
     ) -> Result<(), String> {
-        match self.slab.get(*id) {
+        if type_id.occurs_check() {
+            panic!("recursive type has infinite size");
+        }
+        match self.slab.get(*type_id) {
             TypeInfo::Ref(inner_id) => self.resolve_custom_types(inner_id, cc, current_index),
             TypeInfo::Custom {
                 name,
@@ -207,7 +222,7 @@ impl TypeEngine {
                         let new_info = self.look_up_type_id(struct_decl.create_type_id());
 
                         // replace the id with the new type info
-                        self.slab.replace(*id, &prev_info, new_info);
+                        self.slab.replace(*type_id, &prev_info, new_info);
 
                         Ok(())
                     }
@@ -257,6 +272,9 @@ impl TypeEngine {
         type_id: TypeId,
         mapping: &TypeMapping,
     ) -> Option<TypeId> {
+        if type_id.occurs_check() {
+            panic!("recursive type has infinite size");
+        }
         let type_info = self.look_up_type_id(type_id);
         match type_info {
             TypeInfo::UnknownGeneric { .. } => {
@@ -282,9 +300,6 @@ impl TypeEngine {
             } => {
                 let mut new_type_parameters = type_parameters;
                 for new_param in new_type_parameters.iter_mut() {
-                    if self.occurs_check(type_id, new_param.type_id) {
-                        continue;
-                    }
                     if let Some(matching_id) =
                         self.type_matches_type_parameter(new_param.type_id, mapping)
                     {
@@ -293,9 +308,6 @@ impl TypeEngine {
                 }
                 let mut new_fields = fields;
                 for new_field in new_fields.iter_mut() {
-                    if self.occurs_check(type_id, new_field.type_id) {
-                        continue;
-                    }
                     if let Some(matching_id) =
                         self.type_matches_type_parameter(new_field.type_id, mapping)
                     {
@@ -316,48 +328,22 @@ impl TypeEngine {
         }
     }
 
+    /// Returns true if the same type occurs in both gives types---i.e. if unifying these types would create an infinite cycle.
+    ///
     /// "occurs check: a check for whether the same variable occurs on both sides and, if it does, decline to unify"
     /// https://papl.cs.brown.edu/2016/Type_Inference.html
     fn occurs_check(&self, left: TypeId, right: TypeId) -> bool {
-        fn gather_all_type_ids(
-            te: &TypeEngine,
-            start: TypeId,
-            mut memo: Vec<TypeId>,
-        ) -> Option<Vec<TypeId>> {
-            if memo.contains(&start) {
-                return None;
-            }
-            let s = te.look_up_type_id(start);
-            match s {
-                TypeInfo::ErrorRecovery => Some(memo),
-                TypeInfo::Unknown => Some(memo),
-                TypeInfo::UnknownGeneric { .. } => {
-                    memo.push(start);
-                    Some(memo)
-                }
-                TypeInfo::Custom { type_arguments, .. } => {
-                    memo.push(start);
-                    for ta in type_arguments.into_iter() {
-                        memo.append(&mut gather_all_type_ids(te, ta.type_id, memo.clone())?);
+        let left_ids = left.occurs_check_memo(HashSet::new());
+        let right_ids = right.occurs_check_memo(HashSet::new());
+        match (left_ids, right_ids) {
+            (Either::Left(left_ids), Either::Left(right_ids)) => {
+                for l in left_ids.iter() {
+                    if right_ids.contains(l) {
+                        return true;
                     }
-                    Some(memo)
                 }
-                TypeInfo::Unit => Some(memo),
-                TypeInfo::Ref(next) => gather_all_type_ids(te, next, memo),
-                TypeInfo::UnsignedInteger(_) => Some(memo),
-                TypeInfo::Struct { fields, .. } => {
-                    memo.push(start);
-                    for f in fields.into_iter() {
-                        memo.append(&mut gather_all_type_ids(te, f.type_id, memo.clone())?);
-                    }
-                    Some(memo)
-                }
+                false
             }
-        }
-
-        let right_ids = gather_all_type_ids(self, right, vec![]);
-        match right_ids {
-            Some(right_ids) => right_ids.contains(&left),
             _ => true,
         }
     }

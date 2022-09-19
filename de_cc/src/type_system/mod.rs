@@ -27,3 +27,9 @@ impl fmt::Display for IntegerBits {
         }
     }
 }
+
+#[derive(Debug)]
+enum OccursCheck {
+    Occurs,
+    //DoesNotOccur
+}
