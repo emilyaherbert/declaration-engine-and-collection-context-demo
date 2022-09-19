@@ -3,13 +3,14 @@ use crate::{
     declaration_engine::{declaration_engine::*, declaration_id::DeclarationId},
     language::{
         resolved::resolved_declaration::{
-            ResolvedDeclaration, ResolvedFunctionDeclaration, ResolvedFunctionParameter,
-            ResolvedStructDeclaration, ResolvedStructField, ResolvedTraitDeclaration,
-            ResolvedTraitFn, ResolvedTraitImpl, ResolvedVariableDeclaration,
+            ResolvedCodeBlock, ResolvedDeclaration, ResolvedFunctionDeclaration,
+            ResolvedFunctionParameter, ResolvedStructDeclaration, ResolvedStructField,
+            ResolvedTraitDeclaration, ResolvedTraitFn, ResolvedTraitImpl,
+            ResolvedVariableDeclaration,
         },
         ty::typed_declaration::{
-            TyDeclaration, TyFunctionDeclaration, TyFunctionParameter, TyStructDeclaration,
-            TyStructField, TyVariableDeclaration,
+            TyCodeBlock, TyDeclaration, TyFunctionDeclaration, TyFunctionParameter,
+            TyStructDeclaration, TyStructField, TyVariableDeclaration,
         },
     },
     type_system::{
@@ -18,7 +19,7 @@ use crate::{
     },
 };
 
-use super::{expression::to_resolved_expression, to_resolved_nodes};
+use super::{expression::to_resolved_expression, to_resolved_node};
 
 pub(super) fn to_resolved_declaration(
     cc: &CollectionContext,
@@ -104,7 +105,7 @@ fn to_resolved_function_declaration_inner(
             .into_iter()
             .map(to_resolved_function_parameter)
             .collect::<Vec<_>>();
-        let resolved_body = to_resolved_nodes(cc, func_decl.body);
+        let resolved_body = to_resolved_code_block(cc, func_decl.body);
         let resolved_type = resolve_type(func_decl.return_type).unwrap();
         let func_decl = ResolvedFunctionDeclaration {
             name: func_decl.name,
@@ -132,6 +133,19 @@ fn to_resolved_function_parameter(
         name: function_parameter.name,
         type_info: resolve_type(function_parameter.type_id).unwrap(),
     }
+}
+
+fn to_resolved_code_block(
+    cc: &CollectionContext,
+    code_block: CCIdx<TyCodeBlock>,
+) -> ResolvedCodeBlock {
+    let nodes = code_block
+        .inner()
+        .contents
+        .into_iter()
+        .flat_map(|node| to_resolved_node(cc, node))
+        .collect::<Vec<_>>();
+    ResolvedCodeBlock { contents: nodes }
 }
 
 fn to_resolved_trait_declaration(trait_id: CCIdx<DeclarationId>) -> ResolvedTraitDeclaration {

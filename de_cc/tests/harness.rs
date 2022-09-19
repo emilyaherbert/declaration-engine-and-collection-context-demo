@@ -678,35 +678,84 @@ fn star_import_test() {
         "\n\n**********************************************************************************"
     );
 
+    let steve_decl = struct_(
+        "Steve",
+        &[type_param("T", None), type_param("F", None)],
+        &[
+            struct_field("first", t_gen_("T")),
+            struct_field("second", t_gen_("F")),
+        ],
+    );
+    let program_3 = File {
+        name: "steve.sw".to_string(),
+        nodes: vec![steve_decl],
+    };
+
+    let local_steve = var_decl(
+        "local_steve",
+        None,
+        struct_exp(
+            "Steve",
+            &[],
+            &[
+                struct_exp_field("first", u16(3u16)),
+                struct_exp_field("second", u32(4u32)),
+            ],
+        ),
+    );
     let bob_fn = func_decl(
         "bob_fn",
         &[],
         &[func_param("n", t_u64())],
-        &[return_(var("n"))],
+        &[star_import("steve.sw"), local_steve, return_(var("n"))],
         t_u64(),
+    );
+    let roger_fn = func_decl(
+        "roger_fn",
+        &[],
+        &[func_param("n", t_u64())],
+        &[return_(func_app("alice_fn", &[], &[var("n")]))],
+        t_u64(),
+    );
+    let program_2 = File {
+        name: "bob.sw".to_string(),
+        nodes: vec![bob_fn, roger_fn, star_import("alice.sw")],
+    };
+
+    let local_steve2 = var_decl(
+        "local_steve",
+        None,
+        struct_exp(
+            "Steve",
+            &[],
+            &[
+                struct_exp_field("first", u16(3u16)),
+                struct_exp_field("second", u32(4u32)),
+            ],
+        ),
     );
     let alice_fn = func_decl(
         "alice_fn",
         &[],
         &[func_param("n", t_u64())],
-        &[return_(func_app("bob_fn", &[], &[var("n")]))],
+        &[
+            star_import("steve.sw"),
+            local_steve2,
+            return_(func_app("bob_fn", &[], &[var("n")])),
+        ],
         t_u64(),
     );
-
     let foo_decl = var_decl("foo", None, func_app("alice_fn", &[], &[u64(5u64)]));
     let main_fn = func_decl("main", &[], &[], &[foo_decl], t_unit());
-
     let program_1 = File {
         name: "alice.sw".to_string(),
         nodes: vec![star_import("bob.sw"), alice_fn, main_fn],
     };
-    let program_2 = File {
-        name: "bob.sw".to_string(),
-        nodes: vec![bob_fn],
-    };
+
     let application = Application {
-        files: vec![program_1, program_2],
+        files: vec![program_1, program_2, program_3],
     };
+
     println!("{}", application);
     let resolved_application = compile(application);
     println!("{}", resolved_application);
@@ -816,7 +865,7 @@ fn nested_generic_struct_test() {
 
     let main_fn = func_decl("main", &[], &[], &[foo_decl, bar_decl], t_unit());
     let program_1 = File {
-        name: "do_it.sw".to_string(),
+        name: "main.sw".to_string(),
         nodes: vec![alice_decl, bob_decl, main_fn],
     };
 
@@ -857,7 +906,7 @@ fn mutual_recursion_struct_test() {
 
     let main_fn = func_decl("main", &[], &[], &[], t_unit());
     let program_1 = File {
-        name: "do_it.sw".to_string(),
+        name: "main.sw".to_string(),
         nodes: vec![alice_decl, bob_decl, main_fn],
     };
 

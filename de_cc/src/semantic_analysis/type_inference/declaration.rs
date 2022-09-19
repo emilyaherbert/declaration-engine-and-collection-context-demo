@@ -5,7 +5,7 @@ use crate::{
     },
     declaration_engine::{declaration_engine::*, declaration_id::DeclarationId},
     language::ty::{
-        typed_declaration::{TyDeclaration, TyVariableDeclaration},
+        typed_declaration::{TyCodeBlock, TyDeclaration, TyVariableDeclaration},
         TyNode,
     },
     namespace::namespace::Namespace,
@@ -113,9 +113,9 @@ fn analyze_function(
 fn analyze_code_block(
     cc: &CollectionContext,
     ns: &mut Namespace,
-    nodes: &mut [CCIdx<TyNode>],
+    nodes: &mut CCIdx<TyCodeBlock>,
 ) -> TypeId {
-    for node in nodes.iter_mut() {
+    for node in nodes.inner_ref_mut().contents.iter_mut() {
         analyze_node(cc, ns, node);
         if let TyNode::ReturnStatement(exp) = node.inner_ref() {
             return exp.type_id;

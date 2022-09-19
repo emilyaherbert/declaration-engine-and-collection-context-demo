@@ -10,20 +10,20 @@ use crate::{
 
 use super::{collection_context::CollectionContext, collection_edge::CollectionEdge};
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub(crate) struct CCIdx<T> {
     inner: T,
     idx: CollectionIndex,
 }
 
-// impl<T> fmt::Debug for CCIdx<T>
-// where
-//     T: fmt::Debug,
-// {
-//     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-//         write!(f, "{:?}", self.inner)
-//     }
-// }
+impl<T> fmt::Debug for CCIdx<T>
+where
+    T: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{:?}", self.inner)
+    }
+}
 
 impl<T> fmt::Display for CCIdx<T>
 where

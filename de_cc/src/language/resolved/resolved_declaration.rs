@@ -46,7 +46,7 @@ pub(crate) struct ResolvedFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<ResolvedTypeParameter>,
     pub(crate) parameters: Vec<ResolvedFunctionParameter>,
-    pub(crate) body: Vec<ResolvedNode>,
+    pub(crate) body: ResolvedCodeBlock,
     pub(crate) return_type: ResolvedType,
 }
 
@@ -78,7 +78,7 @@ impl fmt::Display for ResolvedFunctionDeclaration {
         .unwrap();
         {
             let mut indent = IndentWriter::new("  ", &mut f);
-            for node in self.body.iter() {
+            for node in self.body.contents.iter() {
                 writeln!(indent, "{};", node).unwrap();
             }
         }
@@ -96,6 +96,10 @@ impl fmt::Display for ResolvedFunctionParameter {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}: {}", self.name, self.type_info)
     }
+}
+
+pub(crate) struct ResolvedCodeBlock {
+    pub(crate) contents: Vec<ResolvedNode>,
 }
 
 #[derive(Clone)]

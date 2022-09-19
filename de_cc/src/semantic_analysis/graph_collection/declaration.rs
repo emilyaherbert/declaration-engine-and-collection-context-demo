@@ -18,12 +18,10 @@ use crate::{
             },
             Node,
         },
-        ty::{
-            typed_declaration::{
-                TyDeclaration, TyFunctionDeclaration, TyFunctionParameter, TyStructDeclaration,
-                TyStructField, TyTraitDeclaration, TyTraitFn, TyTraitImpl, TyVariableDeclaration,
-            },
-            TyNode,
+        ty::typed_declaration::{
+            TyCodeBlock, TyDeclaration, TyFunctionDeclaration, TyFunctionParameter,
+            TyStructDeclaration, TyStructField, TyTraitDeclaration, TyTraitFn, TyTraitImpl,
+            TyVariableDeclaration,
         },
     },
     type_system::type_engine::insert_type,
@@ -107,8 +105,8 @@ fn collect_graph_function(
     // create an Idx for the function
     let func_decl_cc_idx = CCIdx::new(func_decl_id, func_decl_idx);
 
-    // add an edge from every node in the function body
-    CCIdx::add_edges_many_to_one(
+    // add an edge from body to the function declaration
+    CCIdx::add_edge(
         &func_decl.body,
         &func_decl_cc_idx,
         CollectionEdge::ScopedChild,
@@ -118,7 +116,7 @@ fn collect_graph_function(
     func_decl_cc_idx
 }
 
-fn collect_graph_code_block(cc: &mut CollectionContext, nodes: Vec<Node>) -> Vec<CCIdx<TyNode>> {
+fn collect_graph_code_block(cc: &mut CollectionContext, nodes: Vec<Node>) -> CCIdx<TyCodeBlock> {
     // collect the nodes
     let nodes = nodes
         .into_iter()
@@ -128,7 +126,23 @@ fn collect_graph_code_block(cc: &mut CollectionContext, nodes: Vec<Node>) -> Vec
     // for every node in this scope, connect them under the same shared scope
     CCIdx::add_edges_many(&nodes, CollectionEdge::SharedScope, cc);
 
-    nodes
+    let code_block = TyCodeBlock { contents: nodes };
+
+    // add the code block to the graph
+    let code_block_idx = cc.add_node(CollectionNode::CodeBlock(code_block.clone()));
+
+    // create an Idx for the code block
+    let code_block_cc_idx = CCIdx::new(code_block.clone(), code_block_idx);
+
+    // add an edge from every node to the code block
+    CCIdx::add_edges_many_to_one(
+        &code_block.contents,
+        &code_block_cc_idx,
+        CollectionEdge::ScopedChild,
+        cc,
+    );
+
+    code_block_cc_idx
 }
 
 fn collect_graph_function_parameter(function_parameter: FunctionParameter) -> TyFunctionParameter {

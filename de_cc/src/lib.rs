@@ -27,7 +27,7 @@ pub fn compile(application: Application) -> ResolvedApplication {
     let mut collection_context = CollectionContext::default();
     let mut application = collect_graph(&mut collection_context, application);
 
-    collection_context.create_link();
+    let cc_before_typing = collection_context.create_link();
 
     // 3. do type collection
     collect_types(&collection_context, &mut application);
@@ -35,6 +35,10 @@ pub fn compile(application: Application) -> ResolvedApplication {
     // 4. do type inference with new namespace
     let mut namespace = Namespace::default();
     analyze(&collection_context, &mut namespace, &mut application);
+
+    let cc_after_typing = collection_context.create_link();
+
+    println!("\n\n!!! paste these links in your browser to see visualizations of the AST graphs !!!\n\nUNTYPED:\n\n{}\n\nTYPED:\n\n{}\n\n", cc_before_typing, cc_after_typing);
 
     // 5. resolve all types
     let resolved_application = to_resolved(&collection_context, application);

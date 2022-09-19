@@ -25,21 +25,20 @@ impl CollectionContext {
     #[allow(dead_code)]
     pub(crate) fn debug_print(&self) {
         println!(
-            "{:?}",
+            "{}",
             Dot::with_config(&self.graph, &[Config::EdgeIndexLabel])
         );
     }
 
-    pub(crate) fn create_link(&self) {
+    pub(crate) fn create_link(&self) -> String {
         let dot_str = format!(
-            "https://dreampuf.github.io/GraphvizOnline/#{:?}",
+            "https://dreampuf.github.io/GraphvizOnline/#{}",
             Dot::with_config(&self.graph, &[Config::EdgeIndexLabel])
         )
         .replace('\n', "%0A")
         .replace('=', "%3D")
         .replace("   ", "%20%20%20");
-        let s = std::str::from_utf8(dot_str.as_bytes()).unwrap();
-        println!("{}", s);
+        std::str::from_utf8(dot_str.as_bytes()).unwrap().to_string()
     }
 
     pub(crate) fn register_file_index(&mut self, filename: String, index: CollectionIndex) {

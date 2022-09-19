@@ -46,7 +46,14 @@ impl PartialEq for DeclarationWrapper {
 
 impl fmt::Display for DeclarationWrapper {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "decl({})", self.friendly_name())
+        match self {
+            DeclarationWrapper::Unknown => write!(f, "unknown declaration"),
+            DeclarationWrapper::Function(decl) => write!(f, "{}", decl),
+            DeclarationWrapper::Trait(decl) => write!(f, "{}", decl),
+            DeclarationWrapper::TraitFn(decl) => write!(f, "{}", decl),
+            DeclarationWrapper::TraitImpl(decl) => write!(f, "{}", decl),
+            DeclarationWrapper::Struct(decl) => write!(f, "{}", decl),
+        }
     }
 }
 

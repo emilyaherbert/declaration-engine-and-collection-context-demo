@@ -124,7 +124,7 @@ pub(crate) struct TyFunctionDeclaration {
     pub(crate) name: String,
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) parameters: Vec<TyFunctionParameter>,
-    pub(crate) body: Vec<CCIdx<TyNode>>,
+    pub(crate) body: CCIdx<TyCodeBlock>,
     pub(crate) return_type: TypeId,
 }
 
@@ -137,9 +137,7 @@ impl CopyTypes for TyFunctionDeclaration {
             .iter_mut()
             .for_each(|x| x.copy_types(type_mapping));
         self.return_type.copy_types(type_mapping);
-        self.body
-            .iter_mut()
-            .for_each(|node| node.copy_types(type_mapping));
+        self.body.copy_types(type_mapping);
     }
 }
 
@@ -188,7 +186,7 @@ impl fmt::Display for TyFunctionDeclaration {
         .unwrap();
         {
             let mut indent = IndentWriter::new("  ", &mut f);
-            for node in self.body.iter() {
+            for node in self.body.inner_ref().contents.iter() {
                 writeln!(indent, "{};", node).unwrap();
             }
         }
@@ -235,9 +233,74 @@ impl fmt::Debug for TyFunctionParameter {
 }
 
 #[derive(Clone, PartialEq)]
+pub(crate) struct TyCodeBlock {
+    pub(crate) contents: Vec<CCIdx<TyNode>>,
+}
+
+impl fmt::Debug for TyCodeBlock {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{{").unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for node in self.contents.iter() {
+                writeln!(indent, "{:?};", node).unwrap();
+            }
+        }
+        writeln!(f, "}}")
+    }
+}
+
+impl fmt::Display for TyCodeBlock {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "{{").unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for node in self.contents.iter() {
+                writeln!(indent, "{};", node).unwrap();
+            }
+        }
+        writeln!(f, "}}")
+    }
+}
+
+impl CopyTypes for TyCodeBlock {
+    fn copy_types(&mut self, type_mapping: &TypeMapping) {
+        self.contents
+            .iter_mut()
+            .for_each(|node| node.copy_types(type_mapping));
+    }
+}
+
+#[derive(Clone, PartialEq)]
 pub(crate) struct TyTraitDeclaration {
     pub(crate) name: String,
     pub(crate) interface_surface: Vec<CCIdx<DeclarationId>>,
+}
+
+impl fmt::Debug for TyTraitDeclaration {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "trait {} {{", self.name).unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for node in self.interface_surface.iter() {
+                writeln!(indent, "{:?};", node).unwrap();
+            }
+        }
+        write!(f, "}}")
+    }
+}
+
+impl fmt::Display for TyTraitDeclaration {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "trait {} {{", self.name).unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for node in self.interface_surface.iter() {
+                writeln!(indent, "{};", node).unwrap();
+            }
+        }
+        write!(f, "}}")
+    }
 }
 
 impl CopyTypes for TyTraitDeclaration {
@@ -258,6 +321,22 @@ pub(crate) struct TyTraitFn {
 impl CopyTypes for TyTraitFn {
     fn copy_types(&mut self, type_mapping: &TypeMapping) {
         self.return_type.copy_types(type_mapping);
+    }
+}
+
+impl fmt::Debug for TyTraitFn {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "fn {}({}) -> {:?}",
+            self.name,
+            self.parameters
+                .iter()
+                .map(|parameter| format!("{:?}", parameter))
+                .collect::<Vec<_>>()
+                .join(", "),
+            self.return_type
+        )
     }
 }
 
@@ -283,6 +362,37 @@ pub(crate) struct TyTraitImpl {
     pub(crate) type_implementing_for: TypeId,
     pub(crate) type_parameters: Vec<TypeParameter>,
     pub(crate) methods: Vec<CCIdx<DeclarationId>>,
+}
+
+impl fmt::Display for TyTraitImpl {
+    fn fmt(&self, mut f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(
+            f,
+            "impl{} {} for {} {{",
+            if self.type_parameters.is_empty() {
+                "".to_string()
+            } else {
+                format!(
+                    "<{}>",
+                    self.type_parameters
+                        .iter()
+                        .map(|x| x.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            },
+            self.trait_name,
+            self.type_implementing_for,
+        )
+        .unwrap();
+        {
+            let mut indent = IndentWriter::new("  ", &mut f);
+            for method in self.methods.iter() {
+                writeln!(indent, "{};", method).unwrap();
+            }
+        }
+        write!(f, "}}")
+    }
 }
 
 impl CopyTypes for TyTraitImpl {

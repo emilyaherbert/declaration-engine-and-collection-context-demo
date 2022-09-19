@@ -128,7 +128,7 @@ impl fmt::Debug for TyNode {
         match self {
             TyNode::Declaration(decl) => write!(f, "{:?}", decl),
             TyNode::Expression(exp) => write!(f, "{:?}", exp),
-            TyNode::ReturnStatement(exp) => write!(f, "{:?}", exp),
+            TyNode::ReturnStatement(exp) => write!(f, "return {:?}", exp),
             TyNode::StarImport(filename) => write!(f, "use {}::*", filename),
         }
     }
@@ -139,7 +139,7 @@ impl fmt::Display for TyNode {
         match self {
             TyNode::Declaration(decl) => write!(f, "{}", decl),
             TyNode::Expression(exp) => write!(f, "{}", exp),
-            TyNode::ReturnStatement(exp) => write!(f, "{}", exp),
+            TyNode::ReturnStatement(exp) => write!(f, "return {}", exp),
             TyNode::StarImport(filename) => write!(f, "use {}::*", filename),
         }
     }

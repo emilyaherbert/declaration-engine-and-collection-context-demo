@@ -25,7 +25,7 @@ impl PartialEq for DeclarationId {
 
 impl fmt::Display for DeclarationId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_str(&de_look_up_decl_id(*self).to_string())
+        write!(f, "{}", de_look_up_decl_id(*self))
     }
 }
 

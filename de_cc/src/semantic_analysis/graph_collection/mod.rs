@@ -37,8 +37,15 @@ pub(crate) fn collect_graph(cc: &mut CollectionContext, app: Application) -> CCI
 }
 
 fn collect_graph_file(cc: &mut CollectionContext, file: File) -> CCIdx<TyFile> {
-    // create graph nodes for the nodes
-    let nodes = collect_graph_nodes(cc, file.nodes);
+    // create graph nodes for the ast nodes
+    let nodes = file
+        .nodes
+        .into_iter()
+        .map(|node| collect_graph_node(cc, node))
+        .collect::<Vec<_>>();
+
+    // for every ast node in this scope, connect them under the same shared scope with graph edges
+    CCIdx::add_edges_many(&nodes, CollectionEdge::SharedScope, cc);
 
     // create a graph node for this file
     let file = TyFile {
@@ -56,19 +63,6 @@ fn collect_graph_file(cc: &mut CollectionContext, file: File) -> CCIdx<TyFile> {
     CCIdx::add_edges_many_to_one(&nodes, &cc_idx, CollectionEdge::FileContents, cc);
 
     cc_idx
-}
-
-fn collect_graph_nodes(cc: &mut CollectionContext, nodes: Vec<Node>) -> Vec<CCIdx<TyNode>> {
-    // create graph nodes for each of the ast nodes
-    let nodes = nodes
-        .into_iter()
-        .map(|node| collect_graph_node(cc, node))
-        .collect::<Vec<_>>();
-
-    // for every ast node in this scope, connect them under the same shared scope with graph edges
-    CCIdx::add_edges_many(&nodes, CollectionEdge::SharedScope, cc);
-
-    nodes
 }
 
 fn collect_graph_node(cc: &mut CollectionContext, node: Node) -> CCIdx<TyNode> {
