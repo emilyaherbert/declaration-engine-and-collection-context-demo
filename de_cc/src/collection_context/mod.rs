@@ -1,3 +1,5 @@
+//! This module is used in graph collection.
+
 mod bfs;
 #[allow(clippy::module_inception)]
 pub(crate) mod collection_context;

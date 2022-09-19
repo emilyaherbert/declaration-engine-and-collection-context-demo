@@ -1,3 +1,16 @@
+//! This module transforms the untyped AST into a typeable AST and collects a [CollectionContext]
+//! in the process.
+//!
+//! In transforming the untyped AST into a typeable AST, this module:
+//! 1. inserts instances of [TypeInfo](crate::type_system::type_info::TypeInfo)
+//!     into the [TypeEngine](crate::type_system::type_engine::TypeEngine)
+//! 2. inserts declarations into the [DeclarationEngine](crate::declaration_engine::declaration_engine::DeclarationEngine)
+//!
+//! This module does not *and should not*:
+//! - evaluate types in any way
+//! - create constraints on types or perform type unification
+//! - resolve instances of custom types
+
 mod declaration;
 mod expression;
 
@@ -15,6 +28,8 @@ use crate::{
     },
 };
 
+/// Takes an untyped [Application] struct and transforms it into a typeable [TyApplication],
+/// wrapped in a [CCIdx] representing its index in the [CollectionContext]
 pub(crate) fn collect_graph(cc: &mut CollectionContext, app: Application) -> CCIdx<TyApplication> {
     // create graph nodes for each of the files
     let file_idxs = app

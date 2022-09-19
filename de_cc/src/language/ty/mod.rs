@@ -1,3 +1,5 @@
+//! A typeable AST.
+
 use std::fmt;
 
 use colored::Colorize;

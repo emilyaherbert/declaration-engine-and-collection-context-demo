@@ -15,6 +15,43 @@ use super::{
     CollectionGraph,
 };
 
+/// Represents a typeable AST as a graph by adding typeable AST nodes into a graph
+/// and by drawing edges between relevant AST nodes. An edge is created between two
+/// AST nodes when those two AST nodes share some scope relationship---sharing the
+/// same scope, one being a scoped child of another, etc.
+///
+/// At a high level, the [CollectionContext] is a cyclical directed graph that allows
+/// for both parallel edges and for self-referential edges. This is useful for the
+/// AST because it allows us to model scoping relationships. The 'leaves' of the
+/// [CollectionContext] are nodes from which no other nodes derive any nested scoping
+/// (think literal expressions, variable expression, etc). Edges in the graph are
+/// directed towards outward scope. For example, an AST node in a function body will
+/// have an edge pointing outward in scope towards the AST node of the function
+/// declaration itself. And that function declaration will have and edging pointing
+/// outward in scope to the file its in. In this way, the root of the graph is the
+/// entire application itself, as it encompasses the most outward scope.
+///
+/// Modeling scope in this way is useful because it allows us to 'look ahead' at
+/// 'future AST nodes' during type collection, type inference, etc. We can think of it
+/// this way. Given this file:
+///
+/// ```ignore
+/// fn ping(n: u64) -> u64 {
+///     return pong(n-1);
+/// }
+///
+/// fn pong(n: u64) -> u64 {
+///     return ping(n-1);
+/// }
+/// ```
+///
+/// During type inference, when evaluating the AST node for `return pong(n-1);`, we will
+/// need to know 1) the type signature of `pong` 2) if `pong` exists at all and is in scope,
+/// but we don't know this information because we haven't done type inference on `pong`
+/// yet. Because these functions are mutually recursive, it is not possible to determine
+/// an ordering for which to do type inference. The [CollectionContext] gives the ability
+/// for the compiler to either 'look forward' or 'look backward' in the AST given any
+/// location where type inference is currently 'standing'.
 #[derive(Default, Clone)]
 pub(crate) struct CollectionContext {
     pub(super) graph: CollectionGraph,
@@ -24,10 +61,7 @@ pub(crate) struct CollectionContext {
 impl CollectionContext {
     #[allow(dead_code)]
     pub(crate) fn debug_print(&self) {
-        println!(
-            "{}",
-            Dot::with_config(&self.graph, &[Config::EdgeIndexLabel])
-        );
+        println!("{}", self.create_link());
     }
 
     pub(crate) fn create_link(&self) -> String {
@@ -60,10 +94,6 @@ impl CollectionContext {
         self.graph.index(*index)
     }
 
-    // pub(crate) fn get_node_mut(&mut self, index: CollectionIndex) -> &mut CollectionNode {
-    //     self.graph.index_mut(*index)
-    // }
-
     pub(crate) fn add_edge(
         &mut self,
         from: CollectionIndex,
@@ -73,7 +103,6 @@ impl CollectionContext {
         self.graph.add_edge(*from, *to, edge)
     }
 
-    // https://docs.rs/petgraph/latest/src/petgraph/visit/traversal.rs.html#253
     pub(crate) fn get_symbol(
         &self,
         index: CollectionIndex,

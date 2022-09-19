@@ -1,3 +1,10 @@
+//! This module performs type inference on the typeable AST.
+//!
+//! Type inference includes:
+//! 1. visiting all function bodies and expressions
+//! 2. resolving custom types
+//! 3. monomorphizing as needed
+
 mod declaration;
 mod expression;
 

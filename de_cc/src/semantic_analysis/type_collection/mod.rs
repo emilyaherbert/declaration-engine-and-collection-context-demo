@@ -1,3 +1,15 @@
+//! This module performs type collection on the typeable AST.
+//!
+//! Type collection includes:
+//! 1. visiting all types that touch intraprocedural objects
+//!     (struct/enum/function/trait/etc declarations)
+//! 2. resolving custom types
+//! 3. applying CopyTypes to associate type parameters with generics
+//!
+//! Type collection does not include:
+//! - visiting types that do not touch intraprocedural objects
+//!     (function bodies are not visited)
+
 mod declaration;
 
 use declaration::*;
